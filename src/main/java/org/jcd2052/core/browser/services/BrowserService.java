@@ -1,0 +1,158 @@
+package org.jcd2052.core.browser.services;
+
+import com.microsoft.playwright.Browser;
+import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.Tracing;
+import org.jcd2052.core.browser.browser.PlaywrightBrowser;
+import org.jcd2052.core.browser.browser.interfaces.IBrowser;
+import org.jcd2052.core.browser.browser.interfaces.IBrowserWindow;
+import org.jcd2052.core.browser.configuration.IBrowserProperties;
+import org.jcd2052.core.browser.factory.IBrowserFactory;
+import org.jcd2052.core.browser.services.interfaces.IBrowserService;
+import org.jcd2052.core.logger.LoggerProvider;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+/**
+ * Concrete implementation of the {@link IBrowserService}.
+ * <p>
+ * This service manages the lifecycle of Playwright browsers. It is designed to be
+ * thread-safe for parallel test execution by utilizing a {@link ThreadLocal} storage
+ * mechanism for the browser instances. This ensures that each executing thread
+ * (e.g., each parallel TestNG method) gets its own completely isolated browser session.</p>
+ */
+public class BrowserService implements IBrowserService {
+    /**
+     * Thread-local storage to hold a separate browser instance for each executing thread,
+     * guaranteeing thread safety during parallel test execution.
+     */
+    private static final ThreadLocal<IBrowser> threadLocalBrowser = new ThreadLocal<>();
+    private final IBrowserProperties browserProperties;
+    private final IBrowserFactory browserFactory;
+
+    /**
+     * Constructs a new {@code BrowserService}.
+     *
+     * @param browserProperties The configuration properties for the browser (tracing, headless, etc.).
+     * @param browserFactory    The factory responsible for instantiating the actual Playwright browsers.
+     */
+    public BrowserService(IBrowserProperties browserProperties, IBrowserFactory browserFactory) {
+        this.browserProperties = browserProperties;
+        this.browserFactory = browserFactory;
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * <b>Lifecycle Note:</b> This method retrieves the currently active browser window
+     * and, if tracing is enabled via properties, starts the Playwright tracer to begin
+     * recording DOM snapshots and screenshots for the session.
+     */
+    @Override
+    public void startTracing() {
+        IBrowserWindow iBrowserWindow = getBrowser().getCurrentBrowserWindow();
+        if (browserProperties.isTracing()) {
+            iBrowserWindow.getBrowserContext().tracing().start(new Tracing.StartOptions()
+                    .setScreenshots(browserProperties.isScreenshots())
+                    .setSnapshots(browserProperties.isSnapshots()));
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * <b>Implementation Note:</b> Explicitly stops the Playwright tracer, exports the recorded
+     * data to a ZIP file on disk, and reads that file into memory to be returned.
+     * This method is typically called during test teardown <b>only if a test fails</b>,
+     * ensuring that valuable debugging artifacts are preserved for root-cause analysis.</p>
+     *
+     * @param filename The specific name to assign to the exported trace ZIP file.
+     * @return A {@code byte[]} containing the ZIP file data, or an empty byte array
+     * ({@code new byte[0]}) if tracing is disabled or an error occurs during file reading.
+     */
+    @Override
+    public byte[] stopAndSaveTrace(String filename) {
+        if (browserProperties.isTracing()) {
+            try {
+                Path tracePath = Paths.get(browserProperties.getTracingSaveFolder(), filename);
+                getBrowser()
+                        .getCurrentBrowserWindow()
+                        .getBrowserContext()
+                        .tracing()
+                        .stop(new Tracing.StopOptions().setPath(tracePath));
+                return Files.readAllBytes(tracePath);
+
+            } catch (Exception e) {
+                LoggerProvider.getLogger().error("Failed to read trace file into byte array: " + e.getMessage());
+            }
+        }
+        return new byte[0];
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * <b>Implementation Note:</b> This method safely caches the browser. It checks the
+     * {@link ThreadLocal} storage; if a valid, open browser exists for the current thread,
+     * it returns it. Otherwise, it uses the {@link IBrowserFactory} to spawn a new one.
+     */
+    @Override
+    public synchronized IBrowser getBrowser() {
+        IBrowser cached = threadLocalBrowser.get();
+        if (cached != null && !cached.isClosed()) {
+            return cached;
+        }
+        setBrowser(browserFactory);
+        return threadLocalBrowser.get();
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Closes any existing browser instance for the current thread and replaces it
+     * with a new instance generated by the provided factory.
+     *
+     * @param browserFactory The factory used to spawn the new browser instance.
+     * @throws IllegalArgumentException if the provided factory is null.
+     */
+    @Override
+    public void setBrowser(IBrowserFactory browserFactory) {
+        if (browserFactory == null) {
+            throw new IllegalArgumentException("Browser factory cannot be null");
+        }
+
+        IBrowser cached = threadLocalBrowser.get();
+        if (cached != null && !cached.isClosed()) {
+            cached.close();
+        }
+        Browser playwrightBrowser = browserFactory.createBrowser(getPlaywright());
+        IBrowser browser = new PlaywrightBrowser(playwrightBrowser, browserProperties);
+        threadLocalBrowser.set(browser);
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Gracefully terminates the active Playwright browser for the current thread and
+     * clears the {@link ThreadLocal} reference to prevent memory leaks between test suites.
+     */
+    @Override
+    public void close() {
+        IBrowser browser = getBrowser();
+        if (browser != null) {
+            browser.close();
+            threadLocalBrowser.remove();
+        }
+    }
+
+    /**
+     * Helper method to initialize the core Playwright connection.
+     *
+     * @return A newly created {@link Playwright} instance.
+     */
+    private Playwright getPlaywright() {
+        return Playwright.create();
+    }
+}
