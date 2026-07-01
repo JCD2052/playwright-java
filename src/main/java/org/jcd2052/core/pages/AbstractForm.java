@@ -50,49 +50,33 @@ public abstract class AbstractForm implements IForm {
         this.formLabel = elementFactory.createLabelElement(locatorStrategy, name);
     }
 
-    /**
-     * Checks if the form is currently visible on the page.
-     * <p>This evaluation is delegated to the underlying {@code formLabel} element.</p>
-     *
-     * @return {@code true} if the form is visible; {@code false} otherwise.
-     */
     @Override
     public boolean isVisible() {
         return getFormLabel().isVisible();
     }
 
     /**
-     * Waits for the form to finish loading.
-     * <p>This synchronization is delegated to the underlying {@code formLabel} element's
-     * specific loading wait condition.</p>
-     *
-     * @return {@code true} if the form successfully loaded within the timeout period.
-     */
-    public boolean waitForLoading() {
-        return getFormLabel().waitForLoading();
-    }
-
-    /**
-     * Waits for the form to become visible on the page.
-     * <p>This synchronization is delegated to the underlying {@code formLabel} element.</p>
-     *
-     * @return {@code true} if the form became visible within the timeout period.
-     */
-    public boolean waitToBeVisible() {
-        return getFormLabel().waitToBeVisible();
-    }
-
-    /**
-     * Waits for the form to become invisible or detached from the DOM.
-     * <p>This synchronization is delegated to the underlying {@code formLabel} element's
-     * detached state condition, which is useful for verifying that a form (like a modal
-     * or popup) has successfully closed.</p>
-     *
-     * @return {@code true} if the form became invisible/detached within the timeout period.
+     * Waits for the form to finish loading with a custom timeout.
      */
     @Override
-    public boolean waitToBeInvisible() {
-        return getFormLabel().waitToBeDetached();
+    public boolean waitForLoading(Double timeout) {
+        return getFormLabel().waitForLoading(null, timeout);
+    }
+
+    /**
+     * Waits for the form to become visible with a custom timeout.
+     */
+    @Override
+    public boolean waitToBeVisible(Double timeout) {
+        return getFormLabel().waitToBeVisible(timeout);
+    }
+
+    /**
+     * Waits for the form to become invisible or detached with a custom timeout.
+     */
+    @Override
+    public boolean waitToBeInvisible(Double timeout) {
+        return getFormLabel().waitToBeDetached(timeout);
     }
 
     protected Map<String, IElement> getAllElements() {

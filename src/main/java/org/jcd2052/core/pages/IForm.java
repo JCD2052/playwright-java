@@ -25,28 +25,46 @@ public interface IForm {
 
     /**
      * Halts test execution until the form has completely loaded.
-     * <p>The specific conditions for "loading" (e.g., waiting for a spinner to disappear or
-     * a specific network state) are defined by the implementing class.</p>
      *
-     * @return {@code true} if the form successfully loaded within the designated timeout; {@code false} otherwise.
+     * @param timeout The maximum time to wait in milliseconds. If null, the framework default is used.
+     * @return {@code true} if the form successfully loaded; {@code false} otherwise.
      */
-    boolean waitForLoading();
+    boolean waitForLoading(Double timeout);
+
+    /**
+     * Halts test execution until the form has completely loaded using default timeout.
+     */
+    default boolean waitForLoading() {
+        return waitForLoading(null);
+    }
 
     /**
      * Halts test execution until the form becomes visible on the page.
-     * <p>This is useful for synchronizing interactions with forms that appear dynamically,
-     * such as popups, modals, or dropdown menus.</p>
      *
-     * @return {@code true} if the form became visible within the designated timeout; {@code false} otherwise.
+     * @param timeout The maximum time to wait in milliseconds. If null, the framework default is used.
+     * @return {@code true} if the form became visible; {@code false} otherwise.
      */
-    boolean waitToBeVisible();
+    boolean waitToBeVisible(Double timeout);
+
+    /**
+     * Halts test execution until the form becomes visible on the page using default timeout.
+     */
+    default boolean waitToBeVisible() {
+        return waitToBeVisible(null);
+    }
 
     /**
      * Halts test execution until the form becomes invisible or is completely detached from the DOM.
-     * <p>This is frequently used to verify that a form (like a modal dialog or loading overlay)
-     * has successfully closed or disappeared before proceeding with the next test step.</p>
      *
-     * @return {@code true} if the form became invisible within the designated timeout; {@code false} otherwise.
+     * @param timeout The maximum time to wait in milliseconds. If null, the framework default is used.
+     * @return {@code true} if the form became invisible; {@code false} otherwise.
      */
-    boolean waitToBeInvisible();
+    boolean waitToBeInvisible(Double timeout);
+
+    /**
+     * Halts test execution until the form becomes invisible using default timeout.
+     */
+    default boolean waitToBeInvisible() {
+        return waitToBeInvisible(null);
+    }
 }

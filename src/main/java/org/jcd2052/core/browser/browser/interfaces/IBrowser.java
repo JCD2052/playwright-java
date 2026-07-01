@@ -78,6 +78,10 @@ public interface IBrowser {
      */
     void switchToWindow(IBrowserWindow window);
 
+    default void setViewportSize(int width, int height) {
+     getCurrentBrowserWindow().getCurrentBrowserTab().setViewportSize(width, height);
+    }
+
     /**
      * Reloads the currently active tab in the current browser window.
      */

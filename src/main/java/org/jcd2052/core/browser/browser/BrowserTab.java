@@ -4,6 +4,7 @@ import com.microsoft.playwright.Page;
 import lombok.Getter;
 import org.jcd2052.core.browser.browser.interfaces.IAlert;
 import org.jcd2052.core.browser.browser.interfaces.IBrowserTab;
+import org.jcd2052.core.browser.browser.interfaces.IStorageManager;
 
 /**
  * Concrete implementation of the {@link IBrowserTab} interface.
@@ -32,5 +33,15 @@ public class BrowserTab implements IBrowserTab {
     @Override
     public IAlert getAlert() {
         return new BrowserAlert(page);
+    }
+
+    @Override
+    public IStorageManager getLocalStorage() {
+        return new StorageManager(page.localStorage(), "Local Storage");
+    }
+
+    @Override
+    public IStorageManager getSessionStorage() {
+        return new StorageManager(page.sessionStorage(), "Session Storage");
     }
 }

@@ -1,6 +1,9 @@
 package org.jcd2052.core.browser.browser.interfaces;
 
+import com.microsoft.playwright.Download;
 import com.microsoft.playwright.Page;
+
+import java.nio.file.Path;
 
 /**
  * Represents a single tab (or Page in Playwright terminology) within a browser window.
@@ -17,12 +20,47 @@ public interface IBrowserTab {
     IAlert getAlert();
 
     /**
+     * @return The Local Storage manager for the current tab.
+     */
+    IStorageManager getLocalStorage();
+
+    /**
+     * @return The Session Storage manager for the current tab.
+     */
+    IStorageManager getSessionStorage();
+
+    /**
      * Retrieves the current URL of the active tab.
      *
      * @return The current URL as a string.
      */
     default String getCurrentUrl() {
         return getPage().url();
+    }
+
+    default void saveFileAfterAction(Runnable actionThatTriggersDownload, Path pathToSave) {
+        waitForDownload(actionThatTriggersDownload).saveAs(pathToSave);
+    }
+
+    /**
+     * Waits for a file download to be triggered by the provided action.
+     *
+     * @param actionThatTriggersDownload The action (e.g., clicking a button) that initiates the download.
+     * @return A Playwright Download object containing the downloaded file metadata.
+     */
+    default Download waitForDownload(Runnable actionThatTriggersDownload) {
+        return getPage().waitForDownload(actionThatTriggersDownload);
+    }
+
+    /**
+     * Dynamically resizes the browser viewport during test execution.
+     * Useful for testing responsive UI layouts on the fly.
+     *
+     * @param width  The new viewport width in pixels.
+     * @param height The new viewport height in pixels.
+     */
+    default void setViewportSize(int width, int height) {
+        getPage().setViewportSize(width, height);
     }
 
     /**
