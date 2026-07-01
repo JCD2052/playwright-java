@@ -54,6 +54,7 @@ public class ElementFactory implements IElementFactory {
      */
     @Getter
     private final IBrowserProperties browserProperties;
+    private final Map<Class<? extends IElement>, Class<? extends IElement>> elementRegistry = new HashMap<>();
 
     /**
      * Constructs a new {@code ElementFactory} instance.
@@ -64,15 +65,51 @@ public class ElementFactory implements IElementFactory {
     public ElementFactory(IElementFinderService elementFinderService, IBrowserProperties browserProperties) {
         this.elementFinderService = elementFinderService;
         this.browserProperties = browserProperties;
+        registerDefaultElements();
+    }
+
+    @Override
+    public <T extends IElement> IElementCollection<T> createElementsCollection(
+            String selector, String name, IElementSupplier<T> supplier, ExpectedCount expectedCount) {
+        return new ElementCollection<>(selector, name, this, supplier, expectedCount);
+    }
+
+    @Override
+    public <T extends IElement> IElementCollection<T> createElementsCollection(
+            String selector,
+            String name,
+            Class<T> clazz,
+            ExpectedCount expectedCount) {
+        return createElementsCollection(selector, name, getDefaultElementSupplier(clazz), expectedCount);
+    }
+
+    @Override
+    public <T extends IElement> IElementCollection<T> createChildElementsCollection(
+            IElementSupplier<T> supplier,
+            IElement parentElement,
+            String selector,
+            String name,
+            ExpectedCount expectedCount) {
+        String combinedSelector = combineSelectors(parentElement, selector);
+        return new ElementCollection<>(combinedSelector, name, this, supplier, expectedCount);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public <T extends IElement> IElementCollection<T> createElementsCollection(
-            String selector, String name, Class<T> clazz, ExpectedCount expectedCount) {
-        return new ElementCollection<>(selector, name, clazz, this, expectedCount);
+    public <T extends IElement> IElementCollection<T> createChildElementsCollection(
+            Class<T> elementClass,
+            IElement parentElement,
+            String selector,
+            String name,
+            ExpectedCount expectedCount) {
+        return createChildElementsCollection(
+                getDefaultElementSupplier(elementClass),
+                parentElement,
+                selector,
+                name,
+                expectedCount);
     }
 
     /**
@@ -90,18 +127,14 @@ public class ElementFactory implements IElementFactory {
      * {@inheritDoc}
      */
     @Override
-    public <T extends IElement> IElementCollection<T> createChildElementsCollection(
-            Class<T> elementClass, IElement parentElement, String selector, String name, ExpectedCount expectedCount) {
-        String combinedSelector = combineSelectors(parentElement, selector);
-        return new ElementCollection<>(combinedSelector, name, elementClass, this, expectedCount);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public boolean isHighlightEnabled() {
         return browserProperties.isHighlight();
+    }
+
+    public void registerElement(
+            Class<? extends IElement> interfaceClass,
+            Class<? extends IElement> implementationClass) {
+        elementRegistry.put(interfaceClass, implementationClass);
     }
 
     /**
@@ -139,30 +172,23 @@ public class ElementFactory implements IElementFactory {
      * @throws IllegalArgumentException if an interface is requested that is not mapped in the registry.
      */
     private <T extends IElement> Class<T> resolveElementClass(Class<T> clazz) {
-        if (clazz.isInterface() && !getElementTypesMap().containsKey(clazz)) {
+        if (clazz.isInterface() && !elementRegistry.containsKey(clazz)) {
             throw new IllegalArgumentException(
                     String.format("Interface %1$s is not found in getElementTypesMap()", clazz));
         }
 
         //noinspection unchecked
-        return clazz.isInterface() ? (Class<T>) getElementTypesMap().get(clazz) : clazz;
+        return clazz.isInterface() ? (Class<T>) elementRegistry.get(clazz) : clazz;
     }
 
-    /**
-     * Provides the mapping registry between standard element interfaces and their concrete implementations.
-     *
-     * @return A map where the keys are element interfaces and the values are their concrete class equivalents.
-     */
-    protected Map<Class<? extends IElement>, Class<? extends IElement>> getElementTypesMap() {
-        Map<Class<? extends IElement>, Class<? extends IElement>> typesMap = new HashMap<>();
-        typesMap.put(IButtonElement.class, ButtonElement.class);
-        typesMap.put(ILabelElement.class, LabelElement.class);
-        typesMap.put(ITextBoxElement.class, TextBoxElement.class);
-        typesMap.put(IDropdownElement.class, DropdownElement.class);
-        typesMap.put(ILinkElement.class, LinkElement.class);
-        typesMap.put(IRadioButtonElement.class, RadioButtonElement.class);
-        typesMap.put(ICheckBoxElement.class, CheckBoxElement.class);
-        typesMap.put(IUploadBox.class, UploadBox.class);
-        return typesMap;
+    private void registerDefaultElements() {
+        elementRegistry.put(IButtonElement.class, ButtonElement.class);
+        elementRegistry.put(ILabelElement.class, LabelElement.class);
+        elementRegistry.put(ITextBoxElement.class, TextBoxElement.class);
+        elementRegistry.put(IDropdownElement.class, DropdownElement.class);
+        elementRegistry.put(ILinkElement.class, LinkElement.class);
+        elementRegistry.put(IRadioButtonElement.class, RadioButtonElement.class);
+        elementRegistry.put(ICheckBoxElement.class, CheckBoxElement.class);
+        elementRegistry.put(IUploadBox.class, UploadBox.class);
     }
 }

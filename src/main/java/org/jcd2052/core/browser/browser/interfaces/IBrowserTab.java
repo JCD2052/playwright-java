@@ -7,13 +7,14 @@ import com.microsoft.playwright.Page;
  * Provides default implementations for basic browser navigation and tab-level interactions.
  */
 public interface IBrowserTab {
-
     /**
      * Gets the underlying Playwright {@link Page} instance associated with this tab.
      *
      * @return The raw Playwright page object.
      */
     Page getPage();
+
+    IAlert getAlert();
 
     /**
      * Retrieves the current URL of the active tab.

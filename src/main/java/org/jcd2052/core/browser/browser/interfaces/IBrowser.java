@@ -10,7 +10,6 @@ import java.util.Collection;
  * Provides functionality to manage windows (contexts), take screenshots, and handle the browser lifecycle.
  */
 public interface IBrowser {
-
     /**
      * Opens a new browser window (BrowserContext in Playwright) and sets it as the current active window.
      *

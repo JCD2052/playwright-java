@@ -1,12 +1,14 @@
 package org.jcd2052.core.browser.browser;
 
 import com.microsoft.playwright.BrowserContext;
+import com.microsoft.playwright.options.Cookie;
 import lombok.Getter;
 import lombok.Setter;
 import org.jcd2052.core.browser.browser.interfaces.IBrowserTab;
 import org.jcd2052.core.browser.browser.interfaces.IBrowserWindow;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -17,7 +19,6 @@ import java.util.stream.Collectors;
  */
 @Getter
 public class BrowserWindow implements IBrowserWindow {
-
     /**
      * The underlying Playwright BrowserContext associated with this window.
      * <p>
@@ -66,6 +67,21 @@ public class BrowserWindow implements IBrowserWindow {
                 .stream()
                 .map(BrowserTab::new)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public void addCookies(List<Cookie> cookies) {
+        browserContext.addCookies(cookies);
+    }
+
+    @Override
+    public List<Cookie> getCookies() {
+        return browserContext.cookies();
+    }
+
+    @Override
+    public void clearCookies() {
+        browserContext.clearCookies();
     }
 
     /**

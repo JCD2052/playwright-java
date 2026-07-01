@@ -1,15 +1,16 @@
 package org.jcd2052.core.browser.browser.interfaces;
 
 import com.microsoft.playwright.BrowserContext;
+import com.microsoft.playwright.options.Cookie;
 
 import java.util.Collection;
+import java.util.List;
 
 /**
  * Represents a single browser window (or {@link BrowserContext} in Playwright).
  * A window provides an isolated session that contains its own collection of {@link IBrowserTab}s.
  */
 public interface IBrowserWindow {
-
     /**
      * Opens a new tab (Page) within this specific browser window and sets it as the active tab.
      *
@@ -38,6 +39,25 @@ public interface IBrowserWindow {
      * @return The current {@link IBrowserTab}.
      */
     IBrowserTab getCurrentBrowserTab();
+
+    /**
+     * Adds an array of cookies to the current browser context.
+     *
+     * @param cookies A list of Playwright Cookie objects to add.
+     */
+    void addCookies(List<Cookie> cookies);
+
+    /**
+     * Retrieves all cookies from the current browser context.
+     *
+     * @return A list of current Playwright Cookie objects.
+     */
+    List<Cookie> getCookies();
+
+    /**
+     * Clears all cookies from the current browser context.
+     */
+    void clearCookies();
 
     /**
      * Sets the specified tab as the currently tracked active tab in the framework.

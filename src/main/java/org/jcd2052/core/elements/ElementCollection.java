@@ -3,6 +3,7 @@ package org.jcd2052.core.elements;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.options.WaitForSelectorState;
 import org.jcd2052.core.browser.services.interfaces.IElementFactory;
+import org.jcd2052.core.browser.services.interfaces.IElementSupplier;
 import org.jcd2052.core.elements.interfaces.IElement;
 import org.jcd2052.core.elements.interfaces.IElementCollection;
 
@@ -23,7 +24,7 @@ import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertTha
 public class ElementCollection<T extends IElement> implements IElementCollection<T> {
     private final String selector;
     private final String name;
-    private final Class<T> clazz;
+    private final IElementSupplier<T> supplier;
     private final IElementFactory elementFactory;
     private final ExpectedCount expectedCount;
 
@@ -32,18 +33,18 @@ public class ElementCollection<T extends IElement> implements IElementCollection
      *
      * @param selector       The base Playwright selector used to find all elements in the collection.
      * @param name           A base human-readable name for the collection, appended with an index for individual elements.
-     * @param clazz          The class type of the elements to instantiate (e.g., {@code ButtonElement.class}).
      * @param elementFactory The {@link IElementFactory} responsible for creating the individual elements.
      * @param expectedCount  The expectation rule applied before resolving the collection (e.g., MUST have elements, MUST be empty).
      */
     public ElementCollection(
-            String selector, String name,
-            Class<T> clazz,
+            String selector,
+            String name,
             IElementFactory elementFactory,
+            IElementSupplier<T> supplier,
             ExpectedCount expectedCount) {
         this.selector = selector;
         this.name = name;
-        this.clazz = clazz;
+        this.supplier = supplier;
         this.elementFactory = elementFactory;
         this.expectedCount = expectedCount;
     }
@@ -64,10 +65,12 @@ public class ElementCollection<T extends IElement> implements IElementCollection
 
         for (int i = 0; i < size; i++) {
             elementList.add(
-                    elementFactory.createCustomElement(
-                            clazz,
+                    supplier.get(
                             elementFactory.combineSelectors(selector, "nth=" + i),
-                            String.format("%s %d", name, i + 1)));
+                            String.format("%s %d", name, i + 1),
+                            elementFactory
+                    )
+            );
         }
         return elementList;
     }

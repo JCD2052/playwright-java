@@ -63,4 +63,8 @@ public interface IBrowserService {
     default void start() {
         getBrowser().openNewWindow().openNewTab();
     }
+
+    default void navigateTo(String url) {
+        getBrowser().getCurrentBrowserWindow().getCurrentBrowserTab().navigateTo(url);
+    }
 }

@@ -1,7 +1,6 @@
 package org.jcd2052.core.elements;
 
 import com.microsoft.playwright.Locator;
-import com.microsoft.playwright.options.WaitForSelectorState;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.jcd2052.core.browser.services.interfaces.IElementFactory;
@@ -13,7 +12,7 @@ import org.jcd2052.core.logger.LoggerProvider;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;import java.util.stream.Collectors;
+import java.util.stream.Collectors;
 
 /**
  * The core abstract base class for all web elements in the framework.
@@ -52,14 +51,6 @@ public abstract class AbstractElement implements IElement {
     }
 
     /**
-     * Scrolls the element into the visible viewport if it is not already visible.
-     */
-    @Override
-    public void scrollToElement() {
-        getLocator().scrollIntoViewIfNeeded();
-    }
-
-    /**
      * Performs a standard click on the element.
      * <p>This method delegates to a centralized click handler, ensuring the page
      * is in a ready state before and after the action, and applies a slight delay
@@ -69,16 +60,6 @@ public abstract class AbstractElement implements IElement {
     public void click() {
         LoggerProvider.getLogger().debugElementAction(getElementType(), getName(), "was clicked");
         clickWithOptions(false);
-    }
-
-    /**
-     * Performs a click on the element using JavaScript injection.
-     * <p>This is useful for bypassing elements that intercept native clicks.</p>
-     */
-    @Override
-    public void clickWithJs() {
-        LoggerProvider.getLogger().debugElementAction(getElementType(), getName(), "was clicked with JavaScript");
-        jsActions.click();
     }
 
     /**
@@ -93,37 +74,6 @@ public abstract class AbstractElement implements IElement {
         clickWithOptions(true);
     }
 
-    @Override
-    public void unfocus() {
-        getLocator().blur();
-    }
-
-    /**
-     * Waits for the element to reach a specific state within the DOM.
-     *
-     * @param state   The expected state to wait for (e.g., VISIBLE, HIDDEN).
-     * @param timeout The maximum time to wait in milliseconds. If null, the default timeout is used.
-     */
-    @Override
-    public void waitForState(WaitForSelectorState state, Double timeout) {
-        Locator.WaitForOptions waitOptions = state == null && timeout == null ? null : new Locator.WaitForOptions();
-        if (waitOptions != null) {
-            waitOptions.setState(state);
-            Optional.ofNullable(timeout).ifPresent(waitOptions::setTimeout);
-        }
-        getLocator().waitFor(waitOptions);
-    }
-
-    /**
-     * Waits for the underlying web page's document to reach a fully loaded or ready state.
-     * <p>This method delegates to the underlying {@link IJsActions} to ensure any
-     * asynchronous DOM updates related to this element's interaction have completed.</p>
-     */
-    @Override
-    public void waitForReadyState() {
-        jsActions.waitForReadyState();
-    }
-
     /**
      * Simulates pressing a specific keyboard key on the element.
      *
@@ -133,12 +83,6 @@ public abstract class AbstractElement implements IElement {
     public void press(String key) {
         LoggerProvider.getLogger().debugElementAction(getElementType(), getName(), "pressed key '%s'", key);
         getLocator().press(key);
-    }
-
-    @Override
-    public void hover() {
-        getLocator().hover();
-        LoggerProvider.getLogger().debugElementAction(getElementType(), getName(), "was successfully hovered over");
     }
 
     /**
@@ -269,16 +213,6 @@ public abstract class AbstractElement implements IElement {
     }
 
     /**
-     * Captures a visual screenshot of the specific element.
-     *
-     * @return A byte array representing the screenshot image data.
-     */
-    @Override
-    public byte[] getScreenshot() {
-        return getLocator().screenshot();
-    }
-
-    /**
      * Gets the trimmed human-readable name of the element.
      *
      * @return The element's name.
@@ -286,6 +220,17 @@ public abstract class AbstractElement implements IElement {
     @Override
     public String getName() {
         return name.trim();
+    }
+
+    /**
+     * Resolves and retrieves the Playwright {@link Locator} instance for this element.
+     * <p>This defers the actual DOM lookup to the {@link IElementFactory}'s finder service,
+     * ensuring dynamic resolution when the element is actually interacted with.</p>
+     *
+     * @return The Playwright {@code Locator} instance.
+     */
+    public Locator getLocator() {
+        return elementFactory.getElementFinderService().findElement(selector);
     }
 
     /**
@@ -308,17 +253,6 @@ public abstract class AbstractElement implements IElement {
     }
 
     /**
-     * Resolves and retrieves the Playwright {@link Locator} instance for this element.
-     * <p>This defers the actual DOM lookup to the {@link IElementFactory}'s finder service,
-     * ensuring dynamic resolution when the element is actually interacted with.</p>
-     *
-     * @return The Playwright {@code Locator} instance.
-     */
-    protected Locator getLocator() {
-        return elementFactory.getElementFinderService().findElement(selector);
-    }
-
-    /**
      * A centralized helper method to execute click interactions with specific Playwright options.
      * <p>This ensures a consistent workflow for all native clicks: waiting for the document
      * to be ready, highlighting the element (if enabled), performing the click with a slight
@@ -328,9 +262,7 @@ public abstract class AbstractElement implements IElement {
      *                {@code false} to perform a standard, safe click.
      */
     private void clickWithOptions(boolean isForce) {
-        waitForReadyState();
         highlightElementIfNeeded();
         getLocator().click(new Locator.ClickOptions().setForce(isForce).setDelay(100));
-        waitForReadyState();
     }
 }

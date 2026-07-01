@@ -9,7 +9,6 @@ package org.jcd2052.core.elements.interfaces;
  * </p>
  */
 public interface IJsActions {
-
     /**
      * Performs a click interaction by dispatching a MouseEvent or calling the
      * HTMLElement.click() method directly via JavaScript.
@@ -44,13 +43,4 @@ public interface IJsActions {
      * and automated test demonstration.
      */
     void highlight();
-
-    /**
-     * Waits for the document or element context to reach a fully loaded or ready state.
-     * <p>
-     * This typically involves executing JavaScript to evaluate {@code document.readyState === 'complete'},
-     * or waiting for any pending asynchronous DOM updates related to the element to finish.
-     * </p>
-     */
-    void waitForReadyState();
 }

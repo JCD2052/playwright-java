@@ -1,6 +1,5 @@
 package org.jcd2052.core.elements;
 
-import com.microsoft.playwright.Locator;
 import org.jcd2052.core.elements.interfaces.IElement;
 import org.jcd2052.core.elements.interfaces.IJsActions;
 
@@ -32,7 +31,7 @@ public class JsActions implements IJsActions {
      * if the element is visible, stable, or unobscured by other elements.</p>
      */
     public void click() {
-        getLocator().evaluate("node => node.click()");
+        element.getLocator().evaluate("node => node.click()");
     }
 
     /**
@@ -41,7 +40,7 @@ public class JsActions implements IJsActions {
      * and center alignment.</p>
      */
     public void scrollIntoView() {
-        getLocator().evaluate("el => el.scrollIntoView({ block: 'center', inline: 'center' })");
+        element.getLocator().evaluate("el => el.scrollIntoView({ block: 'center', inline: 'center' })");
     }
 
     /**
@@ -51,7 +50,7 @@ public class JsActions implements IJsActions {
      * @param value         The string value to assign to the attribute.
      */
     public void setAttribute(String attributeName, String value) {
-        getLocator().evaluate("(node, data) => node.setAttribute(data.attr, data.val)",
+        element.getLocator().evaluate("(node, data) => node.setAttribute(data.attr, data.val)",
                 Map.of("attr", attributeName, "val", value));
     }
 
@@ -60,18 +59,7 @@ public class JsActions implements IJsActions {
      * <p>This is primarily used for debugging and visual tracking during test execution.</p>
      */
     public void highlight() {
-        getLocator().evaluate("node => node.style.border = '3px solid red'");
-    }
-
-    /**
-     * Waits for the underlying web page's document to reach a fully loaded state.
-     * <p>This method evaluates the {@code document.readyState === 'complete'}
-     * JavaScript expression on the current page context, pausing execution
-     * until the condition is met.</p>
-     */
-    @Override
-    public void waitForReadyState() {
-        getLocator().page().waitForFunction("() => document.readyState === 'complete'");
+        element.getLocator().evaluate("node => node.style.border = '3px solid red'");
     }
 
     /**
@@ -81,23 +69,7 @@ public class JsActions implements IJsActions {
      * is strictly equal to {@code 'none'}; {@code false} otherwise.
      */
     public boolean isPointerEventsDisabled() {
-        return (boolean) getLocator().evaluate("node => window.getComputedStyle(node).pointerEvents === 'none'");
-    }
-
-    /**
-     * Retrieves the underlying Playwright {@link Locator} from the bound element.
-     * <p>Since {@code IElement} is an interface, this method enforces that the
-     * provided element implementation is an {@link AbstractElement} to access
-     * the protected locator method.</p>
-     *
-     * @return The Playwright {@code Locator}.
-     * @throws IllegalArgumentException if the bound element is not an instance of {@code AbstractElement}.
-     */
-    private Locator getLocator() {
-        if (element instanceof AbstractElement) {
-            return ((AbstractElement) element).getLocator();
-        } else {
-            throw new IllegalArgumentException("IElement must be an instance of AbstractElement to use JsActions");
-        }
+        return (boolean) element.getLocator()
+                .evaluate("node => window.getComputedStyle(node).pointerEvents === 'none'");
     }
 }

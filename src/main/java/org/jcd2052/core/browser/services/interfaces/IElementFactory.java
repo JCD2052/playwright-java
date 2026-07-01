@@ -23,6 +23,19 @@ public interface IElementFactory {
     <T extends IElement> IElementCollection<T> createElementsCollection(
             String selector,
             String name,
+            IElementSupplier<T> supplier,
+            ExpectedCount expectedCount);
+
+    <T extends IElement> IElementCollection<T> createChildElementsCollection(
+            IElementSupplier<T> supplier,
+            IElement parentElement,
+            String selector,
+            String name,
+            ExpectedCount expectedCount);
+
+    <T extends IElement> IElementCollection<T> createElementsCollection(
+            String selector,
+            String name,
             Class<T> clazz,
             ExpectedCount expectedCount);
 

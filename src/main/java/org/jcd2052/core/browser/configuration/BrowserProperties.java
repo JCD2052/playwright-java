@@ -14,7 +14,6 @@ import lombok.experimental.Accessors;
 @Data
 @Accessors(chain = true)
 public class BrowserProperties implements IBrowserProperties {
-
     /**
      * The directory path where Playwright execution traces and artifacts will be saved.
      */

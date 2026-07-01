@@ -2,6 +2,7 @@ package org.jcd2052.core.browser.browser;
 
 import com.microsoft.playwright.Page;
 import lombok.Getter;
+import org.jcd2052.core.browser.browser.interfaces.IAlert;
 import org.jcd2052.core.browser.browser.interfaces.IBrowserTab;
 
 /**
@@ -11,7 +12,6 @@ import org.jcd2052.core.browser.browser.interfaces.IBrowserTab;
  * representing a single browser tab and providing access to its underlying functionality.
  */
 public class BrowserTab implements IBrowserTab {
-
     /**
      * The underlying Playwright Page instance associated with this tab.
      * <p>
@@ -27,5 +27,10 @@ public class BrowserTab implements IBrowserTab {
      */
     public BrowserTab(Page page) {
         this.page = page;
+    }
+
+    @Override
+    public IAlert getAlert() {
+        return new BrowserAlert(page);
     }
 }

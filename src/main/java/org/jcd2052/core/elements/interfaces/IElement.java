@@ -1,11 +1,13 @@
 package org.jcd2052.core.elements.interfaces;
 
+import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.TimeoutError;
 import com.microsoft.playwright.options.WaitForSelectorState;
 import org.jcd2052.core.browser.services.interfaces.IElementSupplier;
 import org.jcd2052.core.elements.ExpectedCount;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * The base interface for all UI elements in the framework.
@@ -16,14 +18,19 @@ import java.util.List;
  * </p>
  */
 public interface IElement {
-
-    /** @return The logical name of the element used for logging and reporting. */
+    /**
+     * @return The logical name of the element used for logging and reporting.
+     */
     String getName();
 
-    /** @return The visible inner text of the element. */
+    /**
+     * @return The visible inner text of the element.
+     */
     String getText();
 
-    /** @return A collection of strings representing the text of all elements matching the selector. */
+    /**
+     * @return A collection of strings representing the text of all elements matching the selector.
+     */
     List<String> getAllTexts();
 
     /**
@@ -34,10 +41,15 @@ public interface IElement {
      */
     String getAttribute(String name);
 
-    /** @return The raw Playwright selector string associated with this element. */
+    /**
+     * @return The raw Playwright selector string associated with this element.
+     */
     String getSelector();
 
+    Locator getLocator();
+
     IJsActions getJsActions();
+
     /**
      * Creates a single child element relative to this element's selector.
      *
@@ -57,7 +69,11 @@ public interface IElement {
      * @param expectedCount The count condition to wait for.
      * @return An {@link IElementCollection} of child elements.
      */
-    <T extends IElement> IElementCollection<T> createChildElements(Class<T> clazz, String selector, String name, ExpectedCount expectedCount);
+    <T extends IElement> IElementCollection<T> createChildElements(
+            Class<T> clazz,
+            String selector,
+            String name,
+            ExpectedCount expectedCount);
 
     /**
      * Creates a single child element using a custom supplier.
@@ -69,13 +85,14 @@ public interface IElement {
      */
     <T extends IElement> T createChildElement(IElementSupplier<T> elementSupplier, String selector, String name);
 
-    /** @return A byte array representing the screenshot of the element. */
-    byte[] getScreenshot();
-
-    /** @return {@code true} if the element is currently visible in the DOM. */
+    /**
+     * @return {@code true} if the element is currently visible in the DOM.
+     */
     boolean isVisible();
 
-    /** @return {@code true} if the element is not disabled. */
+    /**
+     * @return {@code true} if the element is not disabled.
+     */
     boolean isEnabled();
 
     /**
@@ -85,21 +102,48 @@ public interface IElement {
      */
     void press(String key);
 
-    /** Performs a standard Playwright click on the element. */
+    /**
+     * Performs a standard Playwright click on the element.
+     */
     void click();
 
-    void unfocus();
-
-    /** Performs a forced click, bypassing actionability checks if necessary. */
+    /**
+     * Performs a forced click, bypassing actionability checks if necessary.
+     */
     void forceClick();
 
-    /** Performs a click interaction using JavaScript execution in the browser context. */
-    void clickWithJs();
+    default void unfocus() {
+        getLocator().blur();
+    }
 
-    /** Scrolls the element into the browser's viewport. */
-    void scrollToElement();
+    /**
+     * Performs a click interaction using JavaScript execution in the browser context.
+     */
+    default void clickWithJs() {
+        getJsActions().click();
+    }
 
-    void hover();
+    /**
+     * Scrolls the element into the browser's viewport.
+     */
+    default void scrollToElement() {
+        getLocator().scrollIntoViewIfNeeded();
+    }
+
+    default void dragTo(IElement targetElement) {
+        getLocator().dragTo(targetElement.getLocator());
+    }
+
+    default void hover() {
+        getLocator().hover();
+    }
+
+    /**
+     * @return A byte array representing the screenshot of the element.
+     */
+    default byte[] getScreenshot() {
+        return getLocator().screenshot();
+    }
 
     /**
      * Waits for the element to reach a specific state (e.g., VISIBLE, HIDDEN, ATTACHED).
@@ -107,16 +151,14 @@ public interface IElement {
      * @param state   The desired {@link WaitForSelectorState}.
      * @param timeout The maximum time to wait in milliseconds.
      */
-    void waitForState(WaitForSelectorState state, Double timeout);
-
-    /**
-     * Waits for the underlying web page's document or context to reach a fully loaded or ready state.
-     * <p>
-     * Typically ensures that all asynchronous DOM updates related to the element have completed
-     * before proceeding with further interactions.
-     * </p>
-     */
-    void waitForReadyState();
+    default void waitForState(WaitForSelectorState state, Double timeout) {
+        Locator.WaitForOptions waitOptions = state == null && timeout == null ? null : new Locator.WaitForOptions();
+        if (waitOptions != null) {
+            waitOptions.setState(state);
+            Optional.ofNullable(timeout).ifPresent(waitOptions::setTimeout);
+        }
+        getLocator().waitFor(waitOptions);
+    }
 
     /**
      * Safe wait method that returns a boolean instead of throwing an exception on timeout.
@@ -134,45 +176,64 @@ public interface IElement {
         }
     }
 
-    /** Waits for the default state and timeout. */
+    /**
+     * Waits for the default state and timeout.
+     */
     default boolean waitForLoading() {
         return waitForLoading(null, null);
     }
 
-    /** Waits for the element to be removed from the DOM. */
+    /**
+     * Waits for the element to be removed from the DOM.
+     */
     default boolean waitToBeDetached(Double timeout) {
         return waitForLoading(WaitForSelectorState.DETACHED, timeout);
     }
 
-    /** Waits for the element to be removed from the DOM using default timeout. */
+    /**
+     * Waits for the element to be removed from the DOM using default timeout.
+     */
     default boolean waitToBeDetached() {
         return waitToBeDetached(null);
     }
 
-    /** Waits for the element to become visible. */
+    /**
+     * Waits for the element to become visible.
+     */
     default boolean waitToBeVisible(Double timeout) {
         return waitForLoading(WaitForSelectorState.VISIBLE, timeout);
     }
 
-    /** Waits for the element to become visible using default timeout. */
+    /**
+     * Waits for the element to become visible using default timeout.
+     */
     default boolean waitToBeVisible() {
         return waitToBeVisible(null);
     }
 
-    /** Convenience method for creating a child element with a default logical name. */
+    /**
+     * Convenience method for creating a child element with a default logical name.
+     */
     default <T extends IElement> T createChildElement(Class<T> clazz, String selector) {
         return createChildElement(clazz, selector, "Child of " + getName());
     }
 
-    /** Convenience method for creating a child element via supplier with a default logical name. */
+    /**
+     * Convenience method for creating a child element via supplier with a default logical name.
+     */
     default <T extends IElement> T createChildElement(
             IElementSupplier<T> elementSupplier,
             String selector) {
         return createChildElement(elementSupplier, selector, "Child of " + getName());
     }
 
-    /** Convenience method for creating a child collection with an 'ANY' expected count. */
-    default <T extends IElement> IElementCollection<T> createChildElements(Class<T> clazz, String selector, String name) {
+    /**
+     * Convenience method for creating a child collection with an 'ANY' expected count.
+     */
+    default <T extends IElement> IElementCollection<T> createChildElements(
+            Class<T> clazz,
+            String selector,
+            String name) {
         return createChildElements(clazz, selector, name, ExpectedCount.ANY);
     }
 }

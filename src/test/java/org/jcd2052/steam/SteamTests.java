@@ -34,7 +34,7 @@ public class SteamTests extends BaseTests {
 
     @Test
     public void testSearchResultPage() {
-        browserService.getBrowser().getCurrentBrowserWindow().getCurrentBrowserTab().navigateTo("https://store.steampowered.com/agecheck/app/3240220/");
+        browserService.navigateTo("https://store.steampowered.com/agecheck/app/3240220/");
         ageCheckPage.fillTheForm(30, "May", 1995);
     }
 }

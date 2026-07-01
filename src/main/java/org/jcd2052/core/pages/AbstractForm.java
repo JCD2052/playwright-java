@@ -69,7 +69,6 @@ public abstract class AbstractForm implements IForm {
      * @return {@code true} if the form successfully loaded within the timeout period.
      */
     public boolean waitForLoading() {
-        getFormLabel().waitForReadyState();
         return getFormLabel().waitForLoading();
     }
 
