@@ -247,7 +247,7 @@ public abstract class AbstractElement implements IElement {
      */
     protected void highlightElementIfNeeded() {
         if (elementFactory.isHighlightEnabled()) {
-            jsActions.highlight();
+            getLocator().highlight(new Locator.HighlightOptions().setStyle("outline: 3px solid red"));
         }
     }
 

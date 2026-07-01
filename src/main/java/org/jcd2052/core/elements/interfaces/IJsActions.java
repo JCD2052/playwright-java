@@ -36,11 +36,4 @@ public interface IJsActions {
      * @return {@code true} if pointer events are disabled, {@code false} otherwise.
      */
     boolean isPointerEventsDisabled();
-
-    /**
-     * Visually highlights the element in the browser, typically by modifying
-     * its CSS outline or background color. This is primarily used for debugging
-     * and automated test demonstration.
-     */
-    void highlight();
 }

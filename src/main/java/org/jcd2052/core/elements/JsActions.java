@@ -55,14 +55,6 @@ public class JsActions implements IJsActions {
     }
 
     /**
-     * Visually highlights the element on the page by applying a solid red CSS border.
-     * <p>This is primarily used for debugging and visual tracking during test execution.</p>
-     */
-    public void highlight() {
-        element.getLocator().evaluate("node => node.style.border = '3px solid red'");
-    }
-
-    /**
      * Checks if the element is unclickable due to its CSS pointer-events style.
      *
      * @return {@code true} if the computed CSS style for {@code pointer-events}
