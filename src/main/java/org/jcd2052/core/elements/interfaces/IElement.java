@@ -107,6 +107,19 @@ public interface IElement {
      */
     void click();
 
+    /** Performs a right-click (context menu) on the element. */
+    void rightClick();
+
+    /** Performs a middle-click (auxiliary click) on the element. */
+    void middleClick();
+
+    /**
+     * Clicks at specific coordinates relative to the top-left corner of the element's padding box.
+     * * @param x The X coordinate relative to the element.
+     * @param y The Y coordinate relative to the element.
+     */
+    void click(double x, double y);
+
     /**
      * Performs a forced click, bypassing actionability checks if necessary.
      */

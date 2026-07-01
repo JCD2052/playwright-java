@@ -1,6 +1,7 @@
 package org.jcd2052.core.elements;
 
 import com.microsoft.playwright.Locator;
+import com.microsoft.playwright.options.MouseButton;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.jcd2052.core.browser.services.interfaces.IElementFactory;
@@ -50,28 +51,35 @@ public abstract class AbstractElement implements IElement {
         this.jsActions = new JsActions(this);
     }
 
-    /**
-     * Performs a standard click on the element.
-     * <p>This method delegates to a centralized click handler, ensuring the page
-     * is in a ready state before and after the action, and applies a slight delay
-     * for enhanced stability.</p>
-     */
     @Override
     public void click() {
         LoggerProvider.getLogger().debugElementAction(getElementType(), getName(), "was clicked");
-        clickWithOptions(false);
+        clickWithOptions(new Locator.ClickOptions());
     }
 
-    /**
-     * Forces a native click on the element, bypassing Playwright's actionability checks
-     * (e.g., visibility, bounding box, intercepting elements).
-     * <p>Like standard clicks, this ensures the DOM is ready and applies a brief delay
-     * for stability.</p>
-     */
     @Override
     public void forceClick() {
         LoggerProvider.getLogger().debugElementAction(getElementType(), getName(), "was force clicked");
-        clickWithOptions(true);
+        clickWithOptions(new Locator.ClickOptions().setForce(true));
+    }
+
+    @Override
+    public void rightClick() {
+        LoggerProvider.getLogger().debugElementAction(getElementType(), getName(), "was right-clicked");
+        clickWithOptions(new Locator.ClickOptions().setButton(MouseButton.RIGHT));
+    }
+
+    @Override
+    public void middleClick() {
+        LoggerProvider.getLogger().debugElementAction(getElementType(), getName(), "was middle-clicked");
+        clickWithOptions(new Locator.ClickOptions().setButton(MouseButton.MIDDLE));
+    }
+
+    @Override
+    public void click(double x, double y) {
+        LoggerProvider.getLogger().debugElementAction(
+                getElementType(), getName(), "was clicked at coordinates (x: %s, y: %s)", x, y);
+        clickWithOptions(new Locator.ClickOptions().setPosition(x, y));
     }
 
     /**
@@ -254,15 +262,13 @@ public abstract class AbstractElement implements IElement {
 
     /**
      * A centralized helper method to execute click interactions with specific Playwright options.
-     * <p>This ensures a consistent workflow for all native clicks: waiting for the document
-     * to be ready, highlighting the element (if enabled), performing the click with a slight
-     * delay (100ms) for enhanced stability, and finally waiting for the document ready state again.</p>
+     * <p>This applies the provided options, enforces a default 100ms delay for stability,
+     * and handles framework-level synchronization and highlighting.</p>
      *
-     * @param isForce {@code true} to force the click, bypassing Playwright's actionability checks;
-     *                {@code false} to perform a standard, safe click.
+     * @param options The Playwright ClickOptions to apply (button type, position, force, etc.).
      */
-    private void clickWithOptions(boolean isForce) {
+    private void clickWithOptions(Locator.ClickOptions options) {
         highlightElementIfNeeded();
-        getLocator().click(new Locator.ClickOptions().setForce(isForce).setDelay(100));
+        getLocator().click(options.setDelay(100));
     }
 }
