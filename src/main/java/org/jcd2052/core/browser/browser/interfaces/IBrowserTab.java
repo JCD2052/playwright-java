@@ -2,6 +2,7 @@ package org.jcd2052.core.browser.browser.interfaces;
 
 import com.microsoft.playwright.Download;
 import com.microsoft.playwright.Page;
+import com.microsoft.playwright.options.LoadState;
 
 import java.nio.file.Path;
 
@@ -28,6 +29,14 @@ public interface IBrowserTab {
      * @return The Session Storage manager for the current tab.
      */
     IStorageManager getSessionStorage();
+
+    /** @return The raw mouse action API for this tab. */
+    IMouseActions getMouseActions();
+
+    /**
+     * Evaluates Javascript to read the current text from the system clipboard.
+     */
+    String readClipboard();
 
     /**
      * Retrieves the current URL of the active tab.
@@ -108,5 +117,13 @@ public interface IBrowserTab {
      */
     default void navigateTo(String url) {
         getPage().navigate(url);
+    }
+
+    /**
+     * Waits until there are no network connections for at least 500 ms.
+     * Incredibly useful for waiting on SPAs (React/Angular) to finish loading data.
+     */
+    default void waitForNetworkIdle() {
+        getPage().waitForLoadState(LoadState.NETWORKIDLE);
     }
 }

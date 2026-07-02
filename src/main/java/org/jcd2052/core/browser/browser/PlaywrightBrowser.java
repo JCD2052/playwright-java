@@ -66,7 +66,6 @@ public class PlaywrightBrowser implements IBrowser {
     @Override
     public IBrowserWindow openNewWindow() {
         BrowserWindow browserWindow = new BrowserWindow(browser.newContext(new Browser.NewContextOptions()
-                .setIgnoreHTTPSErrors(true)
                 .setViewportSize(browserProperties.getWidth(), browserProperties.getHeight())));
         setCurrentBrowserWindow(browserWindow);
         return browserWindow;

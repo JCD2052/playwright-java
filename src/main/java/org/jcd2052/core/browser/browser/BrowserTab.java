@@ -4,6 +4,7 @@ import com.microsoft.playwright.Page;
 import lombok.Getter;
 import org.jcd2052.core.browser.browser.interfaces.IAlert;
 import org.jcd2052.core.browser.browser.interfaces.IBrowserTab;
+import org.jcd2052.core.browser.browser.interfaces.IMouseActions;
 import org.jcd2052.core.browser.browser.interfaces.IStorageManager;
 
 /**
@@ -20,6 +21,8 @@ public class BrowserTab implements IBrowserTab {
      */
     @Getter
     private final Page page;
+    @Getter
+    private final IMouseActions mouseActions;
 
     /**
      * Constructs a new {@code BrowserTab} instance.
@@ -28,6 +31,7 @@ public class BrowserTab implements IBrowserTab {
      */
     public BrowserTab(Page page) {
         this.page = page;
+        this.mouseActions = new MouseActions(page.mouse());
     }
 
     @Override
@@ -43,5 +47,11 @@ public class BrowserTab implements IBrowserTab {
     @Override
     public IStorageManager getSessionStorage() {
         return new StorageManager(page.sessionStorage(), "Session Storage");
+    }
+
+    @Override
+    public String readClipboard() {
+        Object result = page.evaluate("async () => await navigator.clipboard.readText()");
+        return result != null ? result.toString() : "";
     }
 }
