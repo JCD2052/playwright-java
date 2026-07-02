@@ -7,6 +7,8 @@ import org.jcd2052.core.browser.browser.interfaces.IBrowserTab;
 import org.jcd2052.core.browser.browser.interfaces.IMouseActions;
 import org.jcd2052.core.browser.browser.interfaces.IStorageManager;
 
+import java.util.function.Consumer;
+
 /**
  * Concrete implementation of the {@link IBrowserTab} interface.
  * <p>
@@ -35,8 +37,9 @@ public class BrowserTab implements IBrowserTab {
     }
 
     @Override
-    public IAlert getAlert() {
-        return new BrowserAlert(page);
+    public void handleNextAlert(Consumer<IAlert> alertHandler, Runnable actionThatTriggersAlert) {
+        page.onceDialog(dialog -> alertHandler.accept(new BrowserAlert(dialog)));
+        actionThatTriggersAlert.run();
     }
 
     @Override

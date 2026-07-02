@@ -18,8 +18,6 @@ public interface IBrowserTab {
      */
     Page getPage();
 
-    IAlert getAlert();
-
     /**
      * @return The Local Storage manager for the current tab.
      */
@@ -30,13 +28,25 @@ public interface IBrowserTab {
      */
     IStorageManager getSessionStorage();
 
-    /** @return The raw mouse action API for this tab. */
+    /**
+     * @return The raw mouse action API for this tab.
+     */
     IMouseActions getMouseActions();
 
     /**
      * Evaluates Javascript to read the current text from the system clipboard.
      */
     String readClipboard();
+
+    /**
+     * Handles the exact next alert triggered by a specific action.
+     * Note: In Playwright Java, dialogs are blocking. They MUST be handled (accepted/declined)
+     * inside the handler block, otherwise the action will hang indefinitely.
+     *
+     * @param alertHandler            The logic to execute when the alert appears.
+     * @param actionThatTriggersAlert The action (e.g., clicking a button) that causes the alert.
+     */
+    void handleNextAlert(java.util.function.Consumer<IAlert> alertHandler, Runnable actionThatTriggersAlert);
 
     /**
      * Retrieves the current URL of the active tab.
