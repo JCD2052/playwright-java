@@ -59,11 +59,11 @@ public class BrowserFactory implements IBrowserFactory {
     public Browser createBrowser(Playwright playwright) {
         BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions()
                 .setHeadless(browserProperties.isHeadless())
-                .setTimeout(browserProperties.getTimeout().doubleValue())
-                .setArgs(List.of(
-                        "--no-sandbox",
-                        "--disable-dev-shm-usage",
-                        "--disable-gpu"));
+                .setTimeout(browserProperties.getTimeout().doubleValue());
+
+        if (browserProperties.getArgs() != null && !browserProperties.getArgs().isEmpty()) {
+            launchOptions.setArgs(browserProperties.getArgs());
+        }
 
         IBrowserLauncher launcher = launcherRegistry.get(browserProperties.getName().toLowerCase());
 

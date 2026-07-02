@@ -3,6 +3,8 @@ package org.jcd2052.core.browser.configuration;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
+import java.util.List;
+
 /**
  * Concrete implementation of the {@link IBrowserProperties} interface.
  * <p>
@@ -68,4 +70,9 @@ public class BrowserProperties implements IBrowserProperties {
      * Flag indicating whether the browser should run in headless mode (no GUI).
      */
     private boolean headless;
+
+    /**
+     * Custom command-line arguments to pass to the browser executable.
+     */
+    private List<String> args;
 }

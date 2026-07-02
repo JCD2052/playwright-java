@@ -1,5 +1,7 @@
 package org.jcd2052.core.browser.configuration;
 
+import java.util.List;
+
 /**
  * Defines the configuration properties required to initialize and manage a browser session.
  * <p>
@@ -90,4 +92,11 @@ public interface IBrowserProperties {
      * @return {@code true} if snapshots are enabled, {@code false} otherwise.
      */
     boolean isSnapshots();
+
+    /**
+     * Retrieves the list of custom command-line arguments to pass to the browser executable on startup.
+     *
+     * @return A list of argument strings (e.g., "--no-sandbox", "--disable-gpu").
+     */
+    List<String> getArgs();
 }
