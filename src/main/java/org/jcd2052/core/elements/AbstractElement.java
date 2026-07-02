@@ -1,9 +1,12 @@
 package org.jcd2052.core.elements;
 
 import com.microsoft.playwright.Locator;
+import com.microsoft.playwright.options.BoundingBox;
 import com.microsoft.playwright.options.MouseButton;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
+import org.jcd2052.core.browser.browser.MouseActions;
+import org.jcd2052.core.browser.browser.interfaces.IMouseActions;
 import org.jcd2052.core.browser.services.interfaces.IElementFactory;
 import org.jcd2052.core.browser.services.interfaces.IElementSupplier;
 import org.jcd2052.core.elements.interfaces.IElement;
@@ -91,6 +94,42 @@ public abstract class AbstractElement implements IElement {
     public void press(String key) {
         LoggerProvider.getLogger().debugElementAction(getElementType(), getName(), "pressed key '%s'", key);
         getLocator().press(key);
+    }
+
+    @Override
+    public void dragAndDropTo(IElement targetElement, int steps) {
+        LoggerProvider.getLogger().debugElementAction(
+                getElementType(),
+                getName(),
+                "performing stepped drag-and-drop to '%s' using %d steps",
+                targetElement.getName(),
+                steps
+        );
+
+        BoundingBox sourceBox = getLocator().boundingBox();
+        BoundingBox targetBox = targetElement.getLocator().boundingBox();
+
+        if (sourceBox == null || targetBox == null) {
+            throw new IllegalStateException(
+                    "Cannot perform dragAndDropTo: Source or target element is not visible on the screen."
+            );
+        }
+
+        double startX = sourceBox.x + (sourceBox.width / 2);
+        double startY = sourceBox.y + (sourceBox.height / 2);
+
+        double endX = targetBox.x + (targetBox.width / 2);
+        double endY = targetBox.y + (targetBox.height / 2);
+
+        getMouseActions().move(startX, startY);
+        getMouseActions().down();
+
+        getMouseActions().move(endX, endY, steps);
+        getMouseActions().up();
+    }
+
+    public IMouseActions getMouseActions() {
+        return new MouseActions(getLocator().page().mouse());
     }
 
     /**

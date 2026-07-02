@@ -3,6 +3,7 @@ package org.jcd2052.core.elements.interfaces;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.TimeoutError;
 import com.microsoft.playwright.options.WaitForSelectorState;
+import org.jcd2052.core.browser.browser.interfaces.IMouseActions;
 import org.jcd2052.core.browser.services.interfaces.IElementSupplier;
 import org.jcd2052.core.elements.ExpectedCount;
 
@@ -49,6 +50,15 @@ public interface IElement {
     Locator getLocator();
 
     IJsActions getJsActions();
+
+    /**
+     * Retrieves the raw, page-level mouse API from the context of this element.
+     * <p><b>WARNING:</b> The IMouseActions API uses absolute screen coordinates (X/Y),
+     * NOT coordinates relative to this specific element!</p>
+     *
+     * @return The IMouseActions instance for complex mouse movements.
+     */
+    IMouseActions getMouseActions();
 
     /**
      * Creates a single child element relative to this element's selector.
@@ -107,15 +117,20 @@ public interface IElement {
      */
     void click();
 
-    /** Performs a right-click (context menu) on the element. */
+    /**
+     * Performs a right-click (context menu) on the element.
+     */
     void rightClick();
 
-    /** Performs a middle-click (auxiliary click) on the element. */
+    /**
+     * Performs a middle-click (auxiliary click) on the element.
+     */
     void middleClick();
 
     /**
      * Clicks at specific coordinates relative to the top-left corner of the element's padding box.
      * * @param x The X coordinate relative to the element.
+     *
      * @param y The Y coordinate relative to the element.
      */
     void click(double x, double y);
@@ -124,6 +139,17 @@ public interface IElement {
      * Performs a forced click, bypassing actionability checks if necessary.
      */
     void forceClick();
+
+    /**
+     * Performs a complex drag-and-drop operation using simulated, stepped mouse movements.
+     * This bypasses the native Playwright dragTo() and is highly effective for modern
+     * drag-and-drop libraries (like React-Beautiful-DnD or SortableJS) that rely on
+     * precise 'mousemove' event listeners.
+     *
+     * @param targetElement The element to drop onto.
+     * @param steps         The number of intermediate mouse movements (e.g., 10 to 20).
+     */
+    void dragAndDropTo(IElement targetElement, int steps);
 
     default void unfocus() {
         getLocator().blur();
