@@ -124,7 +124,12 @@ public interface IConditionalWait {
      * @param exceptionsToIgnore A collection of exception classes to silently swallow during evaluation.
      * @return {@code true} if the condition resolves to true; {@code false} if the timeout is reached.
      */
-    boolean waitFor(BooleanSupplier condition, Duration timeout, Duration pollingInterval, String message, Collection<Class<? extends Throwable>> exceptionsToIgnore);
+    boolean waitFor(
+            BooleanSupplier condition,
+            Duration timeout,
+            Duration pollingInterval,
+            String message,
+            Collection<Class<? extends Throwable>> exceptionsToIgnore);
 
     /**
      * Strictly waits for the given condition using default configurations. Throws an exception on failure.
@@ -233,5 +238,10 @@ public interface IConditionalWait {
      * @param exceptionsToIgnore A collection of exception classes to silently swallow during evaluation.
      * @throws TimeoutException if the timeout duration is reached before the condition evaluates to true.
      */
-    void waitForTrue(BooleanSupplier condition, Duration timeout, Duration pollingInterval, String message, Collection<Class<? extends Throwable>> exceptionsToIgnore) throws TimeoutException;
+    void waitForTrue(
+            BooleanSupplier condition,
+            Duration timeout,
+            Duration pollingInterval,
+            String message,
+            Collection<Class<? extends Throwable>> exceptionsToIgnore) throws TimeoutException;
 }
