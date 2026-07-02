@@ -1,7 +1,5 @@
 package org.jcd2052.core.waiting;
 
-import org.springframework.stereotype.Component;
-
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Optional;
@@ -17,7 +15,6 @@ import java.util.function.BooleanSupplier;
  * overwhelming the CPU.
  * </p>
  */
-@Component
 public class ConditionalWait implements IConditionalWait {
     /**
      * Executes a "soft wait" by wrapping the strict polling engine in a try-catch block.
