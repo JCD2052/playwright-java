@@ -112,6 +112,10 @@ public class PlaywrightSpringTestConfiguration {
                 .setTracingSaveFolder(tracingFolder)
                 .setHighlight(highlight)
                 .setScreenshots(screenshots)
-                .setSnapshots(snapshots);
+                .setSnapshots(snapshots)
+                .setArgs(List.of(
+                        "--no-sandbox",
+                        "--disable-dev-shm-usage",
+                        "--disable-gpu"));
     }
 }

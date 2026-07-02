@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
  */
 @Getter
 public class PlaywrightBrowser implements IBrowser {
-
     /**
      * The raw Playwright Browser instance.
      */

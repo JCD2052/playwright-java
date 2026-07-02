@@ -8,7 +8,7 @@ public abstract class BaseSteamPage extends AbstractForm {
     private static final String SUB_MENU_XPATH_TEMPLATE = "//a[contains(@data-tooltip-content, '%s')]";
 
     protected BaseSteamPage(String name, IElementFactory elementFactory) {
-        super("//div[id='global_header']", name, elementFactory);
+        super("//div[@id='global_header']", name, elementFactory);
     }
 
     public void clickToSubmenu(String submenuName) {

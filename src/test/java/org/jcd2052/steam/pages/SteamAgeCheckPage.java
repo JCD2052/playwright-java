@@ -1,6 +1,5 @@
 package org.jcd2052.steam.pages;
 
-import org.jcd2052.core.browser.services.ElementFactory;
 import org.jcd2052.core.browser.services.interfaces.IElementFactory;
 import org.jcd2052.core.elements.interfaces.IButtonElement;
 import org.jcd2052.core.elements.interfaces.IDropdownElement;
