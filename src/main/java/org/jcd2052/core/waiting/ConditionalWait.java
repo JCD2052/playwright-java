@@ -6,9 +6,6 @@ import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BooleanSupplier;
 
-/**
- * A concrete, Spring-managed implementation of the {@link IConditionalWait} interface.
- */
 public class ConditionalWait implements IConditionalWait {
     private final Duration defaultTimeout;
     private final Duration defaultPollingInterval;

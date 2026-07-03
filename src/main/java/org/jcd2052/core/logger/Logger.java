@@ -37,7 +37,7 @@ public class Logger implements ILogger {
 
     @Override
     public void fatal(String message, Throwable throwable, Object... args) {
-        log.error("FATAL: " + formatMessage(message, args), throwable);
+        log.error("FATAL: {}", formatMessage(message, args), throwable);
     }
 
     private String formatMessage(String message, Object... args) {
