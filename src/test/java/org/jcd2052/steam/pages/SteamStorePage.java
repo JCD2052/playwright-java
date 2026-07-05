@@ -7,21 +7,26 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class SteamStorePage extends BaseSteamPage {
-    private final ITextBoxElement searchBox;
+    private static final String SEARCH_BASE_XPATH = "//form[contains(@action, 'store')]";
+    private final ITextBoxElement generalSearchBox;
     private final IButtonElement searchButton;
 
     protected SteamStorePage(IElementFactory elementFactory) {
         super("Store page", elementFactory);
-        this.searchBox = getElementFactory().createTextBoxElement("#store_nav_search_term", "Search box");
-        this.searchButton = getElementFactory().createButtonElement("#store_search_link", "Search button");
+        this.generalSearchBox = getElementFactory().createTextBoxElement(
+                SEARCH_BASE_XPATH + "//input[@role='combobox']",
+                "Search box");
+        this.searchButton = getElementFactory().createButtonElement(
+                SEARCH_BASE_XPATH + "//button[@type='submit']",
+                "Search button");
     }
 
     public void performSearch(String searchValue) {
-        searchBox.clearAndFillText(searchValue);
+        generalSearchBox.clearAndFillText(searchValue);
         searchButton.click();
     }
 
     public String getValueFromSearch() {
-        return searchBox.getText();
+        return generalSearchBox.getText();
     }
 }

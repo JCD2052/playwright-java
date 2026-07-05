@@ -4,7 +4,8 @@ import org.jcd2052.core.browser.configuration.BrowserProperties;
 import org.jcd2052.core.browser.configuration.IBrowserProperties;
 import org.jcd2052.core.browser.factory.BrowserFactory;
 import org.jcd2052.core.browser.factory.IBrowserFactory;
-import org.jcd2052.core.browser.launcher.IBrowserLauncher;
+import org.jcd2052.core.browser.launcher.BrowserLauncherRegistry;
+import org.jcd2052.core.browser.launcher.IBrowserLauncherRegistry;
 import org.jcd2052.core.browser.services.BrowserService;
 import org.jcd2052.core.browser.services.ElementFactory;
 import org.jcd2052.core.browser.services.ElementFinderService;
@@ -15,12 +16,17 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
 
-import java.util.List;
+import java.util.Arrays;
 
 @Configuration
+@PropertySource("classpath:application.properties")
+@PropertySource(
+        value = "classpath:application-${spring.profiles.active:default}.properties",
+        ignoreResourceNotFound = true)
 @ComponentScan(basePackages = {"org.jcd2052"})
-public class PlaywrightSpringTestConfiguration {
+public class SpringContextTestConfiguration {
     /**
      * Indicates whether the browser should run without a visible UI.
      */
@@ -76,10 +82,17 @@ public class PlaywrightSpringTestConfiguration {
      */
     @Value("${playwright.browser.page.load.timeout}")
     private long pageLoadTimeout;
+    @Value("${playwright.browser.tracing.args}")
+    private String args;
 
     @Bean
-    public IBrowserFactory browserFactory(IBrowserProperties browserProperties, List<IBrowserLauncher> launchers) {
-        return new BrowserFactory(browserProperties, launchers);
+    public IBrowserLauncherRegistry browserLauncherRegistry() {
+        return new BrowserLauncherRegistry();
+    }
+
+    @Bean
+    public IBrowserFactory browserFactory(IBrowserProperties browserProperties, IBrowserLauncherRegistry registry) {
+        return new BrowserFactory(browserProperties, registry);
     }
 
     @Bean
@@ -113,9 +126,6 @@ public class PlaywrightSpringTestConfiguration {
                 .setHighlight(highlight)
                 .setScreenshots(screenshots)
                 .setSnapshots(snapshots)
-                .setArgs(List.of(
-                        "--no-sandbox",
-                        "--disable-dev-shm-usage",
-                        "--disable-gpu"));
+                .setArgs(Arrays.stream(args.split(",")).toList());
     }
 }

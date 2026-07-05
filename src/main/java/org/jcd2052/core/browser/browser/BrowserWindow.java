@@ -1,7 +1,6 @@
 package org.jcd2052.core.browser.browser;
 
 import com.microsoft.playwright.BrowserContext;
-import com.microsoft.playwright.options.Cookie;
 import lombok.Getter;
 import lombok.Setter;
 import org.jcd2052.core.browser.browser.interfaces.IBrowserTab;
@@ -9,7 +8,6 @@ import org.jcd2052.core.browser.browser.interfaces.IBrowserWindow;
 import org.jcd2052.core.browser.browser.interfaces.ICookieManager;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.stream.Collectors;
 
 /**
