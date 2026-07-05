@@ -5,11 +5,7 @@ import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.Playwright;
 import org.jcd2052.core.browser.configuration.IBrowserProperties;
 import org.jcd2052.core.browser.launcher.IBrowserLauncher;
-
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import org.jcd2052.core.browser.launcher.IBrowserLauncherRegistry;
 
 /**
  * Concrete implementation of {@link IBrowserFactory}.
@@ -26,21 +22,22 @@ public class BrowserFactory implements IBrowserFactory {
     /**
      * A registry mapping browser names (e.g., "chrome", "firefox") to their respective launchers.
      */
-    private final Map<String, IBrowserLauncher> launcherRegistry;
+    private final IBrowserLauncherRegistry launcherRegistry;
+
     /**
      * Constructs a new {@code BrowserFactory}.
      * <p>
-     * Spring automatically injects the active browser properties and a list of all available
-     * classes implementing {@link IBrowserLauncher}. The list of launchers is mapped into a
-     * registry for quick O(1) lookups during browser creation.
+     * This factory utilizes the provided configuration properties to determine the requested
+     * browser type. It then queries the injected {@link IBrowserLauncherRegistry} to resolve
+     * and retrieve the corresponding launcher implementation dynamically at runtime.
+     * </p>
      *
-     * @param browserProperties The browser configuration settings.
-     * @param launchers         A list of all available browser launchers provided by the Spring context.
+     * @param browserProperties The framework configuration properties defining browser settings (e.g., headless mode, timeouts).
+     * @param launcherRegistry  The centralized registry containing all available {@link IBrowserLauncher} implementations.
      */
-    public BrowserFactory(IBrowserProperties browserProperties, List<IBrowserLauncher> launchers) {
+    public BrowserFactory(IBrowserProperties browserProperties, IBrowserLauncherRegistry launcherRegistry) {
         this.browserProperties = browserProperties;
-        this.launcherRegistry = launchers.stream()
-                .collect(Collectors.toMap(IBrowserLauncher::getName, Function.identity()));
+        this.launcherRegistry = launcherRegistry;
     }
 
     /**
@@ -65,8 +62,7 @@ public class BrowserFactory implements IBrowserFactory {
             launchOptions.setArgs(browserProperties.getArgs());
         }
 
-        IBrowserLauncher launcher = launcherRegistry.get(browserProperties.getName().toLowerCase());
-
+        IBrowserLauncher launcher = launcherRegistry.getLauncher(browserProperties.getName());
         if (launcher == null) {
             throw new IllegalArgumentException(
                     "Unsupported browser specified in properties: " + browserProperties.getName());
