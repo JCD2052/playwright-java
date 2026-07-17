@@ -2,6 +2,7 @@ package org.jcd2052.core.browser.browser;
 
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.Page;
+import com.microsoft.playwright.Playwright;
 import lombok.Getter;
 import lombok.Setter;
 import org.jcd2052.core.browser.browser.interfaces.IBrowser;
@@ -25,7 +26,10 @@ public class PlaywrightBrowser implements IBrowser {
      * The raw Playwright Browser instance.
      */
     private final Browser browser;
-
+    /**
+     * The Playwright driver process that owns the browser connection.
+     */
+    private final Playwright playwright;
     /**
      * The currently active browser window (context).
      * <p>
@@ -47,10 +51,12 @@ public class PlaywrightBrowser implements IBrowser {
     /**
      * Constructs a new {@code PlaywrightBrowser} instance.
      *
+     * @param playwright        The Playwright driver process that owns the browser connection.
      * @param browser           The raw Playwright {@link Browser} object to be wrapped.
      * @param browserProperties The configuration properties defining viewport size, tracing, etc.
      */
-    public PlaywrightBrowser(Browser browser, IBrowserProperties browserProperties) {
+    public PlaywrightBrowser(Playwright playwright, Browser browser, IBrowserProperties browserProperties) {
+        this.playwright = playwright;
         this.browser = browser;
         this.browserProperties = browserProperties;
         isClosed = false;
@@ -67,6 +73,8 @@ public class PlaywrightBrowser implements IBrowser {
     public IBrowserWindow openNewWindow() {
         BrowserWindow browserWindow = new BrowserWindow(browser.newContext(new Browser.NewContextOptions()
                 .setViewportSize(browserProperties.getWidth(), browserProperties.getHeight())));
+        browserWindow.getBrowserContext().setDefaultTimeout(browserProperties.getTimeout());
+        browserWindow.getBrowserContext().setDefaultNavigationTimeout(browserProperties.getPageLoadTimeout());
         setCurrentBrowserWindow(browserWindow);
         return browserWindow;
     }
@@ -106,7 +114,9 @@ public class PlaywrightBrowser implements IBrowser {
      */
     @Override
     public void switchToWindow(IBrowserWindow window) {
-        window.switchToTab(window.getCurrentBrowserTab());
+        if (window.getCurrentBrowserTab() != null) {
+            window.switchToTab(window.getCurrentBrowserTab());
+        }
         setCurrentBrowserWindow(window);
     }
 
@@ -117,7 +127,15 @@ public class PlaywrightBrowser implements IBrowser {
      */
     @Override
     public void close() {
-        browser.close();
-        isClosed = true;
+        if (isClosed) {
+            return;
+        }
+
+        try {
+            browser.close();
+        } finally {
+            playwright.close();
+            isClosed = true;
+        }
     }
 }

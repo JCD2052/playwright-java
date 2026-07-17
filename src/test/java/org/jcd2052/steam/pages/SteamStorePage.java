@@ -27,6 +27,6 @@ public class SteamStorePage extends BaseSteamPage {
     }
 
     public String getValueFromSearch() {
-        return generalSearchBox.getText();
+        return generalSearchBox.getInputValue();
     }
 }

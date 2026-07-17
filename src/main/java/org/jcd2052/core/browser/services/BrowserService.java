@@ -28,7 +28,7 @@ public class BrowserService implements IBrowserService {
      * Thread-local storage to hold a separate browser instance for each executing thread,
      * guaranteeing thread safety during parallel test execution.
      */
-    private static final ThreadLocal<IBrowser> threadLocalBrowser = new ThreadLocal<>();
+    private final ThreadLocal<IBrowser> threadLocalBrowser = new ThreadLocal<>();
     private final IBrowserProperties browserProperties;
     private final IBrowserFactory browserFactory;
 
@@ -77,6 +77,10 @@ public class BrowserService implements IBrowserService {
         if (browserProperties.isTracing()) {
             try {
                 Path tracePath = Paths.get(browserProperties.getTracingSaveFolder(), filename);
+                Path traceDirectory = tracePath.getParent();
+                if (traceDirectory != null) {
+                    Files.createDirectories(traceDirectory);
+                }
                 getBrowser()
                         .getCurrentBrowserWindow()
                         .getBrowserContext()
@@ -127,8 +131,15 @@ public class BrowserService implements IBrowserService {
         if (cached != null && !cached.isClosed()) {
             cached.close();
         }
-        Browser playwrightBrowser = browserFactory.createBrowser(getPlaywright());
-        IBrowser browser = new PlaywrightBrowser(playwrightBrowser, browserProperties);
+        Playwright playwright = getPlaywright();
+        Browser playwrightBrowser;
+        try {
+            playwrightBrowser = browserFactory.createBrowser(playwright);
+        } catch (RuntimeException e) {
+            playwright.close();
+            throw e;
+        }
+        IBrowser browser = new PlaywrightBrowser(playwright, playwrightBrowser, browserProperties);
         threadLocalBrowser.set(browser);
     }
 
@@ -140,7 +151,7 @@ public class BrowserService implements IBrowserService {
      */
     @Override
     public void close() {
-        IBrowser browser = getBrowser();
+        IBrowser browser = threadLocalBrowser.get();
         if (browser != null) {
             browser.close();
             threadLocalBrowser.remove();

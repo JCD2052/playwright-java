@@ -20,64 +20,31 @@ import org.springframework.context.annotation.Configuration;
 import java.util.Arrays;
 
 @Configuration
-@ComponentScan(basePackages = {"org.jcd2052"})
+@ComponentScan(basePackages = {"org.jcd2052.steam"})
 public class SpringBootTestConfiguration {
-    /**
-     * Indicates whether the browser should run without a visible UI.
-     */
-    @Value("${playwright.browser.headless}")
+    @Value("${playwright.browser.headless:true}")
     private boolean isHeadless;
-    /**
-     * The name of the browser engine to launch (e.g., "chrome", "firefox").
-     */
-    @Value("${playwright.browser.name}")
+    @Value("${playwright.browser.name:chrome}")
     private String browserName;
-    /**
-     * Indicates whether Playwright tracing should be enabled for test sessions.
-     */
-    @Value("${playwright.browser.tracing}")
+    @Value("${playwright.browser.tracing:false}")
     private boolean isTracingEnabled;
-    /**
-     * The maximum timeout duration in milliseconds for Playwright operations.
-     */
-    @Value("${playwright.browser.timeout}")
+    @Value("${playwright.browser.timeout:30000}")
     private long timeout;
-    /**
-     * The directory path where Playwright trace ZIP files will be saved.
-     */
-    @Value("${playwright.browser.tracing.folder}")
+    @Value("${playwright.browser.tracing.folder:target/tracing}")
     private String tracingFolder;
-    /**
-     * Indicates whether elements should be visually highlighted when interacted with.
-     */
-    @Value("${playwright.browser.highlight}")
+    @Value("${playwright.browser.highlight:false}")
     private boolean highlight;
-    /**
-     * Indicates whether screenshots should be captured during execution.
-     */
-    @Value("${playwright.browser.screenshots}")
+    @Value("${playwright.browser.screenshots:true}")
     private boolean screenshots;
-    /**
-     * Indicates whether DOM snapshots should be captured during execution.
-     */
-    @Value("${playwright.browser.snapshots}")
+    @Value("${playwright.browser.snapshots:true}")
     private boolean snapshots;
-    /**
-     * The initial width of the browser viewport in pixels.
-     */
-    @Value("${playwright.browser.viewport.width}")
+    @Value("${playwright.browser.viewport.width:1600}")
     private Integer width;
-    /**
-     * The initial height of the browser viewport in pixels.
-     */
-    @Value("${playwright.browser.viewport.height}")
+    @Value("${playwright.browser.viewport.height:900}")
     private Integer height;
-    /**
-     * The maximum timeout duration in milliseconds for page loading.
-     */
-    @Value("${playwright.browser.page.load.timeout}")
+    @Value("${playwright.browser.page.load.timeout:30000}")
     private long pageLoadTimeout;
-    @Value("${playwright.browser.tracing.args}")
+    @Value("${playwright.browser.tracing.args:}")
     private String args;
 
     @Bean
@@ -121,6 +88,9 @@ public class SpringBootTestConfiguration {
                 .setHighlight(highlight)
                 .setScreenshots(screenshots)
                 .setSnapshots(snapshots)
-                .setArgs(Arrays.stream(args.split(",")).toList());
+                .setArgs(Arrays.stream(args.split(","))
+                        .map(String::trim)
+                        .filter(arg -> !arg.isEmpty())
+                        .toList());
     }
 }

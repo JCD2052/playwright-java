@@ -24,6 +24,9 @@ public class BrowserLauncherRegistry implements IBrowserLauncherRegistry {
 
     @Override
     public IBrowserLauncher getLauncher(String name) {
+        if (name == null) {
+            return null;
+        }
         return registry.get(name.toLowerCase());
     }
 }

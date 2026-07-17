@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.jcd2052</groupId>
-    <artifactId>playwright-framework</artifactId>
+    <artifactId>playwright-java</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
