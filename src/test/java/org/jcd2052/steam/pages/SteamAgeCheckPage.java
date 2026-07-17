@@ -17,7 +17,7 @@ public class SteamAgeCheckPage extends AbstractForm {
         super("//div[contains(@class, 'age_gate')]", "Steam Age Check", elementFactory);
         this.dayDropdown = elementFactory.createDropdownElement("#ageDay", "Day");
         this.monthDropdown = elementFactory.createDropdownElement("#ageMonth", "Month");
-        this.yearDropdown = elementFactory.createDropdownElement("#ageYear", "Year"); ;
+        this.yearDropdown = elementFactory.createDropdownElement("#ageYear", "Year");
         this.viewPageButton = elementFactory.createButtonElement("#view_product_page_btn", "View Page");
     }
 

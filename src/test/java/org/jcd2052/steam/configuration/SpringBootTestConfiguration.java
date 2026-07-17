@@ -16,17 +16,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.PropertySource;
 
 import java.util.Arrays;
 
 @Configuration
-@PropertySource("classpath:application.properties")
-@PropertySource(
-        value = "classpath:application-${spring.profiles.active:default}.properties",
-        ignoreResourceNotFound = true)
 @ComponentScan(basePackages = {"org.jcd2052"})
-public class SpringContextTestConfiguration {
+public class SpringBootTestConfiguration {
     /**
      * Indicates whether the browser should run without a visible UI.
      */

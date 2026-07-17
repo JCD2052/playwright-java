@@ -1,18 +1,17 @@
-package org.jcd2052.steam;
+package org.jcd2052.steam.springboottests;
 
-import org.jcd2052.steam.configuration.SpringContextTestConfiguration;
+import org.jcd2052.steam.configuration.SpringBootTestConfiguration;
 import org.jcd2052.core.browser.services.interfaces.IBrowserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
 import org.testng.ITestResult;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 
-@ContextConfiguration(classes = SpringContextTestConfiguration.class)
-public class BaseTests extends AbstractTestNGSpringContextTests {
+@SpringBootTest(classes = SpringBootTestConfiguration.class)
+public class SpringBootBaseTests extends AbstractTestNGSpringContextTests {
     private static final String TRACING_FOLDER_TEMPLATE = "trace_%s_%s.zip";
-
     @Autowired
     protected IBrowserService browserService;
 

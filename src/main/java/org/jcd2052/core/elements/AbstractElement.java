@@ -308,6 +308,6 @@ public abstract class AbstractElement implements IElement {
      */
     private void clickWithOptions(Locator.ClickOptions options) {
         highlightElementIfNeeded();
-        getLocator().click(options.setDelay(100));
+        getLocator().click(options);
     }
 }

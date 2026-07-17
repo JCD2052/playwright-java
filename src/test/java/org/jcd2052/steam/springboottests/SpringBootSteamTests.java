@@ -1,4 +1,4 @@
-package org.jcd2052.steam;
+package org.jcd2052.steam.springboottests;
 
 import org.jcd2052.steam.pages.SteamAgeCheckPage;
 import org.jcd2052.steam.pages.SteamApplicationPage;
@@ -10,7 +10,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import org.testng.asserts.SoftAssert;
 
-public class SteamTests extends BaseTests {
+public class SpringBootSteamTests extends SpringBootBaseTests {
     @Autowired
     private SteamStorePage storePage;
     @Autowired
