@@ -7,7 +7,7 @@ The framework is organized around Page Objects, typed element wrappers, Spring d
 
 * Java 17
 * Playwright for Java
-* Spring Boot for dependency injection and property-based configuration
+* Spring Boot for dependency injection and property-based configuration (for test purposes, is not used in core framework)
 * TestNG for test execution and data-driven parallel runs
 * Maven for dependency and build management
 * Lombok for simple model classes
@@ -89,9 +89,79 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 @Configuration
-@Import(PlaywrightFrameworkConfiguration.class)
 @ComponentScan(basePackages = {"org.example"})
 public class TestConfiguration {
+    @Value("${playwright.browser.headless:true}")
+    private boolean isHeadless;
+    @Value("${playwright.browser.name:chrome}")
+    private String browserName;
+    @Value("${playwright.browser.tracing:false}")
+    private boolean isTracingEnabled;
+    @Value("${playwright.browser.timeout:30000}")
+    private long timeout;
+    @Value("${playwright.browser.tracing.folder:target/tracing}")
+    private String tracingFolder;
+    @Value("${playwright.browser.highlight:false}")
+    private boolean highlight;
+    @Value("${playwright.browser.screenshots:true}")
+    private boolean screenshots;
+    @Value("${playwright.browser.snapshots:true}")
+    private boolean snapshots;
+    @Value("${playwright.browser.viewport.width:1600}")
+    private Integer width;
+    @Value("${playwright.browser.viewport.height:900}")
+    private Integer height;
+    @Value("${playwright.browser.page.load.timeout:30000}")
+    private long pageLoadTimeout;
+    @Value("${playwright.browser.tracing.args:}")
+    private String args;
+
+    @Bean
+    public IBrowserLauncherRegistry browserLauncherRegistry() {
+        return new BrowserLauncherRegistry();
+    }
+
+    @Bean
+    public IBrowserFactory browserFactory(IBrowserProperties browserProperties, IBrowserLauncherRegistry registry) {
+        return new BrowserFactory(browserProperties, registry);
+    }
+
+    @Bean
+    public IElementFactory elementFactory(
+            IElementFinderService elementFinderService,
+            IBrowserProperties browserProperties) {
+        return new ElementFactory(elementFinderService, browserProperties);
+    }
+
+    @Bean
+    public IElementFinderService elementFinderService(IBrowserService browserService) {
+        return new ElementFinderService(browserService);
+    }
+
+    @Bean
+    public IBrowserService browserService(IBrowserProperties browserProperties, IBrowserFactory browserFactory) {
+        return new BrowserService(browserProperties, browserFactory);
+    }
+
+    @Bean
+    public IBrowserProperties browserProperties() {
+        return new BrowserProperties()
+                .setHeadless(isHeadless)
+                .setName(browserName)
+                .setTracing(isTracingEnabled)
+                .setTimeout(timeout)
+                .setPageLoadTimeout(pageLoadTimeout)
+                .setWidth(width)
+                .setHeight(height)
+                .setTracingSaveFolder(tracingFolder)
+                .setHighlight(highlight)
+                .setScreenshots(screenshots)
+                .setSnapshots(snapshots)
+                .setArgs(Arrays.stream(args.split(","))
+                        .map(String::trim)
+                        .filter(arg -> !arg.isEmpty())
+                        .toList());
+    }
 }
 ```
 
@@ -353,7 +423,6 @@ For full programmatic control, provide your own `IBrowserProperties` bean in a c
 
 ```java
 @Configuration
-@Import(PlaywrightFrameworkConfiguration.class)
 public class CustomBrowserConfiguration {
     @Bean
     @Primary
@@ -393,7 +462,6 @@ public class ChromiumLauncher implements IBrowserLauncher {
 
 ```java
 @Configuration
-@Import(PlaywrightFrameworkConfiguration.class)
 public class CustomLauncherConfiguration {
     @Bean
     @Primary
