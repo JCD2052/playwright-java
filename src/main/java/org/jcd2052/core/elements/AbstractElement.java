@@ -1,0 +1,313 @@
+package org.jcd2052.core.elements;
+
+import com.microsoft.playwright.Locator;
+import com.microsoft.playwright.options.BoundingBox;
+import com.microsoft.playwright.options.MouseButton;
+import lombok.Getter;
+import org.apache.commons.lang3.StringUtils;
+import org.jcd2052.core.browser.browser.MouseActions;
+import org.jcd2052.core.browser.browser.interfaces.IMouseActions;
+import org.jcd2052.core.browser.services.interfaces.IElementFactory;
+import org.jcd2052.core.browser.services.interfaces.IElementSupplier;
+import org.jcd2052.core.elements.interfaces.IElement;
+import org.jcd2052.core.elements.interfaces.IElementCollection;
+import org.jcd2052.core.elements.interfaces.IJsActions;
+import org.jcd2052.core.logger.LoggerProvider;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
+/**
+ * The core abstract base class for all web elements in the framework.
+ * <p>This class implements the {@link IElement} interface and provides standard wrappers
+ * around Playwright's native {@link Locator} interactions. It handles common element behaviors
+ * including clicking, typing, state evaluation, and dynamic child element creation.</p>
+ * <p>Additionally, it integrates built-in logging, optional visual highlighting, and
+ * JavaScript-based action fallbacks via {@link IJsActions}.</p>
+ */
+public abstract class AbstractElement implements IElement {
+    private final String name;
+    /**
+     * The selector string (e.g., CSS, XPath) used to locate this element in the DOM.
+     */
+    @Getter
+    private final String selector;
+    protected final IElementFactory elementFactory;
+    /**
+     * Provides access to JavaScript-based element interactions.
+     */
+    @Getter
+    protected final IJsActions jsActions;
+
+    /**
+     * Constructs a new {@code AbstractElement}.
+     *
+     * @param selector       The Playwright selector used to locate the element.
+     * @param name           A human-readable name for the element, used in logging.
+     * @param elementFactory The factory responsible for creating and locating elements.
+     */
+    protected AbstractElement(String selector, String name, IElementFactory elementFactory) {
+        this.elementFactory = elementFactory;
+        this.name = name;
+        this.selector = selector;
+        this.jsActions = new JsActions(this);
+    }
+
+    @Override
+    public void click() {
+        LoggerProvider.getLogger().debugElementAction(getElementType(), getName(), "was clicked");
+        clickWithOptions(new Locator.ClickOptions());
+    }
+
+    @Override
+    public void forceClick() {
+        LoggerProvider.getLogger().debugElementAction(getElementType(), getName(), "was force clicked");
+        clickWithOptions(new Locator.ClickOptions().setForce(true));
+    }
+
+    @Override
+    public void rightClick() {
+        LoggerProvider.getLogger().debugElementAction(getElementType(), getName(), "was right-clicked");
+        clickWithOptions(new Locator.ClickOptions().setButton(MouseButton.RIGHT));
+    }
+
+    @Override
+    public void middleClick() {
+        LoggerProvider.getLogger().debugElementAction(getElementType(), getName(), "was middle-clicked");
+        clickWithOptions(new Locator.ClickOptions().setButton(MouseButton.MIDDLE));
+    }
+
+    @Override
+    public void click(double x, double y) {
+        LoggerProvider.getLogger().debugElementAction(
+                getElementType(), getName(), "was clicked at coordinates (x: %s, y: %s)", x, y);
+        clickWithOptions(new Locator.ClickOptions().setPosition(x, y));
+    }
+
+    /**
+     * Simulates pressing a specific keyboard key on the element.
+     *
+     * @param key The key to press (e.g., "Enter", "ArrowDown").
+     */
+    @Override
+    public void press(String key) {
+        LoggerProvider.getLogger().debugElementAction(getElementType(), getName(), "pressed key '%s'", key);
+        getLocator().press(key);
+    }
+
+    @Override
+    public void dragAndDropTo(IElement targetElement, int steps) {
+        LoggerProvider.getLogger().debugElementAction(
+                getElementType(),
+                getName(),
+                "performing stepped drag-and-drop to '%s' using %d steps",
+                targetElement.getName(),
+                steps
+        );
+
+        BoundingBox sourceBox = getLocator().boundingBox();
+        BoundingBox targetBox = targetElement.getLocator().boundingBox();
+
+        if (sourceBox == null || targetBox == null) {
+            throw new IllegalStateException(
+                    "Cannot perform dragAndDropTo: Source or target element is not visible on the screen."
+            );
+        }
+
+        double startX = sourceBox.x + (sourceBox.width / 2);
+        double startY = sourceBox.y + (sourceBox.height / 2);
+
+        double endX = targetBox.x + (targetBox.width / 2);
+        double endY = targetBox.y + (targetBox.height / 2);
+
+        getMouseActions().move(startX, startY);
+        getMouseActions().down();
+
+        getMouseActions().move(endX, endY, steps);
+        getMouseActions().up();
+    }
+
+    public IMouseActions getMouseActions() {
+        return new MouseActions(getLocator().page().mouse());
+    }
+
+    /**
+     * Retrieves the inner text of all matching elements found by the locator.
+     *
+     * @return A collection of inner text strings.
+     */
+    @Override
+    public List<String> getAllTexts() {
+        highlightElementIfNeeded();
+        return Arrays.stream(getLocator().innerText().split(StringUtils.LF)).collect(Collectors.toList());
+    }
+
+    /**
+     * Retrieves the visible text content of the element.
+     *
+     * @return The text content of the element.
+     */
+    @Override
+    public String getText() {
+        highlightElementIfNeeded();
+        String text = getLocator().textContent();
+        LoggerProvider.getLogger().debugElementAction(
+                getElementType(),
+                getName(),
+                "text was retrieved. Result: '%s'",
+                text);
+        return text;
+    }
+
+    /**
+     * Retrieves the value of a specified HTML attribute from the element.
+     *
+     * @param name The name of the attribute (e.g., "href", "class").
+     * @return The value of the attribute, or null if it does not exist.
+     */
+    @Override
+    public String getAttribute(String name) {
+        String attribute = getLocator().getAttribute(name, new Locator.GetAttributeOptions());
+        LoggerProvider.getLogger().debugElementAction(
+                getElementType(),
+                getName(),
+                "attribute '%s' was retrieved. Result: '%s'", name, attribute);
+        return attribute;
+    }
+
+    /**
+     * Checks if the element is currently visible in the DOM.
+     *
+     * @return {@code true} if visible; {@code false} otherwise.
+     */
+    @Override
+    public boolean isVisible() {
+        boolean visible = getLocator().isVisible();
+        LoggerProvider.getLogger().debugElementAction(
+                getElementType(),
+                getName(),
+                "checked visibility. Result: %b",
+                visible);
+        return visible;
+    }
+
+    /**
+     * Checks if the element is currently enabled (i.e., not explicitly disabled).
+     *
+     * @return {@code true} if enabled; {@code false} otherwise.
+     */
+    @Override
+    public boolean isEnabled() {
+        highlightElementIfNeeded();
+        boolean enabled = getLocator().isEnabled();
+        LoggerProvider.getLogger().debugElementAction(
+                getElementType(),
+                getName(),
+                "checked if enabled. Result: %b",
+                enabled);
+        return enabled;
+    }
+
+    /**
+     * Dynamically creates a child element scoped to this parent element.
+     *
+     * @param clazz    The specific class type of the child element to create.
+     * @param selector The relative selector for the child element.
+     * @param name     The human-readable name of the child element.
+     * @param <T>      The type of the child element, extending {@link IElement}.
+     * @return A new instance of the specified child element type.
+     */
+    @Override
+    public <T extends IElement> T createChildElement(Class<T> clazz, String selector, String name) {
+        return elementFactory.createChildElement(clazz, this, selector, name);
+    }
+
+    /**
+     * Dynamically creates a child element using a provided supplier, scoped to this parent element.
+     *
+     * @param elementSupplier The functional interface supplying the element instance.
+     * @param selector        The relative selector for the child element.
+     * @param name            The human-readable name of the child element.
+     * @param <T>             The type of the child element, extending {@link IElement}.
+     * @return A new instance of the specified child element type.
+     */
+    @Override
+    public <T extends IElement> T createChildElement(
+            IElementSupplier<T> elementSupplier,
+            String selector,
+            String name) {
+        return elementFactory.createChildElement(elementSupplier, this, selector, name);
+    }
+
+    /**
+     * Dynamically creates a collection of child elements scoped to this parent element.
+     *
+     * @param clazz         The specific class type of the child elements.
+     * @param selector      The relative selector matching multiple child elements.
+     * @param name          The base human-readable name for the elements.
+     * @param expectedCount The expected number of elements (used for validation/waiting).
+     * @param <T>           The type of the child elements, extending {@link IElement}.
+     * @return An {@link IElementCollection} containing the resolved child elements.
+     */
+    @Override
+    public <T extends IElement> IElementCollection<T> createChildElements(
+            Class<T> clazz,
+            String selector,
+            String name,
+            ExpectedCount expectedCount) {
+        return elementFactory.createChildElementsCollection(clazz, this, selector, name, expectedCount);
+    }
+
+    /**
+     * Gets the trimmed human-readable name of the element.
+     *
+     * @return The element's name.
+     */
+    @Override
+    public String getName() {
+        return name.trim();
+    }
+
+    /**
+     * Resolves and retrieves the Playwright {@link Locator} instance for this element.
+     * <p>This defers the actual DOM lookup to the {@link IElementFactory}'s finder service,
+     * ensuring dynamic resolution when the element is actually interacted with.</p>
+     *
+     * @return The Playwright {@code Locator} instance.
+     */
+    public Locator getLocator() {
+        return elementFactory.getElementFinderService().findElement(selector);
+    }
+
+    /**
+     * Triggers a visual highlight of the element on the page, provided highlighting
+     * is enabled in the framework configuration via the {@code elementFactory}.
+     */
+    protected void highlightElementIfNeeded() {
+        if (elementFactory.isHighlightEnabled()) {
+            getLocator().highlight(new Locator.HighlightOptions().setStyle("outline: 3px solid red"));
+        }
+    }
+
+    /**
+     * Retrieves the simple class name of the concrete element type (e.g., "Button", "TextInput").
+     *
+     * @return The simple name of the class.
+     */
+    protected String getElementType() {
+        return this.getClass().getSimpleName();
+    }
+
+    /**
+     * A centralized helper method to execute click interactions with specific Playwright options.
+     * <p>This applies the provided options, enforces a default 100ms delay for stability,
+     * and handles framework-level synchronization and highlighting.</p>
+     *
+     * @param options The Playwright ClickOptions to apply (button type, position, force, etc.).
+     */
+    private void clickWithOptions(Locator.ClickOptions options) {
+        highlightElementIfNeeded();
+        getLocator().click(options);
+    }
+}
