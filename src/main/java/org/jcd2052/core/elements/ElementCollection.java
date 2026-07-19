@@ -1,7 +1,6 @@
 package org.jcd2052.core.elements;
 
 import com.microsoft.playwright.Locator;
-import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.WaitForSelectorState;
 import org.jcd2052.core.browser.services.interfaces.IElementFactory;
 import org.jcd2052.core.browser.services.interfaces.IElementSupplier;
@@ -67,22 +66,9 @@ public class ElementCollection<T extends IElement> implements IElementCollection
         List<T> elementList = new ArrayList<>();
 
         for (int i = 0; i < size; i++) {
-            final int index = i;
-            Selector nthBy = new Selector() {
-                @Override
-                public Locator evaluate(Page page) {
-                    return selector.evaluate(page).nth(index);
-                }
-
-                @Override
-                public Locator evaluate(Locator parent) {
-                    return selector.evaluate(parent).nth(index);
-                }
-            };
-
             elementList.add(
                     supplier.get(
-                            nthBy,
+                            selector.nth(i),
                             String.format("%s %d", name, i + 1),
                             elementFactory
                     )

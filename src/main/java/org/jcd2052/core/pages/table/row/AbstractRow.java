@@ -1,7 +1,5 @@
 package org.jcd2052.core.pages.table.row;
 
-import com.microsoft.playwright.Locator;
-import com.microsoft.playwright.Page;
 import org.jcd2052.core.browser.services.interfaces.IElementFactory;
 import org.jcd2052.core.elements.selector.Selector;
 import org.jcd2052.core.elements.interfaces.ILabelElement;
@@ -71,18 +69,6 @@ public abstract class AbstractRow<T> extends AbstractForm implements IRow<T> {
      * @return The combined, absolute Selector strategy representing the exact node.
      */
     protected static Selector createPositionLocator(Selector rowLocator, int position) {
-        int index = position - 1;
-
-        return new Selector() {
-            @Override
-            public Locator evaluate(Page page) {
-                return rowLocator.evaluate(page).nth(index);
-            }
-
-            @Override
-            public Locator evaluate(Locator parent) {
-                return rowLocator.evaluate(parent).nth(index);
-            }
-        };
+        return rowLocator.nth(position - 1);
     }
 }

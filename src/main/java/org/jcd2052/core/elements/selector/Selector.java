@@ -4,6 +4,7 @@ import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
 
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
 /**
@@ -12,7 +13,6 @@ import java.util.regex.Pattern;
  * making it thread-safe and compatible with Singleton Page Objects.
  */
 public abstract class Selector {
-
     /**
      * Resolves the locator from the root page.
      *
@@ -36,17 +36,7 @@ public abstract class Selector {
      * @return a new Selector instance for the strategy
      */
     public static Selector bySelector(String selector) {
-        return new Selector() {
-            @Override
-            public Locator evaluate(Page page) {
-                return page.locator(selector);
-            }
-
-            @Override
-            public Locator evaluate(Locator parent) {
-                return parent.locator(selector);
-            }
-        };
+        return of(page -> page.locator(selector), parent -> parent.locator(selector));
     }
 
     /**
@@ -56,17 +46,7 @@ public abstract class Selector {
      * @return a new Selector instance for the text strategy
      */
     public static Selector byText(String text) {
-        return new Selector() {
-            @Override
-            public Locator evaluate(Page page) {
-                return page.getByText(text);
-            }
-
-            @Override
-            public Locator evaluate(Locator parent) {
-                return parent.getByText(text);
-            }
-        };
+        return of(page -> page.getByText(text), parent -> parent.getByText(text));
     }
 
     /**
@@ -77,17 +57,9 @@ public abstract class Selector {
      * @return a new Selector instance for the text strategy
      */
     public static Selector byText(String text, boolean exact) {
-        return new Selector() {
-            @Override
-            public Locator evaluate(Page page) {
-                return page.getByText(text, new Page.GetByTextOptions().setExact(exact));
-            }
-
-            @Override
-            public Locator evaluate(Locator parent) {
-                return parent.getByText(text, new Locator.GetByTextOptions().setExact(exact));
-            }
-        };
+        return of(
+                page -> page.getByText(text, new Page.GetByTextOptions().setExact(exact)),
+                parent -> parent.getByText(text, new Locator.GetByTextOptions().setExact(exact)));
     }
 
     /**
@@ -97,17 +69,7 @@ public abstract class Selector {
      * @return a new Selector instance for the text strategy
      */
     public static Selector byText(Pattern pattern) {
-        return new Selector() {
-            @Override
-            public Locator evaluate(Page page) {
-                return page.getByText(pattern);
-            }
-
-            @Override
-            public Locator evaluate(Locator parent) {
-                return parent.getByText(pattern);
-            }
-        };
+        return of(page -> page.getByText(pattern), parent -> parent.getByText(pattern));
     }
 
     /**
@@ -117,17 +79,7 @@ public abstract class Selector {
      * @return a new Selector instance for the role strategy
      */
     public static Selector byRole(AriaRole role) {
-        return new Selector() {
-            @Override
-            public Locator evaluate(Page page) {
-                return page.getByRole(role);
-            }
-
-            @Override
-            public Locator evaluate(Locator parent) {
-                return parent.getByRole(role);
-            }
-        };
+        return of(page -> page.getByRole(role), parent -> parent.getByRole(role));
     }
 
     /**
@@ -138,17 +90,9 @@ public abstract class Selector {
      * @return a new Selector instance for the role strategy
      */
     public static Selector byRole(AriaRole role, String name) {
-        return new Selector() {
-            @Override
-            public Locator evaluate(Page page) {
-                return page.getByRole(role, new Page.GetByRoleOptions().setName(name));
-            }
-
-            @Override
-            public Locator evaluate(Locator parent) {
-                return parent.getByRole(role, new Locator.GetByRoleOptions().setName(name));
-            }
-        };
+        return of(
+                page -> page.getByRole(role, new Page.GetByRoleOptions().setName(name)),
+                parent -> parent.getByRole(role, new Locator.GetByRoleOptions().setName(name)));
     }
 
     /**
@@ -159,17 +103,9 @@ public abstract class Selector {
      * @return a new Selector instance for the role strategy
      */
     public static Selector byRole(AriaRole role, RoleOptions options) {
-        return new Selector() {
-            @Override
-            public Locator evaluate(Page page) {
-                return page.getByRole(role, options.toPageOptions());
-            }
-
-            @Override
-            public Locator evaluate(Locator parent) {
-                return parent.getByRole(role, options.toLocatorOptions());
-            }
-        };
+        return of(
+                page -> page.getByRole(role, options.toPageOptions()),
+                parent -> parent.getByRole(role, options.toLocatorOptions()));
     }
 
     /**
@@ -179,17 +115,7 @@ public abstract class Selector {
      * @return a new Selector instance for the label strategy
      */
     public static Selector byLabel(String text) {
-        return new Selector() {
-            @Override
-            public Locator evaluate(Page page) {
-                return page.getByLabel(text);
-            }
-
-            @Override
-            public Locator evaluate(Locator parent) {
-                return parent.getByLabel(text);
-            }
-        };
+        return of(page -> page.getByLabel(text), parent -> parent.getByLabel(text));
     }
 
     /**
@@ -200,17 +126,9 @@ public abstract class Selector {
      * @return a new Selector instance for the label strategy
      */
     public static Selector byLabel(String text, boolean exact) {
-        return new Selector() {
-            @Override
-            public Locator evaluate(Page page) {
-                return page.getByLabel(text, new Page.GetByLabelOptions().setExact(exact));
-            }
-
-            @Override
-            public Locator evaluate(Locator parent) {
-                return parent.getByLabel(text, new Locator.GetByLabelOptions().setExact(exact));
-            }
-        };
+        return of(
+                page -> page.getByLabel(text, new Page.GetByLabelOptions().setExact(exact)),
+                parent -> parent.getByLabel(text, new Locator.GetByLabelOptions().setExact(exact)));
     }
 
     /**
@@ -220,17 +138,7 @@ public abstract class Selector {
      * @return a new Selector instance for the label strategy
      */
     public static Selector byLabel(Pattern pattern) {
-        return new Selector() {
-            @Override
-            public Locator evaluate(Page page) {
-                return page.getByLabel(pattern);
-            }
-
-            @Override
-            public Locator evaluate(Locator parent) {
-                return parent.getByLabel(pattern);
-            }
-        };
+        return of(page -> page.getByLabel(pattern), parent -> parent.getByLabel(pattern));
     }
 
     /**
@@ -240,17 +148,7 @@ public abstract class Selector {
      * @return a new Selector instance for the placeholder strategy
      */
     public static Selector byPlaceholder(String text) {
-        return new Selector() {
-            @Override
-            public Locator evaluate(Page page) {
-                return page.getByPlaceholder(text);
-            }
-
-            @Override
-            public Locator evaluate(Locator parent) {
-                return parent.getByPlaceholder(text);
-            }
-        };
+        return of(page -> page.getByPlaceholder(text), parent -> parent.getByPlaceholder(text));
     }
 
     /**
@@ -261,17 +159,9 @@ public abstract class Selector {
      * @return a new Selector instance for the placeholder strategy
      */
     public static Selector byPlaceholder(String text, boolean exact) {
-        return new Selector() {
-            @Override
-            public Locator evaluate(Page page) {
-                return page.getByPlaceholder(text, new Page.GetByPlaceholderOptions().setExact(exact));
-            }
-
-            @Override
-            public Locator evaluate(Locator parent) {
-                return parent.getByPlaceholder(text, new Locator.GetByPlaceholderOptions().setExact(exact));
-            }
-        };
+        return of(
+                page -> page.getByPlaceholder(text, new Page.GetByPlaceholderOptions().setExact(exact)),
+                parent -> parent.getByPlaceholder(text, new Locator.GetByPlaceholderOptions().setExact(exact)));
     }
 
     /**
@@ -281,17 +171,7 @@ public abstract class Selector {
      * @return a new Selector instance for the placeholder strategy
      */
     public static Selector byPlaceholder(Pattern pattern) {
-        return new Selector() {
-            @Override
-            public Locator evaluate(Page page) {
-                return page.getByPlaceholder(pattern);
-            }
-
-            @Override
-            public Locator evaluate(Locator parent) {
-                return parent.getByPlaceholder(pattern);
-            }
-        };
+        return of(page -> page.getByPlaceholder(pattern), parent -> parent.getByPlaceholder(pattern));
     }
 
     /**
@@ -301,17 +181,7 @@ public abstract class Selector {
      * @return a new Selector instance for the alt text strategy
      */
     public static Selector byAltText(String text) {
-        return new Selector() {
-            @Override
-            public Locator evaluate(Page page) {
-                return page.getByAltText(text);
-            }
-
-            @Override
-            public Locator evaluate(Locator parent) {
-                return parent.getByAltText(text);
-            }
-        };
+        return of(page -> page.getByAltText(text), parent -> parent.getByAltText(text));
     }
 
     /**
@@ -322,17 +192,9 @@ public abstract class Selector {
      * @return a new Selector instance for the alt text strategy
      */
     public static Selector byAltText(String text, boolean exact) {
-        return new Selector() {
-            @Override
-            public Locator evaluate(Page page) {
-                return page.getByAltText(text, new Page.GetByAltTextOptions().setExact(exact));
-            }
-
-            @Override
-            public Locator evaluate(Locator parent) {
-                return parent.getByAltText(text, new Locator.GetByAltTextOptions().setExact(exact));
-            }
-        };
+        return of(
+                page -> page.getByAltText(text, new Page.GetByAltTextOptions().setExact(exact)),
+                parent -> parent.getByAltText(text, new Locator.GetByAltTextOptions().setExact(exact)));
     }
 
     /**
@@ -342,17 +204,7 @@ public abstract class Selector {
      * @return a new Selector instance for the alt text strategy
      */
     public static Selector byAltText(Pattern pattern) {
-        return new Selector() {
-            @Override
-            public Locator evaluate(Page page) {
-                return page.getByAltText(pattern);
-            }
-
-            @Override
-            public Locator evaluate(Locator parent) {
-                return parent.getByAltText(pattern);
-            }
-        };
+        return of(page -> page.getByAltText(pattern), parent -> parent.getByAltText(pattern));
     }
 
     /**
@@ -362,17 +214,7 @@ public abstract class Selector {
      * @return a new Selector instance for the title strategy
      */
     public static Selector byTitle(String text) {
-        return new Selector() {
-            @Override
-            public Locator evaluate(Page page) {
-                return page.getByTitle(text);
-            }
-
-            @Override
-            public Locator evaluate(Locator parent) {
-                return parent.getByTitle(text);
-            }
-        };
+        return of(page -> page.getByTitle(text), parent -> parent.getByTitle(text));
     }
 
     /**
@@ -383,17 +225,9 @@ public abstract class Selector {
      * @return a new Selector instance for the title strategy
      */
     public static Selector byTitle(String text, boolean exact) {
-        return new Selector() {
-            @Override
-            public Locator evaluate(Page page) {
-                return page.getByTitle(text, new Page.GetByTitleOptions().setExact(exact));
-            }
-
-            @Override
-            public Locator evaluate(Locator parent) {
-                return parent.getByTitle(text, new Locator.GetByTitleOptions().setExact(exact));
-            }
-        };
+        return of(
+                page -> page.getByTitle(text, new Page.GetByTitleOptions().setExact(exact)),
+                parent -> parent.getByTitle(text, new Locator.GetByTitleOptions().setExact(exact)));
     }
 
     /**
@@ -403,17 +237,7 @@ public abstract class Selector {
      * @return a new Selector instance for the title strategy
      */
     public static Selector byTitle(Pattern pattern) {
-        return new Selector() {
-            @Override
-            public Locator evaluate(Page page) {
-                return page.getByTitle(pattern);
-            }
-
-            @Override
-            public Locator evaluate(Locator parent) {
-                return parent.getByTitle(pattern);
-            }
-        };
+        return of(page -> page.getByTitle(pattern), parent -> parent.getByTitle(pattern));
     }
 
     /**
@@ -423,17 +247,7 @@ public abstract class Selector {
      * @return a new Selector instance for the test-id strategy
      */
     public static Selector byTestId(String testId) {
-        return new Selector() {
-            @Override
-            public Locator evaluate(Page page) {
-                return page.getByTestId(testId);
-            }
-
-            @Override
-            public Locator evaluate(Locator parent) {
-                return parent.getByTestId(testId);
-            }
-        };
+        return of(page -> page.getByTestId(testId), parent -> parent.getByTestId(testId));
     }
 
     /**
@@ -443,17 +257,7 @@ public abstract class Selector {
      * @return a new Selector instance for the test-id strategy
      */
     public static Selector byTestId(Pattern pattern) {
-        return new Selector() {
-            @Override
-            public Locator evaluate(Page page) {
-                return page.getByTestId(pattern);
-            }
-
-            @Override
-            public Locator evaluate(Locator parent) {
-                return parent.getByTestId(pattern);
-            }
-        };
+        return of(page -> page.getByTestId(pattern), parent -> parent.getByTestId(pattern));
     }
 
     /**
@@ -469,15 +273,51 @@ public abstract class Selector {
         }
 
         Selector parentSelector = this;
+        return of(
+                page -> child.evaluate(parentSelector.evaluate(page)),
+                parent -> child.evaluate(parentSelector.evaluate(parent)));
+    }
+
+    /**
+     * Narrows this selector to the single element at the given zero-based index, evaluated lazily.
+     * <p>
+     * Equivalent to appending Playwright's {@code nth(index)} to whatever this selector resolves to,
+     * without eagerly resolving a {@link Locator} up front. Used to give each element inside a
+     * collection or table row its own stable, individually addressable Selector.
+     * </p>
+     *
+     * @param index the zero-based index of the element to target
+     * @return a new Selector scoped to the element at the given index
+     */
+    public Selector nth(int index) {
+        Selector self = this;
+        return of(
+                page -> self.evaluate(page).nth(index),
+                parent -> self.evaluate(parent).nth(index));
+    }
+
+    /**
+     * Builds a Selector from a pair of resolution functions, one for each possible evaluation root.
+     * <p>
+     * This is the single implementation point shared by every {@code byX(...)} factory below, so that
+     * each strategy only needs to describe how to resolve itself from a {@link Page} and from a
+     * {@link Locator}, without repeating the anonymous class boilerplate.
+     * </p>
+     *
+     * @param onPage    resolves the locator when evaluated against a root {@link Page}
+     * @param onLocator resolves the locator when evaluated against a parent {@link Locator}
+     * @return a new Selector backed by the given resolution functions
+     */
+    private static Selector of(Function<Page, Locator> onPage, Function<Locator, Locator> onLocator) {
         return new Selector() {
             @Override
             public Locator evaluate(Page page) {
-                return child.evaluate(parentSelector.evaluate(page));
+                return onPage.apply(page);
             }
 
             @Override
             public Locator evaluate(Locator parent) {
-                return child.evaluate(parentSelector.evaluate(parent));
+                return onLocator.apply(parent);
             }
         };
     }

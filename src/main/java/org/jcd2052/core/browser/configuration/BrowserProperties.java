@@ -77,8 +77,7 @@ public class BrowserProperties implements IBrowserProperties {
     private List<String> args;
 
     /**
-     *
-     * the custom attribute string instead of testId.
+     * The custom attribute Playwright should use instead of {@code data-testid} for {@code Selector.byTestId()}.
      */
     private String testIdAttribute;
 }

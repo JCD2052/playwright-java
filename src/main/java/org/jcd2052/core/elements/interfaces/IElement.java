@@ -139,7 +139,7 @@ public interface IElement {
     void press(String key);
 
     /**
-     * Performs a standard Just-In-Time evaluation and click on the element.
+     * Performs a standard Playwright click on the element.
      */
     void click();
 
@@ -167,10 +167,12 @@ public interface IElement {
     void forceClick();
 
     /**
-     * Performs a stepped drag-and-drop workflow simulation to interact with complex dynamic scripts.
+     * Performs a drag-and-drop operation using simulated, stepped mouse movements instead of Playwright's
+     * native {@code dragTo()}. This is more reliable for modern drag-and-drop libraries (e.g. React-Beautiful-DnD
+     * or SortableJS) that rely on precise, incremental {@code mousemove} events.
      *
-     * @param targetElement The target landing element drop destination.
-     * @param steps         The mouse moving precision granularity layout updates framework.
+     * @param targetElement The element to drop onto.
+     * @param steps         The number of intermediate mouse-move steps between source and target (e.g. 10-20).
      */
     void dragAndDropTo(IElement targetElement, int steps);
 
@@ -189,42 +191,42 @@ public interface IElement {
     }
 
     /**
-     * Scrolls the current document context container viewports until this element becomes visible.
+     * Scrolls the element into the browser's viewport.
      */
     default void scrollToElement() {
         getLocator().scrollIntoViewIfNeeded();
     }
 
     /**
-     * Performs a native drag and drop action to a targeted drop destination element layout node.
+     * Performs a native Playwright drag-and-drop action onto the target element.
      *
-     * @param targetElement The target element block layer.
+     * @param targetElement The element to drop onto.
      */
     default void dragTo(IElement targetElement) {
         getLocator().dragTo(targetElement.getLocator());
     }
 
     /**
-     * Hovers the mouse pointer tracking scope over the element.
+     * Hovers the mouse pointer over the element.
      */
     default void hover() {
         getLocator().hover();
     }
 
     /**
-     * Captures a precise runtime image screenshot buffer block of this localized element space.
+     * Captures a screenshot of the element.
      *
-     * @return A binary byte array capturing the layout graphic view.
+     * @return A byte array representing the screenshot image.
      */
     default byte[] getScreenshot() {
         return getLocator().screenshot();
     }
 
     /**
-     * Dynamic synchronized waiter evaluating active element states against specific rules criteria.
+     * Waits for the element to reach a specific state (e.g., VISIBLE, HIDDEN, ATTACHED).
      *
-     * @param state   The element lifecycle layout target state requirement.
-     * @param timeout The maximum allotted timeout threshold tracking milliseconds scope.
+     * @param state   The desired {@link WaitForSelectorState}.
+     * @param timeout The maximum time to wait in milliseconds.
      */
     default void waitForState(WaitForSelectorState state, Double timeout) {
         Locator.WaitForOptions waitOptions = state == null && timeout == null ? null : new Locator.WaitForOptions();
@@ -236,11 +238,11 @@ public interface IElement {
     }
 
     /**
-     * A safe wait polling wrapper that converts hard TimeoutErrors into soft boolean returns.
+     * Safe wait method that returns a boolean instead of throwing an exception on timeout.
      *
-     * @param state   The layout lifecycle node sync state requirement.
-     * @param timeout The timeout threshold in milliseconds.
-     * @return {@code true} if reached target layout conditions, {@code false} on error timeout boundaries.
+     * @param state   The desired state.
+     * @param timeout The timeout in milliseconds.
+     * @return {@code true} if the state was reached, {@code false} if a {@link TimeoutError} occurred.
      */
     default boolean waitForLoading(WaitForSelectorState state, Double timeout) {
         try {
@@ -252,71 +254,71 @@ public interface IElement {
     }
 
     /**
-     * Wait for standard state constraints with standard duration timeouts configurations.
+     * Waits for the default state and timeout.
      *
-     * @return {@code true} if element state resolved, {@code false} otherwise.
+     * @return {@code true} if the state was reached, {@code false} if a timeout occurred.
      */
     default boolean waitForLoading() {
         return waitForLoading(null, null);
     }
 
     /**
-     * Soft failure safe wait evaluating until element handles drop from active page visibility lifecycles.
+     * Waits for the element to be removed from the DOM.
      *
-     * @param timeout Timeout tracking duration in milliseconds.
-     * @return {@code true} if detached safely, {@code false} on timeout intervals.
+     * @param timeout The maximum time to wait in milliseconds.
+     * @return {@code true} if the element was detached, {@code false} if a timeout occurred.
      */
     default boolean waitToBeDetached(Double timeout) {
         return waitForLoading(WaitForSelectorState.DETACHED, timeout);
     }
 
     /**
-     * Soft failure safe wait tracking absolute node removal lifecycles over standard intervals.
+     * Waits for the element to be removed from the DOM using the default timeout.
      *
-     * @return {@code true} if detached safely, {@code false} on timeout intervals.
+     * @return {@code true} if the element was detached, {@code false} if a timeout occurred.
      */
     default boolean waitToBeDetached() {
         return waitToBeDetached(null);
     }
 
     /**
-     * Soft failure safe wait blocking until element enters visibility layout contexts.
+     * Waits for the element to become visible.
      *
-     * @param timeout Timeout bounds configuration represented in milliseconds.
-     * @return {@code true} if visible, {@code false} if tracking timeline runs out.
+     * @param timeout The maximum time to wait in milliseconds.
+     * @return {@code true} if the element became visible, {@code false} if a timeout occurred.
      */
     default boolean waitToBeVisible(Double timeout) {
         return waitForLoading(WaitForSelectorState.VISIBLE, timeout);
     }
 
     /**
-     * Soft failure safe wait blocking until element enters visibility layout over standard intervals.
+     * Waits for the element to become visible using the default timeout.
      *
-     * @return {@code true} if visible, {@code false} if tracking timeline runs out.
+     * @return {@code true} if the element became visible, {@code false} if a timeout occurred.
      */
     default boolean waitToBeVisible() {
         return waitToBeVisible(null);
     }
 
     /**
-     * Convenience factory helper establishing single nested children components referencing standard logical labels.
+     * Convenience method for creating a child element with a default logical name.
      *
-     * @param clazz    The subclass wrapper blueprint mapping target implementations.
-     * @param selector The localized child layout search query.
-     * @param <T>      The element component type boundary.
-     * @return An instantiated relative sub-component layout wrapper.
+     * @param clazz    The class or interface type of the child element.
+     * @param selector The relative child Selector locator strategy.
+     * @param <T>      The specific type of the element.
+     * @return The instantiated child element.
      */
     default <T extends IElement> T createChildElement(Class<T> clazz, Selector selector) {
         return createChildElement(clazz, selector, "Child of " + getName());
     }
 
     /**
-     * Convenience factory helper establishing single nested elements using localized custom suppliers.
+     * Convenience method for creating a child element via supplier with a default logical name.
      *
-     * @param elementSupplier Custom instance blueprint creation instructions block.
-     * @param selector        The localized relative child search criteria.
-     * @param <T>             The element component type boundary.
-     * @return An instantiated relative sub-component layout wrapper.
+     * @param elementSupplier The supplier defining the instantiation logic.
+     * @param selector        The relative child Selector locator strategy.
+     * @param <T>             The specific type of the element.
+     * @return The instantiated child element.
      */
     default <T extends IElement> T createChildElement(
             IElementSupplier<T> elementSupplier,
@@ -325,13 +327,13 @@ public interface IElement {
     }
 
     /**
-     * Convenience collection creation mapper evaluating any item appearance counts.
+     * Convenience method for creating a child collection with an 'ANY' expected count.
      *
-     * @param clazz    The model class format.
-     * @param selector The relative matching locator query.
-     * @param name     The identifier tracking string.
-     * @param <T>      The target element implementation contract constraint.
-     * @return A grouped custom list reference structure.
+     * @param clazz    The type of elements in the collection.
+     * @param selector The relative child Selector locator strategy.
+     * @param name     The logical name for the collection.
+     * @param <T>      The specific type of the elements.
+     * @return An {@link IElementCollection} of child elements.
      */
     default <T extends IElement> IElementCollection<T> createChildElements(
             Class<T> clazz,
