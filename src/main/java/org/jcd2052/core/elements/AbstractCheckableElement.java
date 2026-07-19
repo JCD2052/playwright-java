@@ -1,42 +1,43 @@
 package org.jcd2052.core.elements;
 
 import org.jcd2052.core.browser.services.interfaces.IElementFactory;
+import org.jcd2052.core.elements.selector.Selector;
 import org.jcd2052.core.elements.interfaces.ICheckableElement;
 import org.jcd2052.core.logger.LoggerProvider;
 
 /**
- * An abstract base class representing a web element that maintains a checkable state,
- * such as a checkbox, radio button, or toggle switch.
- * <p>This class extends {@link AbstractElement} to inherit core Playwright locator
- * management and implements {@link ICheckableElement} to define standard behaviors
- * for elements that can be checked or unchecked.</p>
+ * Base abstract implementation for UI elements that can hold a checked state
+ * (e.g., checkboxes, radio buttons, toggle switches).
+ * <p>
+ * Provides standard interactions for checking, unchecking, and state evaluation,
+ * integrated with framework-level logging, highlighting, and JIT element resolution.
+ * </p>
  */
 public abstract class AbstractCheckableElement extends AbstractElement implements ICheckableElement {
     /**
-     * Constructs a new {@code AbstractCheckableElement}.
+     * Initializes the checkable element.
      *
-     * @param selector       The Playwright selector (e.g., CSS, XPath) used to locate the element in the DOM.
-     * @param name           A human-readable name for the element, utilized for logging and test reporting.
-     * @param elementFactory The {@link IElementFactory} responsible for instantiating and managing locators.
+     * @param selector       The Just-In-Time Selector locator strategy used to find the element.
+     * @param name           The human-readable name of the element used in logging.
+     * @param elementFactory The factory responsible for resolving element dependencies and locators.
      */
-    protected AbstractCheckableElement(String selector, String name, IElementFactory elementFactory) {
+    protected AbstractCheckableElement(Selector selector, String name, IElementFactory elementFactory) {
         super(selector, name, elementFactory);
     }
 
     /**
-     * Determines whether the element is currently in a checked state.
-     * <p>This method performs an evaluation against the DOM using Playwright's native
-     * {@code Locator.isChecked()} method. The action is logged prior to execution.</p>
+     * Evaluates the current checked state of the element in the DOM.
      *
-     * @return {@code true} if the element is checked; {@code false} otherwise.
+     * @return {@code true} if the element is currently checked, {@code false} otherwise.
      */
     @Override
     public boolean isChecked() {
+        highlightElementIfNeeded();
         boolean checked = getLocator().isChecked();
         LoggerProvider.getLogger().debugElementAction(
                 getElementType(),
                 getName(),
-                "checked if is checked. Result: %b",
+                "evaluated 'isChecked' state. Result: %b",
                 checked);
         return checked;
     }

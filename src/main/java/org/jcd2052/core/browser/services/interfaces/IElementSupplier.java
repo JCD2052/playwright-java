@@ -1,27 +1,27 @@
 package org.jcd2052.core.browser.services.interfaces;
 
-
+import org.jcd2052.core.elements.selector.Selector;
 import org.jcd2052.core.elements.interfaces.IElement;
 
 /**
- * A functional interface used to supply instances of specific UI elements.
+ * Represents a supplier for instantiating UI elements.
  * <p>
- * This supplier acts as a factory method for creating custom implementations of {@link IElement}.
- * It allows developers to define explicitly how an element should be instantiated,
- * bypassing default reflection-based creation in the element factory.
+ * This functional interface allows for the custom instantiation of elements
+ * using a specific Just-In-Time (JIT) locator strategy, a logical name,
+ * and the element factory.
+ * </p>
  *
- * @param <T> The specific type of the element being supplied, which must extend {@link IElement}.
+ * @param <T> the specific type of the element being supplied, which must extend {@link IElement}
  */
 @FunctionalInterface
 public interface IElementSupplier<T extends IElement> {
-
     /**
-     * Instantiates and returns a new web element of type {@code T}.
+     * Instantiates or retrieves a new UI element based on the provided locator strategy.
      *
-     * @param locator        The locator strategy (e.g., XPath, CSS selector) used to find the element.
-     * @param name           The logical name of the element, primarily used for logging and reporting.
-     * @param elementFactory The {@link IElementFactory} instance injecting dependencies into the element.
-     * @return A newly created instance of the specific element type {@code T}.
+     * @param selector the Just-In-Time Selector locator strategy used to find the element
+     * @param name     the descriptive, logical name of the element
+     * @param factory  the element factory, useful if the element needs to construct its own children
+     * @return the instantiated UI element of type {@code T}
      */
-    T get(String locator, String name, IElementFactory elementFactory);
+    T get(Selector selector, String name, IElementFactory factory);
 }

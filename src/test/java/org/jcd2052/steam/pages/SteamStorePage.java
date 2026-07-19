@@ -1,6 +1,7 @@
 package org.jcd2052.steam.pages;
 
 import org.jcd2052.core.browser.services.interfaces.IElementFactory;
+import org.jcd2052.core.elements.selector.Selector;
 import org.jcd2052.core.elements.interfaces.IButtonElement;
 import org.jcd2052.core.elements.interfaces.ITextBoxElement;
 import org.springframework.stereotype.Component;
@@ -14,10 +15,10 @@ public class SteamStorePage extends BaseSteamPage {
     protected SteamStorePage(IElementFactory elementFactory) {
         super("Store page", elementFactory);
         this.generalSearchBox = getElementFactory().createTextBoxElement(
-                SEARCH_BASE_XPATH + "//input[@role='combobox']",
+                Selector.bySelector(SEARCH_BASE_XPATH + "//input[@role='combobox']"),
                 "Search box");
         this.searchButton = getElementFactory().createButtonElement(
-                SEARCH_BASE_XPATH + "//button[@type='submit']",
+                Selector.bySelector(SEARCH_BASE_XPATH + "//button[@type='submit']"),
                 "Search button");
     }
 

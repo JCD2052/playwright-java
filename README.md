@@ -19,7 +19,7 @@ The framework keeps Page Objects and Elements small. Page classes describe the s
 
 Elements store selector strings and resolve Playwright `Locator` objects only when an action is executed. This keeps interactions resilient against modern dynamic UIs where the DOM can re-render between steps.
 
-Browser state is managed by `BrowserService`. Each execution thread gets its own browser through `ThreadLocal`, and each started test opens a fresh Browser Context and Page. That allows TestNG data providers such as `@DataProvider(parallel = true)` to run isolated sessions in parallel without sharing cookies, cache, local storage, or active pages.
+Browser state is managed selector `BrowserService`. Each execution thread gets its own browser through `ThreadLocal`, and each started test opens a fresh Browser Context and Page. That allows TestNG data providers such as `@DataProvider(parallel = true)` to run isolated sessions in parallel without sharing cookies, cache, local storage, or active pages.
 
 ## Project Structure
 
@@ -192,7 +192,7 @@ public class BaseTests extends AbstractTestNGSpringContextTests {
 
 ## Creating Pages
 
-Create pages by extending `AbstractForm`. The form locator should identify a stable root element or unique marker on the page.
+Create pages selector extending `AbstractForm`. The form locator should identify a stable root element or unique marker on the page.
 
 ```java
 @Component

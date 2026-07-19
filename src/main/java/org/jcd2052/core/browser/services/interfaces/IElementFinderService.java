@@ -1,22 +1,17 @@
 package org.jcd2052.core.browser.services.interfaces;
 
 import com.microsoft.playwright.Locator;
+import org.jcd2052.core.elements.selector.Selector;
 
 /**
- * Service interface responsible for locating web elements on the active page.
- * <p>
- * This service abstracts the underlying Playwright element discovery mechanism,
- * providing a centralized way to translate string-based selector strategies
- * into Playwright {@link Locator} objects.
+ * Service responsible for resolving Just-In-Time (JIT) locators against the active Playwright page.
  */
 public interface IElementFinderService {
-
     /**
-     * Finds an element (or a collection of elements) on the current active page
-     * based on the provided selector string.
+     * Evaluates the provided Selector strategy against the current active browser page.
      *
-     * @param selector The locator strategy string (e.g., XPath, CSS selector, Playwright specific selectors).
-     * @return A Playwright {@link Locator} object that points to the target element(s).
+     * @param selector the locator strategy to evaluate
+     * @return the resolved Playwright Locator
      */
-    Locator findElement(String selector);
+    Locator findElement(Selector selector);
 }

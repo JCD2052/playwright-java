@@ -1,6 +1,7 @@
 package org.jcd2052.core.elements;
 
 import org.jcd2052.core.browser.services.interfaces.IElementFactory;
+import org.jcd2052.core.elements.selector.Selector;
 import org.jcd2052.core.elements.interfaces.ILabelElement;
 
 /**
@@ -14,11 +15,11 @@ public class LabelElement extends AbstractElement implements ILabelElement {
     /**
      * Constructs a new {@code LabelElement}.
      *
-     * @param locatorValue   The Playwright selector (e.g., CSS, XPath, or text locator) used to find the label in the DOM.
+     * @param selector       The Playwright Selector locator strategy used to find the element.
      * @param name           A human-readable name for the label (e.g., "Error Message", "Username Label"), utilized for logging.
      * @param elementFactory The {@link IElementFactory} responsible for managing and resolving locators.
      */
-    protected LabelElement(String locatorValue, String name, IElementFactory elementFactory) {
-        super(locatorValue, name, elementFactory);
+    protected LabelElement(Selector selector, String name, IElementFactory elementFactory) {
+        super(selector, name, elementFactory);
     }
 }

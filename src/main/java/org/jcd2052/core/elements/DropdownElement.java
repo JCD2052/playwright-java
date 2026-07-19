@@ -3,6 +3,7 @@ package org.jcd2052.core.elements;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.options.SelectOption;
 import org.jcd2052.core.browser.services.interfaces.IElementFactory;
+import org.jcd2052.core.elements.selector.Selector;
 import org.jcd2052.core.elements.interfaces.IDropdownElement;
 import org.jcd2052.core.logger.LoggerProvider;
 
@@ -26,11 +27,11 @@ public class DropdownElement extends AbstractElement implements IDropdownElement
     /**
      * Constructs a new {@code DropdownElement}.
      *
-     * @param selector       The Playwright selector (e.g., CSS, XPath) used to locate the dropdown in the DOM.
+     * @param selector       The Playwright Selector locator strategy used to find the element.
      * @param name           A human-readable name for the dropdown (e.g., "Country Selector"), used for logging.
      * @param elementFactory The {@link IElementFactory} responsible for creating and locating the element.
      */
-    protected DropdownElement(String selector, String name, IElementFactory elementFactory) {
+    protected DropdownElement(Selector selector, String name, IElementFactory elementFactory) {
         super(selector, name, elementFactory);
     }
 

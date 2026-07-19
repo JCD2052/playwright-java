@@ -62,6 +62,11 @@ public class BrowserFactory implements IBrowserFactory {
             launchOptions.setArgs(browserProperties.getArgs());
         }
 
+        String customTestId = browserProperties.getTestIdAttribute();
+        if (customTestId != null && !customTestId.trim().isEmpty()) {
+            playwright.selectors().setTestIdAttribute(customTestId.trim());
+        }
+
         IBrowserLauncher launcher = launcherRegistry.getLauncher(browserProperties.getName());
         if (launcher == null) {
             throw new IllegalArgumentException(

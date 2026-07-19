@@ -5,7 +5,7 @@ import java.util.Map;
 
 /**
  * Concrete implementation of the {@link IBrowserLauncherRegistry}.
- * By default, it automatically registers the core Playwright supported browsers.
+ * Selector default, it automatically registers the core Playwright supported browsers.
  */
 public class BrowserLauncherRegistry implements IBrowserLauncherRegistry {
     private final Map<String, IBrowserLauncher> registry = new HashMap<>();

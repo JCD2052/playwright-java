@@ -1,9 +1,11 @@
 package org.jcd2052.core.elements;
 
 import com.microsoft.playwright.Locator;
+import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.WaitForSelectorState;
 import org.jcd2052.core.browser.services.interfaces.IElementFactory;
 import org.jcd2052.core.browser.services.interfaces.IElementSupplier;
+import org.jcd2052.core.elements.selector.Selector;
 import org.jcd2052.core.elements.interfaces.IElement;
 import org.jcd2052.core.elements.interfaces.IElementCollection;
 
@@ -15,14 +17,14 @@ import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertTha
 /**
  * A dynamic collection of web elements of a specific type.
  * <p>This class implements {@link IElementCollection} to manage a group of elements matching
- * a single selector. It handles waiting for specific collection states (e.g., waiting for at least
+ * a single Selector locator strategy. It handles waiting for specific collection states (e.g., waiting for at least
  * one element to appear) and dynamically wrapping the raw Playwright locators into framework-specific
  * custom elements (e.g., turning a list of button locators into a List of {@code IButtonElement}).</p>
  *
  * @param <T> The specific type of {@link IElement} contained in this collection.
  */
 public class ElementCollection<T extends IElement> implements IElementCollection<T> {
-    private final String selector;
+    private final Selector selector;
     private final String name;
     private final IElementSupplier<T> supplier;
     private final IElementFactory elementFactory;
@@ -31,13 +33,14 @@ public class ElementCollection<T extends IElement> implements IElementCollection
     /**
      * Constructs a new {@code ElementCollection}.
      *
-     * @param selector       The base Playwright selector used to find all elements in the collection.
+     * @param selector       The base Playwright Selector selector used to find all elements in the collection.
      * @param name           A base human-readable name for the collection, appended with an index for individual elements.
      * @param elementFactory The {@link IElementFactory} responsible for creating the individual elements.
+     * @param supplier       The functional supplier template for instantiating the typed wrapper components.
      * @param expectedCount  The expectation rule applied before resolving the collection (e.g., MUST have elements, MUST be empty).
      */
     public ElementCollection(
-            String selector,
+            Selector selector,
             String name,
             IElementFactory elementFactory,
             IElementSupplier<T> supplier,
@@ -52,8 +55,8 @@ public class ElementCollection<T extends IElement> implements IElementCollection
     /**
      * Retrieves the list of resolved framework elements.
      * <p>This method first waits for the expected count condition to be met. It then determines
-     * the total number of matching elements and iterates through them, using the {@code nth=i}
-     * Playwright selector strategy to create isolated, individually addressable framework elements.</p>
+     * the total number of matching elements and iterates through them, using a deferred index-based
+     * Selector wrapper to create isolated, individually addressable framework elements.</p>
      *
      * @return A {@link List} of instantiated elements of type {@code T}.
      */
@@ -64,9 +67,22 @@ public class ElementCollection<T extends IElement> implements IElementCollection
         List<T> elementList = new ArrayList<>();
 
         for (int i = 0; i < size; i++) {
+            final int index = i;
+            Selector nthBy = new Selector() {
+                @Override
+                public Locator evaluate(Page page) {
+                    return selector.evaluate(page).nth(index);
+                }
+
+                @Override
+                public Locator evaluate(Locator parent) {
+                    return selector.evaluate(parent).nth(index);
+                }
+            };
+
             elementList.add(
                     supplier.get(
-                            elementFactory.combineSelectors(selector, "nth=" + i),
+                            nthBy,
                             String.format("%s %d", name, i + 1),
                             elementFactory
                     )
@@ -100,7 +116,7 @@ public class ElementCollection<T extends IElement> implements IElementCollection
     }
 
     /**
-     * Retrieves the current number of elements in the DOM matching the collection's selector.
+     * Retrieves the current number of elements in the DOM matching the collection's selector strategy.
      *
      * @return The integer count of matching elements.
      */

@@ -1,6 +1,7 @@
 package org.jcd2052.core.elements;
 
 import org.jcd2052.core.browser.services.interfaces.IElementFactory;
+import org.jcd2052.core.elements.selector.Selector;
 import org.jcd2052.core.elements.interfaces.IUploadBox;
 import org.jcd2052.core.logger.LoggerProvider;
 
@@ -20,11 +21,11 @@ public class UploadBox extends AbstractElement implements IUploadBox {
     /**
      * Constructs a new {@code UploadBox} element.
      *
-     * @param selector       The CSS or XPath selector strictly targeting the {@code <input type="file">} element.
+     * @param selector       The Playwright Selector locator strategy used to find strictly targeting the {@code <input type="file">} element.
      * @param name           The human-readable name of the upload field, utilized for automated logging.
      * @param elementFactory The central factory used for dependency injection and element resolution.
      */
-    protected UploadBox(String selector, String name, IElementFactory elementFactory) {
+    protected UploadBox(Selector selector, String name, IElementFactory elementFactory) {
         super(selector, name, elementFactory);
     }
 

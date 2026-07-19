@@ -75,4 +75,10 @@ public class BrowserProperties implements IBrowserProperties {
      * Custom command-line arguments to pass to the browser executable.
      */
     private List<String> args;
+
+    /**
+     *
+     * the custom attribute string instead of testId.
+     */
+    private String testIdAttribute;
 }
