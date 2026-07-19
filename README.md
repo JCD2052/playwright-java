@@ -197,19 +197,19 @@ public class BaseTests extends AbstractTestNGSpringContextTests {
 
 ## Creating Pages
 
-Create pages or localized fragments by extending `AbstractForm`. Pass a stable root `Selector` to represent the form container wrapper.
+Create pages or localized fragments by extending `AbstractForm`. Pass a stable root `Selector` identifying the form's container.
 
 ```java
 @Component
-public class SteamStorePage extends AbstractForm {
+public class ExampleStorePage extends AbstractForm {
 
     private final ITextBoxElement searchBox;
     private final IButtonElement searchButton;
 
-    protected SteamStorePage(IElementFactory elementFactory) {
+    protected ExampleStorePage(IElementFactory elementFactory) {
         super(Selector.bySelector("#global_header"), "Store page", elementFactory);
 
-        // Target sub-components relative to their exact parent DOM sections seamlessly
+        // Target sub-components relative to their exact parent DOM sections
         this.searchBox = getElementFactory().createTextBoxElement(
                 Selector.bySelector("form[action*='store'] input[role='combobox']"),
                 "Search box");
@@ -229,17 +229,22 @@ public class SteamStorePage extends AbstractForm {
 }
 ```
 
+See `src/test/java/org/jcd2052/steam/pages/SteamStorePage.java` for the real, running version of this page used by the demo tests.
+
 Useful page methods from `AbstractForm`:
 
+* `getName()`
 * `isVisible()`
 * `waitForLoading()`
 * `waitForLoading(timeout)`
+* `waitToBeVisible()`
 * `waitToBeVisible(timeout)`
+* `waitToBeInvisible()`
 * `waitToBeInvisible(timeout)`
 
 ## Creating Elements
 
-Inject or inherit `IElementFactory`, then pass fluid JIT `Selector` choices to create elements:
+Inject or inherit `IElementFactory`, then create typed elements by passing a `Selector` strategy:
 
 ```java
 IButtonElement saveButton = elementFactory.createButtonElement(Selector.byRole(AriaRole.BUTTON, "Save"), "Save button");
@@ -252,7 +257,7 @@ ILinkElement docsLink = elementFactory.createLinkElement(Selector.bySelector("a.
 IUploadBox avatarUpload = elementFactory.createUploadBoxElement(Selector.bySelector("input[type='file']"), "Avatar upload");
 ```
 
-Create nested child elements safely relative to a parent element's locator boundaries:
+Create child elements scoped to a parent element's locator:
 
 ```java
 IElement row = elementFactory.createCustomElement(LabelElement.class, Selector.bySelector("tr.user-row").chain(Selector.byText("John")), "John Row");
@@ -402,7 +407,7 @@ public class UserRow extends AbstractRow<UserModel> {
 
 ## Creating Custom Elements
 
-Extend existing classes when a reusable component has behavior that is more specific than a generic layout box.
+Use custom elements when a reusable component has behavior that is more specific than a generic button, label, or text box.
 
 ```java
 public class PriceElement extends LabelElement {
@@ -416,7 +421,7 @@ public class PriceElement extends LabelElement {
 }
 ```
 
-Create it using the reflection engine:
+Create it with the factory, which resolves the constructor via reflection:
 
 ```java
 PriceElement price = elementFactory.createCustomElement(
@@ -427,7 +432,7 @@ PriceElement price = elementFactory.createCustomElement(
 BigDecimal amount = price.getAmount();
 ```
 
-Alternatively, pass explicit instantiation instructions block closures directly via suppliers:
+You can also use a supplier when the element needs custom construction logic:
 
 ```java
 PriceElement price = elementFactory.createCustomElement(
@@ -435,6 +440,8 @@ PriceElement price = elementFactory.createCustomElement(
         Selector.byPlaceholder("Amount"),
         "Product price");
 ```
+
+Custom elements can still use all inherited methods such as `click()`, `getText()`, `isVisible()`, child element creation, waits, screenshots, and JavaScript actions.
 
 ## Creating Custom Target Attributes
 
@@ -444,6 +451,75 @@ Because `Selector` is an open abstract strategy class, adding support for custom
 public class CustomSelector {
     public static Selector byNgModel(String name) {
         return Selector.bySelector(String.format("[ng-model='%s']", name));
+    }
+}
+```
+
+## Creating Your Own Browser Settings
+
+The usual path is property-based configuration:
+
+```properties
+playwright.browser.name=firefox
+playwright.browser.headless=true
+playwright.browser.timeout=30000
+playwright.browser.page.load.timeout=60000
+playwright.browser.viewport.width=1366
+playwright.browser.viewport.height=768
+playwright.browser.testid.attribute=data-test
+```
+
+For full programmatic control, provide your own `IBrowserProperties` bean in a custom Spring configuration instead of relying on property values:
+
+```java
+@Configuration
+public class CustomBrowserConfiguration {
+    @Bean
+    @Primary
+    public IBrowserProperties customBrowserProperties() {
+        return new BrowserProperties()
+                .setName("chrome")
+                .setHeadless(true)
+                .setTimeout(30000L)
+                .setPageLoadTimeout(60000L)
+                .setWidth(1366)
+                .setHeight(768)
+                .setTracing(false)
+                .setScreenshots(true)
+                .setSnapshots(true)
+                .setHighlight(false)
+                .setTracingSaveFolder("target/tracing")
+                .setTestIdAttribute("data-test")
+                .setArgs(List.of("--no-sandbox", "--disable-dev-shm-usage"));
+    }
+}
+```
+
+To add a new browser launcher, implement `IBrowserLauncher` and register it in a custom `IBrowserLauncherRegistry` bean:
+
+```java
+public class ChromiumLauncher implements IBrowserLauncher {
+    @Override
+    public String getName() {
+        return "chromium";
+    }
+
+    @Override
+    public Browser launch(Playwright playwright, BrowserType.LaunchOptions options) {
+        return playwright.chromium().launch(options);
+    }
+}
+```
+
+```java
+@Configuration
+public class CustomLauncherConfiguration {
+    @Bean
+    @Primary
+    public IBrowserLauncherRegistry customBrowserLauncherRegistry() {
+        BrowserLauncherRegistry registry = new BrowserLauncherRegistry();
+        registry.register(new ChromiumLauncher());
+        return registry;
     }
 }
 ```
