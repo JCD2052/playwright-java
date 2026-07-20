@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Demo Widget Frame</title>
+<style>
+  body { font-family: Arial, sans-serif; max-width: 640px; margin: 40px auto; }
+  nav a { margin-right: 12px; }
+  iframe { width: 100%; height: 220px; border: 2px solid #ccc; margin-top: 20px; }
+</style>
+</head>
+<body>
+<nav>
+  <a href="index.html">Login</a>
+  <a href="table.html">Products</a>
+  <a href="frame.html">Widget</a>
+</nav>
+
+<h1>Embedded Widget</h1>
+<p>The panel below is a separate document loaded inside an &lt;iframe&gt;, used to demonstrate
+   <code>Selector.byFrame(...)</code>.</p>
+<iframe id="payment-widget" data-testid="payment-widget" src="widget.html" title="Payment widget"></iframe>
+</body>
+</html>

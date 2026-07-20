@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Demo Sign In</title>
+<style>
+  body { font-family: Arial, sans-serif; max-width: 480px; margin: 40px auto; }
+  nav a { margin-right: 12px; }
+  label { display: block; margin-top: 12px; font-weight: bold; }
+  input, select { padding: 6px; width: 100%; box-sizing: border-box; margin-top: 4px; }
+  .checkbox-row { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+  .checkbox-row input { width: auto; }
+  button { margin-top: 20px; padding: 8px 20px; }
+  #status { margin-top: 20px; font-weight: bold; }
+</style>
+</head>
+<body>
+<nav>
+  <a href="index.html">Login</a>
+  <a href="table.html">Products</a>
+  <a href="frame.html">Widget</a>
+</nav>
+
+<h1>Demo Sign In</h1>
+<form id="login-form">
+  <label for="username">Username</label>
+  <input id="username" data-testid="username-input" type="text" placeholder="Enter username">
+
+  <label for="password">Password</label>
+  <input id="password" data-testid="password-input" type="password" placeholder="Enter password">
+
+  <div class="checkbox-row">
+    <input id="remember" data-testid="remember-me" type="checkbox">
+    <label for="remember" style="margin:0;">Remember me</label>
+  </div>
+
+  <label for="country">Country</label>
+  <select id="country" data-testid="country-select">
+    <option value="">-- select --</option>
+    <option value="us">United States</option>
+    <option value="ua">Ukraine</option>
+    <option value="de">Germany</option>
+  </select>
+
+  <button type="submit">Sign In</button>
+</form>
+<p id="status"></p>
+
+<script>
+  document.getElementById('login-form').addEventListener('submit', function (event) {
+    event.preventDefault();
+
+    var username = document.getElementById('username').value;
+    var remembered = document.getElementById('remember').checked;
+    var country = document.getElementById('country').value;
+    var status = document.getElementById('status');
+
+    if (!username) {
+      status.style.color = 'red';
+      status.textContent = 'Username is required';
+      return;
+    }
+
+    status.style.color = 'green';
+    status.textContent = 'Welcome, ' + username + '!' +
+        (remembered ? ' (remembered)' : '') +
+        (country ? ' [' + country + ']' : '');
+  });
+</script>
+</body>
+</html>

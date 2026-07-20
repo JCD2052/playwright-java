@@ -1,6 +1,6 @@
-package org.jcd2052.steam.springboottests;
+package org.jcd2052.demo.tests;
 
-import org.jcd2052.steam.configuration.SpringBootTestConfiguration;
+import org.jcd2052.configuration.SpringBootTestConfiguration;
 import org.jcd2052.core.browser.services.interfaces.IBrowserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

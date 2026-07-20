@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Widget</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 16px; }
+  label { display: block; font-weight: bold; }
+  input { padding: 6px; width: 100%; box-sizing: border-box; margin-top: 4px; }
+  button { margin-top: 12px; padding: 6px 16px; }
+  #widget-status { margin-top: 12px; font-weight: bold; color: green; }
+</style>
+</head>
+<body>
+<h2>Payment Widget</h2>
+<label for="card-number">Card number</label>
+<input id="card-number" data-testid="card-number-input" type="text" placeholder="4242 4242 4242 4242">
+<button id="confirm-button">Confirm</button>
+<p id="widget-status"></p>
+
+<script>
+  document.getElementById('confirm-button').addEventListener('click', function () {
+    var status = document.getElementById('widget-status');
+    var value = document.getElementById('card-number').value;
+    status.textContent = value ? 'Payment confirmed' : 'Card number required';
+  });
+</script>
+</body>
+</html>
