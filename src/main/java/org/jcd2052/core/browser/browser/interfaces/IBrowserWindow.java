@@ -2,6 +2,10 @@ package org.jcd2052.core.browser.browser.interfaces;
 
 import com.microsoft.playwright.BrowserContext;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collection;
 
 /**
@@ -62,4 +66,29 @@ public interface IBrowserWindow {
     void switchToTab(IBrowserTab tab);
 
     void closeWindow();
+
+    /**
+     * Saves this window's current storage state (cookies and local storage) to a JSON file on disk.
+     * <p>
+     * Pair this with {@link org.jcd2052.core.browser.configuration.IBrowserProperties#getStorageStatePath()}
+     * to skip a UI login in future runs: authenticate once (e.g. in a one-off setup test or a
+     * {@code @BeforeSuite} method), call this to persist the session, then point
+     * {@code storageStatePath} at that file so subsequent contexts start already signed in.
+     * </p>
+     *
+     * @param path the file path to write the storage-state JSON to; parent directories are created if needed.
+     */
+    default void saveStorageState(Path path) {
+        Path parent = path.getParent();
+        if (parent != null) {
+            try {
+                Files.createDirectories(parent);
+            } catch (IOException e) {
+                throw new UncheckedIOException(
+                        "Failed to create directories for storage state file: " + path,
+                        e);
+            }
+        }
+        getBrowserContext().storageState(new BrowserContext.StorageStateOptions().setPath(path));
+    }
 }

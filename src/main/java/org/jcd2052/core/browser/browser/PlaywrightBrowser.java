@@ -3,13 +3,17 @@ package org.jcd2052.core.browser.browser;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.options.Geolocation;
 import lombok.Getter;
 import lombok.Setter;
 import org.jcd2052.core.browser.browser.interfaces.IBrowser;
 import org.jcd2052.core.browser.browser.interfaces.IBrowserWindow;
 import org.jcd2052.core.browser.configuration.IBrowserProperties;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -66,17 +70,29 @@ public class PlaywrightBrowser implements IBrowser {
      * {@inheritDoc}
      * <p>
      * <b>Implementation Note:</b> This method creates a new Playwright {@code BrowserContext},
-     * applies the viewport dimensions specified in {@link IBrowserProperties}, and configures
-     * it to ignore HTTPS errors by default.
+     * applying every emulation and session setting configured via {@link IBrowserProperties}
+     * (viewport, locale, timezone, geolocation, permissions, device emulation, and an optional
+     * preloaded storage state).
      */
     @Override
     public IBrowserWindow openNewWindow() {
-        BrowserWindow browserWindow = new BrowserWindow(browser.newContext(new Browser.NewContextOptions()
-                .setViewportSize(browserProperties.getWidth(), browserProperties.getHeight())));
-        browserWindow.getBrowserContext().setDefaultTimeout(browserProperties.getTimeout());
-        browserWindow.getBrowserContext().setDefaultNavigationTimeout(browserProperties.getPageLoadTimeout());
-        setCurrentBrowserWindow(browserWindow);
-        return browserWindow;
+        return createWindow(buildContextOptions());
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * <b>Implementation Note:</b> Behaves exactly like {@link #openNewWindow()}, except the given
+     * {@code storageStatePath} always takes precedence over
+     * {@link IBrowserProperties#getStorageStatePath()} for this window.
+     */
+    @Override
+    public IBrowserWindow openNewWindow(Path storageStatePath) {
+        Browser.NewContextOptions options = buildContextOptions();
+        if (storageStatePath != null) {
+            options.setStorageStatePath(storageStatePath);
+        }
+        return createWindow(options);
     }
 
     /**
@@ -137,5 +153,76 @@ public class PlaywrightBrowser implements IBrowser {
             playwright.close();
             isClosed = true;
         }
+    }
+
+
+    /**
+     * Creates and registers a new {@link IBrowserWindow} from the given, already-built context options.
+     *
+     * @param options the fully configured {@link Browser.NewContextOptions} to create the context with
+     * @return the newly created, now-current {@link IBrowserWindow}.
+     */
+    private IBrowserWindow createWindow(Browser.NewContextOptions options) {
+        BrowserWindow browserWindow = new BrowserWindow(browser.newContext(options));
+        browserWindow.getBrowserContext().setDefaultTimeout(browserProperties.getTimeout());
+        browserWindow.getBrowserContext().setDefaultNavigationTimeout(browserProperties.getPageLoadTimeout());
+        setCurrentBrowserWindow(browserWindow);
+        return browserWindow;
+    }
+
+    /**
+     * Builds the Playwright {@link Browser.NewContextOptions} for a new window, translating every
+     * configured {@link IBrowserProperties} emulation/session setting into the matching Playwright option.
+     * <p>
+     * Every setting beyond the viewport is optional: unset (null/blank) properties are simply omitted
+     * from the options so Playwright falls back to its own defaults for that setting.
+     * </p>
+     *
+     * @return the fully configured {@link Browser.NewContextOptions} for a new browser context.
+     */
+    private Browser.NewContextOptions buildContextOptions() {
+        Browser.NewContextOptions options = new Browser.NewContextOptions()
+                .setViewportSize(browserProperties.getWidth(), browserProperties.getHeight());
+
+        if (isNotBlank(browserProperties.getLocale())) {
+            options.setLocale(browserProperties.getLocale());
+        }
+        if (isNotBlank(browserProperties.getTimezoneId())) {
+            options.setTimezoneId(browserProperties.getTimezoneId());
+        }
+        if (browserProperties.getGeolocationLatitude() != null && browserProperties.getGeolocationLongitude() != null) {
+            options.setGeolocation(new Geolocation(
+                    browserProperties.getGeolocationLatitude(),
+                    browserProperties.getGeolocationLongitude()));
+        }
+
+        List<String> permissions = browserProperties.getPermissions();
+        if (permissions != null && !permissions.isEmpty()) {
+            options.setPermissions(permissions);
+        }
+
+        if (isNotBlank(browserProperties.getUserAgent())) {
+            options.setUserAgent(browserProperties.getUserAgent());
+        }
+        if (browserProperties.getDeviceScaleFactor() != null) {
+            options.setDeviceScaleFactor(browserProperties.getDeviceScaleFactor());
+        }
+        if (browserProperties.isMobile()) {
+            options.setIsMobile(true);
+        }
+        if (browserProperties.isHasTouch()) {
+            options.setHasTouch(true);
+        }
+
+        if (isNotBlank(browserProperties.getStorageStatePath())) {
+            Path storageStatePath = Paths.get(browserProperties.getStorageStatePath());
+            options.setStorageStatePath(storageStatePath);
+        }
+
+        return options;
+    }
+
+    private static boolean isNotBlank(String value) {
+        return value != null && !value.trim().isEmpty();
     }
 }
