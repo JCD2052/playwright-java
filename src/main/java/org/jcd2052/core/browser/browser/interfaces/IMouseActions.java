@@ -15,6 +15,9 @@ public interface IMouseActions {
     /** Clicks at the exact X and Y coordinates. */
     void click(double x, double y);
 
+    /** Double-clicks at the exact X and Y coordinates. */
+    void doubleClick(double x, double y);
+
     /** Presses the left mouse button down (without releasing it). */
     void down();
 

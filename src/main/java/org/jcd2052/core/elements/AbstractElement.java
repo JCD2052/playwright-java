@@ -68,6 +68,12 @@ public abstract class AbstractElement implements IElement {
     }
 
     @Override
+    public void doubleClick() {
+        LoggerProvider.getLogger().debugElementAction(getElementType(), getName(), "was double-clicked");
+        doubleClickWithOptions(new Locator.DblclickOptions());
+    }
+
+    @Override
     public void forceClick() {
         LoggerProvider.getLogger().debugElementAction(getElementType(), getName(), "was force clicked");
         clickWithOptions(new Locator.ClickOptions().setForce(true));
@@ -318,5 +324,17 @@ public abstract class AbstractElement implements IElement {
     private void clickWithOptions(Locator.ClickOptions options) {
         highlightElementIfNeeded();
         getLocator().click(options);
+    }
+
+    /**
+     * A centralized helper method to execute double-click interactions with specific Playwright options.
+     * <p>This applies the provided options, enforces stability configurations,
+     * and handles framework-level synchronization and highlighting.</p>
+     *
+     * @param options The Playwright DblclickOptions to apply (button type, position, force, etc.).
+     */
+    private void doubleClickWithOptions(Locator.DblclickOptions options) {
+        highlightElementIfNeeded();
+        getLocator().dblclick(options);
     }
 }

@@ -144,6 +144,11 @@ public interface IElement {
     void click();
 
     /**
+     * Performs a double-click on the element.
+     */
+    void doubleClick();
+
+    /**
      * Performs a right-click context interaction on the element.
      */
     void rightClick();

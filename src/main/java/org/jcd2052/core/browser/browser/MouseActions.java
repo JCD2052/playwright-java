@@ -28,6 +28,12 @@ public class MouseActions implements IMouseActions {
     }
 
     @Override
+    public void doubleClick(double x, double y) {
+        LoggerProvider.getLogger().info("Page-level mouse double-click at (x: %s, y: %s)", x, y);
+        mouse.dblclick(x, y);
+    }
+
+    @Override
     public void down() {
         mouse.down();
     }
