@@ -1,4 +1,4 @@
-package org.jcd2052.steam.configuration;
+package org.jcd2052.configuration;
 
 import org.jcd2052.core.browser.configuration.BrowserProperties;
 import org.jcd2052.core.browser.configuration.IBrowserProperties;
@@ -21,7 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @Configuration
-@ComponentScan(basePackages = {"org.jcd2052.steam"})
+@ComponentScan(basePackages = {"org.jcd2052"})
 public class SpringBootTestConfiguration {
     @Value("${playwright.browser.headless:true}")
     private boolean isHeadless;
