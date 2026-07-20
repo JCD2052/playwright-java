@@ -36,7 +36,10 @@ public abstract class Selector {
      * @return a new Selector instance for the strategy
      */
     public static Selector bySelector(String selector) {
-        return of(page -> page.locator(selector), parent -> parent.locator(selector));
+        return of(
+                String.format("bySelector(\"%s\")", selector),
+                page -> page.locator(selector),
+                parent -> parent.locator(selector));
     }
 
     /**
@@ -46,7 +49,10 @@ public abstract class Selector {
      * @return a new Selector instance for the text strategy
      */
     public static Selector byText(String text) {
-        return of(page -> page.getByText(text), parent -> parent.getByText(text));
+        return of(
+                String.format("byText(\"%s\")", text),
+                page -> page.getByText(text),
+                parent -> parent.getByText(text));
     }
 
     /**
@@ -58,6 +64,7 @@ public abstract class Selector {
      */
     public static Selector byText(String text, boolean exact) {
         return of(
+                String.format("byText(\"%s\", exact=%s)", text, exact),
                 page -> page.getByText(text, new Page.GetByTextOptions().setExact(exact)),
                 parent -> parent.getByText(text, new Locator.GetByTextOptions().setExact(exact)));
     }
@@ -69,7 +76,10 @@ public abstract class Selector {
      * @return a new Selector instance for the text strategy
      */
     public static Selector byText(Pattern pattern) {
-        return of(page -> page.getByText(pattern), parent -> parent.getByText(pattern));
+        return of(
+                String.format("byText(/%s/)", pattern.pattern()),
+                page -> page.getByText(pattern),
+                parent -> parent.getByText(pattern));
     }
 
     /**
@@ -79,7 +89,10 @@ public abstract class Selector {
      * @return a new Selector instance for the role strategy
      */
     public static Selector byRole(AriaRole role) {
-        return of(page -> page.getByRole(role), parent -> parent.getByRole(role));
+        return of(
+                String.format("byRole(%s)", role),
+                page -> page.getByRole(role),
+                parent -> parent.getByRole(role));
     }
 
     /**
@@ -91,6 +104,7 @@ public abstract class Selector {
      */
     public static Selector byRole(AriaRole role, String name) {
         return of(
+                String.format("byRole(%s, name=\"%s\")", role, name),
                 page -> page.getByRole(role, new Page.GetByRoleOptions().setName(name)),
                 parent -> parent.getByRole(role, new Locator.GetByRoleOptions().setName(name)));
     }
@@ -104,6 +118,7 @@ public abstract class Selector {
      */
     public static Selector byRole(AriaRole role, RoleOptions options) {
         return of(
+                String.format("byRole(%s, %s)", role, options),
                 page -> page.getByRole(role, options.toPageOptions()),
                 parent -> parent.getByRole(role, options.toLocatorOptions()));
     }
@@ -115,7 +130,10 @@ public abstract class Selector {
      * @return a new Selector instance for the label strategy
      */
     public static Selector byLabel(String text) {
-        return of(page -> page.getByLabel(text), parent -> parent.getByLabel(text));
+        return of(
+                String.format("byLabel(\"%s\")", text),
+                page -> page.getByLabel(text),
+                parent -> parent.getByLabel(text));
     }
 
     /**
@@ -127,6 +145,7 @@ public abstract class Selector {
      */
     public static Selector byLabel(String text, boolean exact) {
         return of(
+                String.format("byLabel(\"%s\", exact=%s)", text, exact),
                 page -> page.getByLabel(text, new Page.GetByLabelOptions().setExact(exact)),
                 parent -> parent.getByLabel(text, new Locator.GetByLabelOptions().setExact(exact)));
     }
@@ -138,7 +157,10 @@ public abstract class Selector {
      * @return a new Selector instance for the label strategy
      */
     public static Selector byLabel(Pattern pattern) {
-        return of(page -> page.getByLabel(pattern), parent -> parent.getByLabel(pattern));
+        return of(
+                String.format("byLabel(/%s/)", pattern.pattern()),
+                page -> page.getByLabel(pattern),
+                parent -> parent.getByLabel(pattern));
     }
 
     /**
@@ -148,7 +170,10 @@ public abstract class Selector {
      * @return a new Selector instance for the placeholder strategy
      */
     public static Selector byPlaceholder(String text) {
-        return of(page -> page.getByPlaceholder(text), parent -> parent.getByPlaceholder(text));
+        return of(
+                String.format("byPlaceholder(\"%s\")", text),
+                page -> page.getByPlaceholder(text),
+                parent -> parent.getByPlaceholder(text));
     }
 
     /**
@@ -160,6 +185,7 @@ public abstract class Selector {
      */
     public static Selector byPlaceholder(String text, boolean exact) {
         return of(
+                String.format("byPlaceholder(\"%s\", exact=%s)", text, exact),
                 page -> page.getByPlaceholder(text, new Page.GetByPlaceholderOptions().setExact(exact)),
                 parent -> parent.getByPlaceholder(text, new Locator.GetByPlaceholderOptions().setExact(exact)));
     }
@@ -171,7 +197,10 @@ public abstract class Selector {
      * @return a new Selector instance for the placeholder strategy
      */
     public static Selector byPlaceholder(Pattern pattern) {
-        return of(page -> page.getByPlaceholder(pattern), parent -> parent.getByPlaceholder(pattern));
+        return of(
+                String.format("byPlaceholder(/%s/)", pattern.pattern()),
+                page -> page.getByPlaceholder(pattern),
+                parent -> parent.getByPlaceholder(pattern));
     }
 
     /**
@@ -181,7 +210,10 @@ public abstract class Selector {
      * @return a new Selector instance for the alt text strategy
      */
     public static Selector byAltText(String text) {
-        return of(page -> page.getByAltText(text), parent -> parent.getByAltText(text));
+        return of(
+                String.format("byAltText(\"%s\")", text),
+                page -> page.getByAltText(text),
+                parent -> parent.getByAltText(text));
     }
 
     /**
@@ -193,6 +225,7 @@ public abstract class Selector {
      */
     public static Selector byAltText(String text, boolean exact) {
         return of(
+                String.format("byAltText(\"%s\", exact=%s)", text, exact),
                 page -> page.getByAltText(text, new Page.GetByAltTextOptions().setExact(exact)),
                 parent -> parent.getByAltText(text, new Locator.GetByAltTextOptions().setExact(exact)));
     }
@@ -204,7 +237,10 @@ public abstract class Selector {
      * @return a new Selector instance for the alt text strategy
      */
     public static Selector byAltText(Pattern pattern) {
-        return of(page -> page.getByAltText(pattern), parent -> parent.getByAltText(pattern));
+        return of(
+                String.format("byAltText(/%s/)", pattern.pattern()),
+                page -> page.getByAltText(pattern),
+                parent -> parent.getByAltText(pattern));
     }
 
     /**
@@ -214,7 +250,10 @@ public abstract class Selector {
      * @return a new Selector instance for the title strategy
      */
     public static Selector byTitle(String text) {
-        return of(page -> page.getByTitle(text), parent -> parent.getByTitle(text));
+        return of(
+                String.format("byTitle(\"%s\")", text),
+                page -> page.getByTitle(text),
+                parent -> parent.getByTitle(text));
     }
 
     /**
@@ -226,6 +265,7 @@ public abstract class Selector {
      */
     public static Selector byTitle(String text, boolean exact) {
         return of(
+                String.format("byTitle(\"%s\", exact=%s)", text, exact),
                 page -> page.getByTitle(text, new Page.GetByTitleOptions().setExact(exact)),
                 parent -> parent.getByTitle(text, new Locator.GetByTitleOptions().setExact(exact)));
     }
@@ -237,7 +277,10 @@ public abstract class Selector {
      * @return a new Selector instance for the title strategy
      */
     public static Selector byTitle(Pattern pattern) {
-        return of(page -> page.getByTitle(pattern), parent -> parent.getByTitle(pattern));
+        return of(
+                String.format("byTitle(/%s/)", pattern.pattern()),
+                page -> page.getByTitle(pattern),
+                parent -> parent.getByTitle(pattern));
     }
 
     /**
@@ -247,7 +290,10 @@ public abstract class Selector {
      * @return a new Selector instance for the test-id strategy
      */
     public static Selector byTestId(String testId) {
-        return of(page -> page.getByTestId(testId), parent -> parent.getByTestId(testId));
+        return of(
+                String.format("byTestId(\"%s\")", testId),
+                page -> page.getByTestId(testId),
+                parent -> parent.getByTestId(testId));
     }
 
     /**
@@ -257,7 +303,36 @@ public abstract class Selector {
      * @return a new Selector instance for the test-id strategy
      */
     public static Selector byTestId(Pattern pattern) {
-        return of(page -> page.getByTestId(pattern), parent -> parent.getByTestId(pattern));
+        return of(
+                String.format("byTestId(/%s/)", pattern.pattern()),
+                page -> page.getByTestId(pattern),
+                parent -> parent.getByTestId(pattern));
+    }
+
+    /**
+     * Crosses into an iframe matched by the given CSS or XPath selector, and resolves the given
+     * inner Selector strategy against elements inside that iframe's document.
+     * <p>
+     * Internally this obtains Playwright's {@code FrameLocator} for the iframe and anchors the inner
+     * strategy to the frame's document root (via the {@code :root} CSS pseudo-class), so the inner
+     * Selector can use any strategy (role, text, test-id, CSS, ...) exactly as it would outside a frame.
+     * Frames can be nested by passing another {@code byFrame(...)} as the {@code inner} selector.
+     * </p>
+     *
+     * <pre>{@code
+     * // A "Confirm" button inside an <iframe id="payment-widget">
+     * Selector confirmButton = Selector.byFrame("#payment-widget", Selector.byRole(AriaRole.BUTTON, "Confirm"));
+     * }</pre>
+     *
+     * @param frameSelector CSS or XPath selector matching the target {@code <iframe>} element
+     * @param inner         the Selector strategy to resolve inside the iframe
+     * @return a new Selector that resolves the inner element inside the specified iframe
+     */
+    public static Selector byFrame(String frameSelector, Selector inner) {
+        return of(
+                String.format("byFrame(\"%s\") -> %s", frameSelector, inner),
+                page -> inner.evaluate(page.frameLocator(frameSelector).locator(":root")),
+                parent -> inner.evaluate(parent.frameLocator(frameSelector).locator(":root")));
     }
 
     /**
@@ -274,6 +349,7 @@ public abstract class Selector {
 
         Selector parentSelector = this;
         return of(
+                String.format("%s -> %s", parentSelector, child),
                 page -> child.evaluate(parentSelector.evaluate(page)),
                 parent -> child.evaluate(parentSelector.evaluate(parent)));
     }
@@ -292,23 +368,29 @@ public abstract class Selector {
     public Selector nth(int index) {
         Selector self = this;
         return of(
+                String.format("%s.nth(%d)", self, index),
                 page -> self.evaluate(page).nth(index),
                 parent -> self.evaluate(parent).nth(index));
     }
 
     /**
-     * Builds a Selector from a pair of resolution functions, one for each possible evaluation root.
+     * Builds a Selector from a pair of resolution functions, one for each possible evaluation root,
+     * plus a human-readable description used for {@link #toString()} and framework logging.
      * <p>
      * This is the single implementation point shared by every {@code byX(...)} factory below, so that
      * each strategy only needs to describe how to resolve itself from a {@link Page} and from a
      * {@link Locator}, without repeating the anonymous class boilerplate.
      * </p>
      *
-     * @param onPage    resolves the locator when evaluated against a root {@link Page}
-     * @param onLocator resolves the locator when evaluated against a parent {@link Locator}
+     * @param description a short, human-readable description of this strategy (e.g. {@code byText("OK")})
+     * @param onPage       resolves the locator when evaluated against a root {@link Page}
+     * @param onLocator    resolves the locator when evaluated against a parent {@link Locator}
      * @return a new Selector backed by the given resolution functions
      */
-    private static Selector of(Function<Page, Locator> onPage, Function<Locator, Locator> onLocator) {
+    private static Selector of(
+            String description,
+            Function<Page, Locator> onPage,
+            Function<Locator, Locator> onLocator) {
         return new Selector() {
             @Override
             public Locator evaluate(Page page) {
@@ -318,6 +400,11 @@ public abstract class Selector {
             @Override
             public Locator evaluate(Locator parent) {
                 return onLocator.apply(parent);
+            }
+
+            @Override
+            public String toString() {
+                return description;
             }
         };
     }
