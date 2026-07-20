@@ -3,6 +3,7 @@ package org.jcd2052.core.pages;
 import lombok.AccessLevel;
 import lombok.Getter;
 import org.jcd2052.core.browser.services.interfaces.IElementFactory;
+import org.jcd2052.core.elements.selector.Selector;
 import org.jcd2052.core.elements.interfaces.IElement;
 import org.jcd2052.core.elements.interfaces.ILabelElement;
 
@@ -40,11 +41,11 @@ public abstract class AbstractForm implements IForm {
     /**
      * Constructs a new {@code AbstractForm}.
      *
-     * @param locatorStrategy The Playwright selector used to uniquely identify the form's root or main label element.
+     * @param locatorStrategy The Just-In-Time Selector locator strategy used to uniquely identify the form's root or main label element.
      * @param name            The human-readable name of the form (e.g., "Login Form", "User Profile Section").
      * @param elementFactory  The {@link IElementFactory} responsible for creating the form's root label and any subsequent child elements.
      */
-    protected AbstractForm(String locatorStrategy, String name, IElementFactory elementFactory) {
+    protected AbstractForm(Selector locatorStrategy, String name, IElementFactory elementFactory) {
         this.name = name;
         this.elementFactory = elementFactory;
         this.formLabel = elementFactory.createLabelElement(locatorStrategy, name);

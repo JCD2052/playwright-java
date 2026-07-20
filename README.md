@@ -17,23 +17,23 @@ The framework is organized around Page Objects, typed element wrappers, Spring d
 
 The framework keeps Page Objects and Elements small. Page classes describe the screen, elements wrap Playwright locators, and tests call page-level business methods.
 
-Elements store selector strings and resolve Playwright `Locator` objects only when an action is executed. This keeps interactions resilient against modern dynamic UIs where the DOM can re-render between steps.
+Elements store a custom `Selector` object wrapper strategy and resolve the live Playwright `Locator` dynamically at the exact millisecond an action is executed. This Just-In-Time (JIT) architecture prevents `StaleElementReferenceException` errors and keeps tests resilient against modern single-page applications (SPAs) where the DOM dynamically updates.
 
-Browser state is managed by `BrowserService`. Each execution thread gets its own browser through `ThreadLocal`, and each started test opens a fresh Browser Context and Page. That allows TestNG data providers such as `@DataProvider(parallel = true)` to run isolated sessions in parallel without sharing cookies, cache, local storage, or active pages.
+Browser state is managed via the `BrowserService`. Each execution thread gets its own browser through `ThreadLocal`, and each started test opens a fresh Browser Context and Page. That allows TestNG data providers such as `@DataProvider(parallel = true)` to run isolated sessions in parallel without sharing cookies, cache, local storage, or active pages.
 
 ## Project Structure
 
 ```text
 src/main/java/org/jcd2052/core
   browser/       Browser lifecycle, tabs, windows, launchers, configuration
-  elements/      Typed element wrappers and interfaces
-  pages/         Base form/page abstractions
+  elements/      Typed element wrappers, interfaces, and dynamic selectors
+  pages/         Base form/page abstractions, grids, and index-bound rows
   waiting/       Generic conditional wait utility
   logger/        Logging abstraction
 
 src/test/java/org/jcd2052/steam
   configuration/ Example Spring test configuration
-  pages/         Example Steam Page Objects
+  pages/         Example Steam Page Objects using Selector factories
   springboottests/ Example TestNG tests
 ```
 
@@ -53,6 +53,7 @@ playwright.browser.snapshots=true
 playwright.browser.tracing.folder=target/tracing
 playwright.browser.viewport.width=1600
 playwright.browser.viewport.height=900
+playwright.browser.testid.attribute=data-a-test
 playwright.browser.tracing.args=--no-sandbox,--disable-dev-shm-usage,--disable-gpu
 ```
 
@@ -74,6 +75,7 @@ Important settings:
 * `playwright.browser.screenshots` and `playwright.browser.snapshots` control trace detail.
 * `playwright.browser.tracing.folder` controls where trace ZIP files are written.
 * `playwright.browser.highlight` highlights elements before supported actions.
+* `playwright.browser.testid.attribute` overrides the default `data-testid` attribute globally for `Selector.byTestId()`.
 * `playwright.browser.tracing.args` passes comma-separated launch arguments to the browser.
 
 ## Spring Configuration
@@ -113,6 +115,8 @@ public class TestConfiguration {
     private Integer height;
     @Value("${playwright.browser.page.load.timeout:30000}")
     private long pageLoadTimeout;
+    @Value("${playwright.browser.testid.attribute:data-testid}")
+    private String testIdAttribute;
     @Value("${playwright.browser.tracing.args:}")
     private String args;
 
@@ -157,6 +161,7 @@ public class TestConfiguration {
                 .setHighlight(highlight)
                 .setScreenshots(screenshots)
                 .setSnapshots(snapshots)
+                .setTestIdAttribute(testIdAttribute)
                 .setArgs(Arrays.stream(args.split(","))
                         .map(String::trim)
                         .filter(arg -> !arg.isEmpty())
@@ -192,23 +197,24 @@ public class BaseTests extends AbstractTestNGSpringContextTests {
 
 ## Creating Pages
 
-Create pages by extending `AbstractForm`. The form locator should identify a stable root element or unique marker on the page.
+Create pages or localized fragments by extending `AbstractForm`. Pass a stable root `Selector` identifying the form's container.
 
 ```java
 @Component
-public class SteamStorePage extends AbstractForm {
-    private static final String SEARCH_FORM = "//form[contains(@action, 'store')]";
+public class ExampleStorePage extends AbstractForm {
 
     private final ITextBoxElement searchBox;
     private final IButtonElement searchButton;
 
-    protected SteamStorePage(IElementFactory elementFactory) {
-        super("//div[@id='global_header']", "Store page", elementFactory);
+    protected ExampleStorePage(IElementFactory elementFactory) {
+        super(Selector.bySelector("#global_header"), "Store page", elementFactory);
+
+        // Target sub-components relative to their exact parent DOM sections
         this.searchBox = getElementFactory().createTextBoxElement(
-                SEARCH_FORM + "//input[@role='combobox']",
+                Selector.bySelector("form[action*='store'] input[role='combobox']"),
                 "Search box");
         this.searchButton = getElementFactory().createButtonElement(
-                SEARCH_FORM + "//button[@type='submit']",
+                Selector.byRole(AriaRole.BUTTON, "Search"),
                 "Search button");
     }
 
@@ -223,41 +229,46 @@ public class SteamStorePage extends AbstractForm {
 }
 ```
 
+See `src/test/java/org/jcd2052/steam/pages/SteamStorePage.java` for the real, running version of this page used by the demo tests.
+
 Useful page methods from `AbstractForm`:
 
+* `getName()`
 * `isVisible()`
 * `waitForLoading()`
 * `waitForLoading(timeout)`
+* `waitToBeVisible()`
 * `waitToBeVisible(timeout)`
+* `waitToBeInvisible()`
 * `waitToBeInvisible(timeout)`
 
 ## Creating Elements
 
-Inject or inherit `IElementFactory`, then create typed elements:
+Inject or inherit `IElementFactory`, then create typed elements by passing a `Selector` strategy:
 
 ```java
-IButtonElement saveButton = elementFactory.createButtonElement("#save", "Save button");
-ITextBoxElement emailInput = elementFactory.createTextBoxElement("#email", "Email input");
-IDropdownElement countryDropdown = elementFactory.createDropdownElement("#country", "Country dropdown");
-ICheckBoxElement termsCheckbox = elementFactory.createCheckBoxElement("#terms", "Terms checkbox");
-IRadioButtonElement cardRadio = elementFactory.createRadioButtonElement("#card", "Card payment");
-ILabelElement errorLabel = elementFactory.createLabelElement(".error", "Error label");
-ILinkElement docsLink = elementFactory.createLinkElement("a[href='/docs']", "Docs link");
-IUploadBox avatarUpload = elementFactory.createUploadBoxElement("input[type='file']", "Avatar upload");
+IButtonElement saveButton = elementFactory.createButtonElement(Selector.byRole(AriaRole.BUTTON, "Save"), "Save button");
+ITextBoxElement emailInput = elementFactory.createTextBoxElement(Selector.byPlaceholder("Enter Email"), "Email input");
+IDropdownElement countryDropdown = elementFactory.createDropdownElement(Selector.byLabel("Select Country"), "Country dropdown");
+ICheckBoxElement termsCheckbox = elementFactory.createCheckBoxElement(Selector.bySelector("input[type='checkbox']"), "Terms checkbox");
+IRadioButtonElement cardRadio = elementFactory.createRadioButtonElement(Selector.byText("Credit Card"), "Card payment");
+ILabelElement errorLabel = elementFactory.createLabelElement(Selector.byTestId("error-banner"), "Error label");
+ILinkElement docsLink = elementFactory.createLinkElement(Selector.bySelector("a.docs-link"), "Docs link");
+IUploadBox avatarUpload = elementFactory.createUploadBoxElement(Selector.bySelector("input[type='file']"), "Avatar upload");
 ```
 
-Create child elements from a parent element:
+Create child elements scoped to a parent element's locator:
 
 ```java
-IElement row = elementFactory.createCustomElement(LabelElement.class, "//tr[1]", "First row");
-IButtonElement editButton = row.createChildElement(IButtonElement.class, ".//button[@data-action='edit']", "Edit");
+IElement row = elementFactory.createCustomElement(LabelElement.class, Selector.bySelector("tr.user-row").chain(Selector.byText("John")), "John Row");
+IButtonElement editButton = row.createChildElement(IButtonElement.class, Selector.byRole(AriaRole.BUTTON, "Edit"), "Edit Button");
 ```
 
-Create collections:
+Create dynamic item collections:
 
 ```java
 IElementCollection<ILabelElement> resultTitles = elementFactory.createElementsCollection(
-        "//div[contains(@class, 'result-title')]",
+        Selector.bySelector("div.result-title"),
         "Result title",
         ILabelElement.class,
         ExpectedCount.MORE_THAN_ZERO);
@@ -368,13 +379,39 @@ String url = tab.getCurrentUrl();
 String title = tab.getTitle();
 ```
 
+## Complex Grid and Row Automation
+
+The framework supports structured grid layout configurations completely out of the box using `AbstractTableGridForm` and `AbstractRow`.
+
+Row generation completely avoids fragile string concatenation (`//tr[5]`). Instead, rows natively wrap generic structural definitions using Playwright's `.nth()` filtering methods. This makes rows compatible with any locator strategy (CSS, roles, text, test-IDs).
+
+```java
+public class UserRow extends AbstractRow<UserModel> {
+    public UserRow(int position, IElementFactory factory) {
+        super(
+            position,
+            Selector.bySelector("td"),                     // Cell locator
+            Selector.byRole(AriaRole.ROW),                 // Generic row matching template
+            "User Data Row",
+            factory
+        );
+    }
+
+    @Override
+    public UserModel getModelFromRow() {
+        List<ILabelElement> cells = getCellElements();
+        return new UserModel(cells.get(0).getText(), cells.get(1).getText());
+    }
+}
+```
+
 ## Creating Custom Elements
 
 Use custom elements when a reusable component has behavior that is more specific than a generic button, label, or text box.
 
 ```java
 public class PriceElement extends LabelElement {
-    protected PriceElement(String selector, String name, IElementFactory elementFactory) {
+    protected PriceElement(Selector selector, String name, IElementFactory elementFactory) {
         super(selector, name, elementFactory);
     }
 
@@ -384,12 +421,12 @@ public class PriceElement extends LabelElement {
 }
 ```
 
-Create it with the factory:
+Create it with the factory, which resolves the constructor via reflection:
 
 ```java
 PriceElement price = elementFactory.createCustomElement(
         PriceElement.class,
-        ".//span[@data-test='price']",
+        Selector.byTestId("item-price"),
         "Product price");
 
 BigDecimal amount = price.getAmount();
@@ -400,11 +437,23 @@ You can also use a supplier when the element needs custom construction logic:
 ```java
 PriceElement price = elementFactory.createCustomElement(
         (selector, name, factory) -> new PriceElement(selector, name, factory),
-        ".//span[@data-test='price']",
+        Selector.byPlaceholder("Amount"),
         "Product price");
 ```
 
 Custom elements can still use all inherited methods such as `click()`, `getText()`, `isVisible()`, child element creation, waits, screenshots, and JavaScript actions.
+
+## Creating Custom Target Attributes
+
+Because `Selector` is an open abstract strategy class, adding support for custom frontend framework attributes (like Angular's `ng-model` or internal corporate wrappers) is straightforward without modifying the core framework code:
+
+```java
+public class CustomSelector {
+    public static Selector byNgModel(String name) {
+        return Selector.bySelector(String.format("[ng-model='%s']", name));
+    }
+}
+```
 
 ## Creating Your Own Browser Settings
 
@@ -417,6 +466,7 @@ playwright.browser.timeout=30000
 playwright.browser.page.load.timeout=60000
 playwright.browser.viewport.width=1366
 playwright.browser.viewport.height=768
+playwright.browser.testid.attribute=data-test
 ```
 
 For full programmatic control, provide your own `IBrowserProperties` bean in a custom Spring configuration instead of relying on property values:
@@ -439,6 +489,7 @@ public class CustomBrowserConfiguration {
                 .setSnapshots(true)
                 .setHighlight(false)
                 .setTracingSaveFolder("target/tracing")
+                .setTestIdAttribute("data-test")
                 .setArgs(List.of("--no-sandbox", "--disable-dev-shm-usage"));
     }
 }
@@ -520,7 +571,7 @@ public void testAgeCheck() {
 ## Notes For Scaling
 
 * Keep tests focused on page-level behavior methods, not raw element operations.
-* Prefer stable selectors such as `data-test` attributes where the application provides them.
+* Prefer user-facing semantic selectors such as ARIA roles or text content using `Selector.byRole()` and `Selector.byText()`.
 * Keep browser settings environment-specific through properties.
 * Use `@DataProvider(parallel = true)` only when tests are independent and do not depend on shared backend state.
 * Add custom elements for repeated domain components such as grids, rows, price blocks, date pickers, and upload widgets.

@@ -1,6 +1,7 @@
 package org.jcd2052.steam.pages;
 
 import org.jcd2052.core.browser.services.interfaces.IElementFactory;
+import org.jcd2052.core.elements.selector.Selector;
 import org.jcd2052.core.elements.interfaces.ILabelElement;
 import org.jcd2052.core.elements.interfaces.ITextBoxElement;
 import org.springframework.stereotype.Component;
@@ -15,10 +16,10 @@ public class SteamSearchResultPage extends BaseSteamPage {
     protected SteamSearchResultPage(IElementFactory elementFactory) {
         super("Steam Search Result Page", elementFactory);
         this.searchLabelTags = getElementFactory().createLabelElement(
-                "//div[contains(@class, 'searchtag tag_dynamic')]",
+                Selector.bySelector("//div[contains(@class, 'searchtag tag_dynamic')]"),
                 "Search Tags");
         this.storeSearchBox = getElementFactory().createTextBoxElement(
-                "//input[@id='term']",
+                Selector.bySelector("//input[@id='term']"),
                 "Store search box");
     }
 

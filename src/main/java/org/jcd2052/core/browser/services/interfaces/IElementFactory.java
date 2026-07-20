@@ -1,6 +1,7 @@
 package org.jcd2052.core.browser.services.interfaces;
 
 import org.jcd2052.core.elements.ExpectedCount;
+import org.jcd2052.core.elements.selector.Selector;
 import org.jcd2052.core.elements.interfaces.IButtonElement;
 import org.jcd2052.core.elements.interfaces.ICheckBoxElement;
 import org.jcd2052.core.elements.interfaces.IDropdownElement;
@@ -16,12 +17,12 @@ import org.jcd2052.core.elements.interfaces.IUploadBox;
  * Factory interface responsible for the creation and instantiation of all UI elements and collections.
  * <p>
  * This factory abstracts the underlying instantiation logic, allowing developers to create typed
- * components (like buttons, text boxes, and custom elements) cleanly by providing a selector and a name.
+ * components (like buttons, text boxes, and custom elements) cleanly by providing a JIT `Selector` locator strategy and a name.
  * </p>
  */
 public interface IElementFactory {
     <T extends IElement> IElementCollection<T> createElementsCollection(
-            String selector,
+            Selector selector,
             String name,
             IElementSupplier<T> supplier,
             ExpectedCount expectedCount);
@@ -29,12 +30,12 @@ public interface IElementFactory {
     <T extends IElement> IElementCollection<T> createChildElementsCollection(
             IElementSupplier<T> supplier,
             IElement parentElement,
-            String selector,
+            Selector selector,
             String name,
             ExpectedCount expectedCount);
 
     <T extends IElement> IElementCollection<T> createElementsCollection(
-            String selector,
+            Selector selector,
             String name,
             Class<T> clazz,
             ExpectedCount expectedCount);
@@ -44,7 +45,7 @@ public interface IElementFactory {
      *
      * @param elementClass  The class type of the child elements to instantiate.
      * @param parentElement The parent {@link IElement} to search within.
-     * @param selector      The relative locator strategy for the child elements.
+     * @param selector      The relative Selector locator strategy for the child elements.
      * @param name          The logical name of the child element collection.
      * @param expectedCount The expected count condition to wait for.
      * @param <T>           The type of the child elements.
@@ -53,20 +54,20 @@ public interface IElementFactory {
     <T extends IElement> IElementCollection<T> createChildElementsCollection(
             Class<T> elementClass,
             IElement parentElement,
-            String selector,
+            Selector selector,
             String name,
             ExpectedCount expectedCount);
 
     /**
-     * Creates a custom single UI element based on the provided class and locator.
+     * Creates a custom single UI element based on the provided class and locator strategy.
      *
      * @param clazz   The class type or interface of the element to instantiate.
-     * @param locator The locator strategy to find the element.
+     * @param locator The Selector locator strategy to find the element.
      * @param name    The logical name of the element.
      * @param <T>     The specific element type.
      * @return The instantiated element.
      */
-    <T extends IElement> T createCustomElement(Class<T> clazz, String locator, String name);
+    <T extends IElement> T createCustomElement(Class<T> clazz, Selector locator, String name);
 
     /**
      * Retrieves the underlying service responsible for locating elements via Playwright.
@@ -86,14 +87,14 @@ public interface IElementFactory {
      * Convenience method to create an element collection without specifying an expected count
      * (defaults to {@link ExpectedCount#ANY}).
      *
-     * @param selector The locator strategy.
+     * @param selector The Selector locator strategy.
      * @param name     The logical name.
      * @param clazz    The element class type.
      * @param <T>      The specific element type.
      * @return An {@link IElementCollection}.
      */
     default <T extends IElement> IElementCollection<T> createElementsCollection(
-            String selector, String name, Class<T> clazz) {
+            Selector selector, String name, Class<T> clazz) {
         return createElementsCollection(selector, name, clazz, ExpectedCount.ANY);
     }
 
@@ -103,13 +104,13 @@ public interface IElementFactory {
      *
      * @param elementClass  The child element class type.
      * @param parentElement The parent element.
-     * @param selector      The relative locator strategy.
+     * @param selector      The relative Selector locator strategy.
      * @param name          The logical name.
      * @param <T>           The specific element type.
      * @return An {@link IElementCollection}.
      */
     default <T extends IElement> IElementCollection<T> createChildElementsCollection(
-            Class<T> elementClass, IElement parentElement, String selector, String name) {
+            Class<T> elementClass, IElement parentElement, Selector selector, String name) {
         return createChildElementsCollection(elementClass, parentElement, selector, name, ExpectedCount.ANY);
     }
 
@@ -118,7 +119,7 @@ public interface IElementFactory {
      *
      * @param elementClass  The child element class type.
      * @param parentElement The parent element.
-     * @param selector      The relative locator strategy.
+     * @param selector      The relative Selector locator strategy.
      * @param name          The logical name.
      * @param <T>           The specific element type.
      * @return The instantiated child element.
@@ -126,7 +127,7 @@ public interface IElementFactory {
     default <T extends IElement> T createChildElement(
             Class<T> elementClass,
             IElement parentElement,
-            String selector,
+            Selector selector,
             String name) {
         return createCustomElement(
                 elementClass,
@@ -138,14 +139,14 @@ public interface IElementFactory {
      * Creates a custom element using an explicit element supplier instead of reflection.
      *
      * @param elementSupplier The supplier providing the instantiation logic.
-     * @param locator         The locator strategy.
+     * @param locator         The Selector locator strategy.
      * @param name            The logical name.
      * @param <T>             The specific element type.
      * @return The instantiated element.
      */
     default <T extends IElement> T createCustomElement(
             IElementSupplier<T> elementSupplier,
-            String locator,
+            Selector locator,
             String name) {
         return elementSupplier.get(locator, name, this);
     }
@@ -155,7 +156,7 @@ public interface IElementFactory {
      *
      * @param elementSupplier The supplier providing the instantiation logic.
      * @param parentElement   The parent element.
-     * @param selector        The relative locator strategy.
+     * @param selector        The relative Selector locator strategy.
      * @param name            The logical name.
      * @param <T>             The specific element type.
      * @return The instantiated child element.
@@ -163,7 +164,7 @@ public interface IElementFactory {
     default <T extends IElement> T createChildElement(
             IElementSupplier<T> elementSupplier,
             IElement parentElement,
-            String selector,
+            Selector selector,
             String name) {
         return createCustomElement(elementSupplier, combineSelectors(parentElement, selector), name);
     }
@@ -171,110 +172,113 @@ public interface IElementFactory {
     /**
      * Convenience method to create an {@link IButtonElement}.
      *
-     * @param locatorStrategy The locator strategy.
+     * @param locatorStrategy The Selector locator strategy.
      * @param name            The logical name.
      * @return The instantiated button element.
      */
-    default IButtonElement createButtonElement(String locatorStrategy, String name) {
+    default IButtonElement createButtonElement(Selector locatorStrategy, String name) {
         return createCustomElement(IButtonElement.class, locatorStrategy, name);
     }
 
     /**
      * Convenience method to create an {@link ILabelElement}.
      *
-     * @param locatorStrategy The locator strategy.
+     * @param locatorStrategy The Selector locator strategy.
      * @param name            The logical name.
      * @return The instantiated label element.
      */
-    default ILabelElement createLabelElement(String locatorStrategy, String name) {
+    default ILabelElement createLabelElement(Selector locatorStrategy, String name) {
         return createCustomElement(ILabelElement.class, locatorStrategy, name);
     }
 
     /**
      * Convenience method to create an {@link ITextBoxElement}.
      *
-     * @param locatorStrategy The locator strategy.
+     * @param locatorStrategy The Selector locator strategy.
      * @param name            The logical name.
      * @return The instantiated text box element.
      */
-    default ITextBoxElement createTextBoxElement(String locatorStrategy, String name) {
+    default ITextBoxElement createTextBoxElement(Selector locatorStrategy, String name) {
         return createCustomElement(ITextBoxElement.class, locatorStrategy, name);
     }
 
     /**
      * Convenience method to create an {@link ICheckBoxElement}.
      *
-     * @param locatorStrategy The locator strategy.
+     * @param locatorStrategy The Selector locator strategy.
      * @param name            The logical name.
      * @return The instantiated check box element.
      */
-    default ICheckBoxElement createCheckBoxElement(String locatorStrategy, String name) {
+    default ICheckBoxElement createCheckBoxElement(Selector locatorStrategy, String name) {
         return createCustomElement(ICheckBoxElement.class, locatorStrategy, name);
     }
 
     /**
      * Convenience method to create an {@link IDropdownElement}.
      *
-     * @param locatorStrategy The locator strategy.
+     * @param locatorStrategy The Selector locator strategy.
      * @param name            The logical name.
      * @return The instantiated dropdown element.
      */
-    default IDropdownElement createDropdownElement(String locatorStrategy, String name) {
+    default IDropdownElement createDropdownElement(Selector locatorStrategy, String name) {
         return createCustomElement(IDropdownElement.class, locatorStrategy, name);
     }
 
     /**
      * Convenience method to create an {@link ILinkElement}.
      *
-     * @param locatorStrategy The locator strategy.
+     * @param locatorStrategy The Selector locator strategy.
      * @param name            The logical name.
      * @return The instantiated link element.
      */
-    default ILinkElement createLinkElement(String locatorStrategy, String name) {
+    default ILinkElement createLinkElement(Selector locatorStrategy, String name) {
         return createCustomElement(ILinkElement.class, locatorStrategy, name);
     }
 
     /**
      * Convenience method to create an {@link IRadioButtonElement}.
      *
-     * @param locatorStrategy The locator strategy.
+     * @param locatorStrategy The Selector locator strategy.
      * @param name            The logical name.
      * @return The instantiated radio button element.
      */
-    default IRadioButtonElement createRadioButtonElement(String locatorStrategy, String name) {
+    default IRadioButtonElement createRadioButtonElement(Selector locatorStrategy, String name) {
         return createCustomElement(IRadioButtonElement.class, locatorStrategy, name);
     }
 
     /**
      * Convenience method to create an {@link IUploadBox}.
      *
-     * @param locatorStrategy The locator strategy.
+     * @param locatorStrategy The Selector locator strategy.
      * @param name            The logical name.
      * @return The instantiated upload box element.
      */
-    default IUploadBox createUploadBoxElement(String locatorStrategy, String name) {
+    default IUploadBox createUploadBoxElement(Selector locatorStrategy, String name) {
         return createCustomElement(IUploadBox.class, locatorStrategy, name);
     }
 
     /**
-     * Combines a parent element's selector with a child selector string.
+     * Combines a parent element's Selector selector strategy with a child Selector selector strategy.
      *
-     * @param parentElement The parent element.
-     * @param selector      The relative child selector.
-     * @return The combined absolute selector.
+     * @param parentElement The parent element (must expose its Selector strategy via getSelector()).
+     * @param selector      The relative child Selector locator strategy.
+     * @return The combined Selector locator strategy.
      */
-    default String combineSelectors(IElement parentElement, String selector) {
+    default Selector combineSelectors(IElement parentElement, Selector selector) {
         return combineSelectors(parentElement.getSelector(), selector);
     }
 
     /**
-     * Combines two selector strings using Playwright's descendent selector syntax ({@code >>}).
+     * Combines two Selector locator strategies dynamically using the chaining mechanism.
      *
-     * @param parentSelector The parent selector string.
-     * @param selector       The child selector string.
-     * @return The combined selector.
+     * @param parentSelector The parent Selector locator strategy.
+     * @param selector       The child Selector locator strategy.
+     * @return The combined Selector locator strategy.
      */
-    default String combineSelectors(String parentSelector, String selector) {
-        return parentSelector + ">>" + selector;
+    default Selector combineSelectors(Selector parentSelector, Selector selector) {
+        if (parentSelector == null) {
+            return selector;
+        }
+        return parentSelector.chain(selector);
     }
 }

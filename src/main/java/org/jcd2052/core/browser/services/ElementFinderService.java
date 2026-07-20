@@ -4,49 +4,32 @@ import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import org.jcd2052.core.browser.services.interfaces.IBrowserService;
 import org.jcd2052.core.browser.services.interfaces.IElementFinderService;
+import org.jcd2052.core.elements.selector.Selector;
 
 /**
- * Concrete implementation of the {@link IElementFinderService}.
- * <p>
- * This Spring service acts as the bridge between the framework's custom elements
- * and Playwright's native DOM querying mechanism. It dynamically retrieves the
- * currently active page from the {@link BrowserService} to locate elements.
+ * Implementation of the element finder service that interacts with the ThreadLocal browser instance.
  */
 public class ElementFinderService implements IElementFinderService {
-    /**
-     * Service used to access the current state of the browser, including active windows and tabs.
-     */
     private final IBrowserService browserService;
+
     /**
-     * Constructs a new {@code ElementFinderService}.
+     * Instantiates the element finder service.
      *
-     * @param browserService The injected service used to retrieve the active Playwright {@link Page}.
+     * @param browserService the browser service supplying the active page
      */
     public ElementFinderService(IBrowserService browserService) {
         this.browserService = browserService;
     }
 
     /**
-     * {@inheritDoc}
-     * <p>
-     * <b>Implementation Note:</b> This method fetches the current active page dynamically
-     * and uses Playwright's {@link Page#locator(String)} method to create the locator.
+     * Evaluates the Selector strategy dynamically against the currently active thread's page.
+     *
+     * @param selector the locator strategy to evaluate
+     * @return the resolved Playwright Locator
      */
     @Override
-    public Locator findElement(String selector) {
-        return getCurrentPageFromBrowser().locator(selector);
-    }
-
-    /**
-     * Helper method to safely navigate the browser hierarchy and retrieve the currently active tab's page.
-     *
-     * @return The active Playwright {@link Page} object.
-     * @throws NullPointerException if there is no active browser, window, or tab.
-     */
-    protected Page getCurrentPageFromBrowser() {
-        return browserService.getBrowser()
-                .getCurrentBrowserWindow()
-                .getCurrentBrowserTab()
-                .getPage();
+    public Locator findElement(Selector selector) {
+        Page currentPage = browserService.getBrowser().getCurrentBrowserWindow().getCurrentBrowserTab().getPage();
+        return selector.evaluate(currentPage);
     }
 }

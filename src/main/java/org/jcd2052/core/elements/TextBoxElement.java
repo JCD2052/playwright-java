@@ -2,6 +2,7 @@ package org.jcd2052.core.elements;
 
 import com.microsoft.playwright.Locator;
 import org.jcd2052.core.browser.services.interfaces.IElementFactory;
+import org.jcd2052.core.elements.selector.Selector;
 import org.jcd2052.core.elements.interfaces.ITextBoxElement;
 import org.jcd2052.core.logger.LoggerProvider;
 
@@ -16,12 +17,12 @@ public class TextBoxElement extends AbstractElement implements ITextBoxElement {
     /**
      * Constructs a new {@code TextBoxElement}.
      *
-     * @param locatorValue   The Playwright selector (e.g., CSS, XPath) used to locate the text box in the DOM.
+     * @param selector       The Playwright Selector locator strategy used to find the element.
      * @param name           A human-readable name for the text box (e.g., "Username Input", "Search Bar"), utilized for logging.
      * @param elementFactory The {@link IElementFactory} responsible for managing and resolving locators.
      */
-    protected TextBoxElement(String locatorValue, String name, IElementFactory elementFactory) {
-        super(locatorValue, name, elementFactory);
+    protected TextBoxElement(Selector selector, String name, IElementFactory elementFactory) {
+        super(selector, name, elementFactory);
     }
 
     /**

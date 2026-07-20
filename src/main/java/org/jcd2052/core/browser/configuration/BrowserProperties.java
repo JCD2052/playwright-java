@@ -75,4 +75,9 @@ public class BrowserProperties implements IBrowserProperties {
      * Custom command-line arguments to pass to the browser executable.
      */
     private List<String> args;
+
+    /**
+     * The custom attribute Playwright should use instead of {@code data-testid} for {@code Selector.byTestId()}.
+     */
+    private String testIdAttribute;
 }

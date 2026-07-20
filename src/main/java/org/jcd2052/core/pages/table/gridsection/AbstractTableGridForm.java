@@ -1,6 +1,7 @@
 package org.jcd2052.core.pages.table.gridsection;
 
 import org.jcd2052.core.browser.services.interfaces.IElementFactory;
+import org.jcd2052.core.elements.selector.Selector;
 import org.jcd2052.core.elements.interfaces.ILabelElement;
 import org.jcd2052.core.pages.AbstractForm;
 import org.jcd2052.core.pages.table.row.IRow;
@@ -20,22 +21,21 @@ import java.util.stream.IntStream;
  */
 public abstract class AbstractTableGridForm<M, R extends IRow<M>> extends AbstractForm implements ITableGridForm<M, R> {
     /**
-     * The specific Playwright selector used to locate the individual row containers (e.g., "tbody tr")
-     * within the broader table grid.
+     * The specific Just-In-Time Selector locator strategy used to locate the individual row containers
+     * (e.g., table rows) within the broader table grid.
      */
-    private final String rowLocator;
-
+    private final Selector rowLocator;
     /**
      * Constructs a new {@code AbstractTableGridForm}.
      *
-     * @param locatorStrategy The Playwright selector used to locate the main table container (the root form label).
-     * @param rowLocator      The Playwright selector used to locate individual rows within the table.
+     * @param locatorStrategy The Selector locator strategy used to locate the main table container (the root form label).
+     * @param rowLocator      The Selector locator strategy used to locate individual rows within the table.
      * @param name            A human-readable name for the table (e.g., "Users Data Grid"), used for logging.
      * @param elementFactory  The {@link IElementFactory} responsible for creating the underlying elements and collections.
      */
     protected AbstractTableGridForm(
-            String locatorStrategy,
-            String rowLocator,
+            Selector locatorStrategy,
+            Selector rowLocator,
             String name,
             IElementFactory elementFactory) {
         super(locatorStrategy, name + " Grid Section", elementFactory);

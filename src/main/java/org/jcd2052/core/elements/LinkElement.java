@@ -1,6 +1,7 @@
 package org.jcd2052.core.elements;
 
 import org.jcd2052.core.browser.services.interfaces.IElementFactory;
+import org.jcd2052.core.elements.selector.Selector;
 import org.jcd2052.core.elements.interfaces.ILinkElement;
 import org.jcd2052.core.logger.LoggerProvider;
 
@@ -19,11 +20,11 @@ public class LinkElement extends AbstractElement implements ILinkElement {
     /**
      * Constructs a new {@code LinkElement}.
      *
-     * @param selector       The Playwright selector (e.g., CSS, XPath, or text) used to locate the link in the DOM.
+     * @param selector       The Playwright Selector locator strategy used to find the element.
      * @param name           A human-readable name for the link (e.g., "Forgot Password Link", "Home"), utilized for logging.
      * @param elementFactory The {@link IElementFactory} responsible for creating and locating the element.
      */
-    protected LinkElement(String selector, String name, IElementFactory elementFactory) {
+    protected LinkElement(Selector selector, String name, IElementFactory elementFactory) {
         super(selector, name, elementFactory);
     }
 

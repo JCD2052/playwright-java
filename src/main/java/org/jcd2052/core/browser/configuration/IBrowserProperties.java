@@ -99,4 +99,11 @@ public interface IBrowserProperties {
      * @return A list of argument strings (e.g., "--no-sandbox", "--disable-gpu").
      */
     List<String> getArgs();
+    /**
+     * Retrieves the custom test ID attribute to be used globally by Playwright Selectors.
+     * If null or empty, Playwright defaults to 'data-testid'.
+     *
+     * @return the custom attribute string (e.g., "data-a-test").
+     */
+    String getTestIdAttribute();
 }

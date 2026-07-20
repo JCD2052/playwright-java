@@ -1,7 +1,9 @@
 package org.jcd2052.core.elements;
 
 import org.jcd2052.core.browser.services.interfaces.IElementFactory;
-import org.jcd2052.core.elements.interfaces.ICheckBoxElement;import org.jcd2052.core.logger.LoggerProvider;
+import org.jcd2052.core.elements.selector.Selector;
+import org.jcd2052.core.elements.interfaces.ICheckBoxElement;
+import org.jcd2052.core.logger.LoggerProvider;
 
 /**
  * A concrete representation of a checkbox element within the web application.
@@ -13,11 +15,11 @@ public class CheckBoxElement extends AbstractCheckableElement implements ICheckB
     /**
      * Constructs a new {@code CheckBoxElement}.
      *
-     * @param selector       The Playwright selector (e.g., CSS, XPath) used to locate the checkbox in the DOM.
+     * @param selector       The Playwright Selector locator strategy used to find the element.
      * @param name           A human-readable name for the checkbox (e.g., "Accept Terms"), used for logging and reporting.
      * @param elementFactory The {@link IElementFactory} responsible for creating and locating the element.
      */
-    protected CheckBoxElement(String selector, String name, IElementFactory elementFactory) {
+    protected CheckBoxElement(Selector selector, String name, IElementFactory elementFactory) {
         super(selector, name, elementFactory);
     }
 
