@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Demo Products</title>
+<style>
+  body { font-family: Arial, sans-serif; max-width: 640px; margin: 40px auto; }
+  nav a { margin-right: 12px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+  th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+  button.remove { padding: 4px 10px; }
+</style>
+</head>
+<body>
+<nav>
+  <a href="index.html">Login</a>
+  <a href="table.html">Products</a>
+  <a href="frame.html">Widget</a>
+</nav>
+
+<h1>Products</h1>
+<table data-testid="products-table">
+  <thead>
+    <tr><th>Name</th><th>Price</th><th>Stock</th><th></th></tr>
+  </thead>
+  <tbody id="products-body">
+    <tr data-testid="product-row">
+      <td class="name">Keyboard</td><td class="price">$49.99</td><td class="stock">12</td>
+      <td><button class="remove">Remove</button></td>
+    </tr>
+    <tr data-testid="product-row">
+      <td class="name">Mouse</td><td class="price">$19.99</td><td class="stock">30</td>
+      <td><button class="remove">Remove</button></td>
+    </tr>
+    <tr data-testid="product-row">
+      <td class="name">Monitor</td><td class="price">$199.99</td><td class="stock">5</td>
+      <td><button class="remove">Remove</button></td>
+    </tr>
+  </tbody>
+</table>
+
+<script>
+  document.getElementById('products-body').addEventListener('click', function (event) {
+    if (event.target.classList.contains('remove')) {
+      event.target.closest('tr').remove();
+    }
+  });
+</script>
+</body>
+</html>
