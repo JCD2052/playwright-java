@@ -98,12 +98,14 @@ public class BrowserService implements IBrowserService {
     /**
      * {@inheritDoc}
      * <p>
-     * <b>Implementation Note:</b> This method safely caches the browser. It checks the
-     * {@link ThreadLocal} storage; if a valid, open browser exists for the current thread,
-     * it returns it. Otherwise, it uses the {@link IBrowserFactory} to spawn a new one.
+     * <b>Implementation Note:</b> This method retrieves the browser from {@link ThreadLocal} storage.
+     * No additional synchronization is required: each thread only ever reads and writes its own
+     * {@code ThreadLocal} slot, so concurrent calls from different threads (e.g. parallel TestNG
+     * data providers) can never race against each other here. Locking this method would only
+     * serialize browser startup across threads and undermine the parallel execution model.
      */
     @Override
-    public synchronized IBrowser getBrowser() {
+    public IBrowser getBrowser() {
         IBrowser cached = threadLocalBrowser.get();
         if (cached != null && !cached.isClosed()) {
             return cached;

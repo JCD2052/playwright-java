@@ -80,4 +80,57 @@ public class BrowserProperties implements IBrowserProperties {
      * The custom attribute Playwright should use instead of {@code data-testid} for {@code Selector.byTestId()}.
      */
     private String testIdAttribute;
+
+    /**
+     * The locale to emulate (e.g., "en-US"), or {@code null} to use the system default.
+     */
+    private String locale;
+
+    /**
+     * The IANA timezone ID to emulate (e.g., "Europe/Kyiv"), or {@code null} to use the system default.
+     */
+    private String timezoneId;
+
+    /**
+     * The latitude to emulate for the Geolocation API. Requires {@link #geolocationLongitude}
+     * and {@code "geolocation"} to be present in {@link #permissions}.
+     */
+    private Double geolocationLatitude;
+
+    /**
+     * The longitude to emulate for the Geolocation API. Requires {@link #geolocationLatitude}
+     * and {@code "geolocation"} to be present in {@link #permissions}.
+     */
+    private Double geolocationLongitude;
+
+    /**
+     * Browser permissions to grant automatically on every new context (e.g., "geolocation", "camera").
+     */
+    private List<String> permissions;
+
+    /**
+     * A custom User-Agent string to emulate a specific browser or device.
+     */
+    private String userAgent;
+
+    /**
+     * The device scale factor (DPR) to emulate, e.g. 2.0 for high-density mobile displays.
+     */
+    private Double deviceScaleFactor;
+
+    /**
+     * Whether to emulate a mobile device.
+     */
+    private boolean mobile;
+
+    /**
+     * Whether to enable touch event support, as on a real mobile or tablet device.
+     */
+    private boolean hasTouch;
+
+    /**
+     * Path to a previously saved Playwright storage-state JSON file to preload into every
+     * new browser context, letting tests start already authenticated instead of repeating a UI login.
+     */
+    private String storageStatePath;
 }

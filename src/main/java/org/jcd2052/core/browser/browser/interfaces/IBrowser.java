@@ -3,6 +3,7 @@ package org.jcd2052.core.browser.browser.interfaces;
 import com.microsoft.playwright.Browser;
 import org.jcd2052.core.browser.browser.BrowserWindow;
 
+import java.nio.file.Path;
 import java.util.Collection;
 
 /**
@@ -12,10 +13,28 @@ import java.util.Collection;
 public interface IBrowser {
     /**
      * Opens a new browser window (BrowserContext in Playwright) and sets it as the current active window.
+     * <p>
+     * If {@link org.jcd2052.core.browser.configuration.IBrowserProperties#getStorageStatePath()} is
+     * configured, the new window is preloaded with that saved storage state. To load a specific state
+     * file for one window without changing the global configuration, use {@link #openNewWindow(Path)}.
      *
      * @return The newly created {@link IBrowserWindow}.
      */
     IBrowserWindow openNewWindow();
+
+    /**
+     * Opens a new browser window (BrowserContext in Playwright) preloaded with a saved storage state
+     * (cookies and local storage) from the given file, and sets it as the current active window.
+     * <p>
+     * This overrides {@link org.jcd2052.core.browser.configuration.IBrowserProperties#getStorageStatePath()}
+     * for this window only, so different windows in the same test can each start already signed in as a
+     * different user. Pairs with {@link IBrowserWindow#saveStorageState(Path)}, which produces the file
+     * this method consumes.
+     *
+     * @param storageStatePath the file path to a previously saved Playwright storage-state JSON file
+     * @return The newly created {@link IBrowserWindow}, already authenticated per the saved state.
+     */
+    IBrowserWindow openNewWindow(Path storageStatePath);
 
     /**
      * Retrieves all currently open browser windows associated with this browser instance.

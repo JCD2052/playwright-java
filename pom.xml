@@ -8,7 +8,30 @@
     <packaging>jar</packaging>
 
     <name>playwright-framework</name>
-    <url>https://maven.apache.org</url>
+    <description>A lightweight Java UI automation framework built on Playwright, Spring, and TestNG.</description>
+    <url>https://github.com/JCD2052/playwright-java</url>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>JCD2052</id>
+            <url>https://github.com/JCD2052</url>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:https://github.com/JCD2052/playwright-java.git</connection>
+        <developerConnection>scm:git:https://github.com/JCD2052/playwright-java.git</developerConnection>
+        <url>https://github.com/JCD2052/playwright-java</url>
+        <tag>HEAD</tag>
+    </scm>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
