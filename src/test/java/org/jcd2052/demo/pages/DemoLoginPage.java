@@ -1,7 +1,7 @@
 package org.jcd2052.demo.pages;
 
 import com.microsoft.playwright.options.AriaRole;
-import org.jcd2052.core.browser.services.interfaces.IElementFactory;
+import org.jcd2052.core.browser.interfaces.IElementFactory;
 import org.jcd2052.core.elements.interfaces.IButtonElement;
 import org.jcd2052.core.elements.interfaces.ICheckBoxElement;
 import org.jcd2052.core.elements.interfaces.IDropdownElement;
