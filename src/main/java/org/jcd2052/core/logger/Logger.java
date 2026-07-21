@@ -7,7 +7,7 @@ public class Logger implements ILogger {
     @Override
     public void debugElementAction(String elementType, String elementName, String message, Object... args) {
         String actionMessage = formatMessage(message, args);
-        debug("{} '{}' {}", elementType, elementName, actionMessage);
+        log.debug("{} '{}' {}", elementType, elementName, actionMessage);
     }
 
     @Override

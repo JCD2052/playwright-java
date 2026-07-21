@@ -2,11 +2,10 @@ package org.jcd2052.core.browser.services;
 
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
-import org.jcd2052.core.browser.ElementFinderService;
 import org.jcd2052.core.browser.browser.interfaces.IBrowser;
 import org.jcd2052.core.browser.browser.interfaces.IBrowserTab;
 import org.jcd2052.core.browser.browser.interfaces.IBrowserWindow;
-import org.jcd2052.core.browser.interfaces.IBrowserService;
+import org.jcd2052.core.browser.services.interfaces.IBrowserService;
 import org.jcd2052.core.elements.selector.Selector;
 import org.testng.annotations.Test;
 

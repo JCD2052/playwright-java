@@ -1,9 +1,8 @@
 package org.jcd2052.core.browser.services;
 
-import org.jcd2052.core.browser.ElementFactory;
 import org.jcd2052.core.browser.configuration.IBrowserProperties;
-import org.jcd2052.core.browser.interfaces.IElementFactory;
-import org.jcd2052.core.browser.interfaces.IElementFinderService;
+import org.jcd2052.core.browser.services.interfaces.IElementFactory;
+import org.jcd2052.core.browser.services.interfaces.IElementFinderService;
 import org.jcd2052.core.elements.AbstractElement;
 import org.jcd2052.core.elements.ButtonElement;
 import org.jcd2052.core.elements.selector.Selector;
