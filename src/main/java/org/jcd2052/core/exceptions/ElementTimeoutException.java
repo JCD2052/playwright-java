@@ -7,4 +7,8 @@ public class ElementTimeoutException extends BasePlaywrightException {
     public ElementTimeoutException(String message) {
         super(message);
     }
+
+    public ElementTimeoutException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

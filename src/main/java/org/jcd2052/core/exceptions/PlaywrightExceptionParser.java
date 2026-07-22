@@ -33,19 +33,19 @@ public class PlaywrightExceptionParser {
                 actionName,
                 elementName,
                 compactMessage,
-                selector != null ? selector.getClass().getSimpleName() : "Unknown"
+                selector != null ? selector.toString() : "Unknown"
         );
 
         if (e instanceof TimeoutError || compactMessage.contains("Timeout")) {
-            return new ElementTimeoutException(formattedMessage);
+            return new ElementTimeoutException(formattedMessage, e);
         }
 
         if (compactMessage.contains("Target closed") || compactMessage.contains("detached")) {
             return new ElementActionException(
-                    formattedMessage + "\n(The element was likely removed from the DOM during the action).");
+                    formattedMessage + "\n(The element was likely removed from the DOM during the action).", e);
         }
 
-        return new ElementActionException(formattedMessage);
+        return new ElementActionException(formattedMessage, e);
     }
 
     /**

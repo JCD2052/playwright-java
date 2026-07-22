@@ -7,4 +7,8 @@ public class ElementActionException extends BasePlaywrightException {
     public ElementActionException(String message) {
         super(message);
     }
+
+    public ElementActionException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

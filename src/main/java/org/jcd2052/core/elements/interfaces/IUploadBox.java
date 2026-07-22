@@ -1,6 +1,7 @@
 package org.jcd2052.core.elements.interfaces;
 
 import java.io.File;
+import java.nio.file.Path;
 
 /**
  * Represents a web element capable of handling file uploads.
@@ -22,5 +23,9 @@ public interface IUploadBox extends IElement {
      *
      * @param file The {@link File} object representing the local file to be uploaded.
      */
-    void upload(File file);
+    void upload(Path path);
+
+    default void upload(File file) {
+        upload(file.toPath());
+    }
 }

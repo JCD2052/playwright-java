@@ -33,7 +33,7 @@ public abstract class AbstractCheckableElement extends AbstractElement implement
     @Override
     public boolean isChecked() {
         highlightElementIfNeeded();
-        boolean checked = getLocator().isChecked();
+        boolean checked = executeActionReturning(() -> getLocator().isChecked(), "isChecked");
         LoggerProvider.getLogger().debugElementAction(
                 getElementType(),
                 getName(),
