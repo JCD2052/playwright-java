@@ -42,7 +42,9 @@ public class DropdownElement extends AbstractElement implements IDropdownElement
      */
     @Override
     public String getSelectedOption() {
-        return getLocator().locator(SELECTOR_FOR_SELECTED_OPTION).innerText();
+        return executeActionReturning(
+                () -> getLocator().locator(SELECTOR_FOR_SELECTED_OPTION).innerText(),
+                "selectOption from dropdown");
     }
 
     /**
@@ -52,12 +54,14 @@ public class DropdownElement extends AbstractElement implements IDropdownElement
      */
     @Override
     public List<String> getTexts() {
-        return getLocator()
-                .locator("option")
-                .all()
-                .stream()
-                .map(Locator::textContent)
-                .collect(Collectors.toList());
+        return executeActionReturning(
+                () -> getLocator()
+                        .locator("option")
+                        .all()
+                        .stream()
+                        .map(Locator::textContent)
+                        .collect(Collectors.toList()),
+                "getting texts from dropdown");
     }
 
     /**
@@ -67,7 +71,9 @@ public class DropdownElement extends AbstractElement implements IDropdownElement
      */
     @Override
     public void selectByValue(String option) {
-        selectByOption(selectOption -> selectOption.setValue(option));
+        executeAction(
+                () -> selectByOption(selectOption -> selectOption.setValue(option)),
+                "selectByValue");
         LoggerProvider.getLogger().debugElementAction(
                 getElementType(),
                 getName(),
@@ -82,7 +88,9 @@ public class DropdownElement extends AbstractElement implements IDropdownElement
      */
     @Override
     public void selectByIndex(int index) {
-        selectByOption(selectOption -> selectOption.setIndex(index));
+        executeAction(
+                () -> selectByOption(selectOption -> selectOption.setIndex(index)),
+                "selectByIndex");
         LoggerProvider.getLogger().debugElementAction(
                 getElementType(),
                 getName(),
@@ -97,7 +105,9 @@ public class DropdownElement extends AbstractElement implements IDropdownElement
      */
     @Override
     public void selectByText(String text) {
-        selectByOption(selectOption -> selectOption.setLabel(text));
+        executeAction(
+                () -> selectByOption(selectOption -> selectOption.setLabel(text)),
+                "selectByText");
         LoggerProvider.getLogger().debugElementAction(
                 getElementType(),
                 getName(),

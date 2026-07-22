@@ -37,8 +37,13 @@ public class LinkElement extends AbstractElement implements ILinkElement {
      */
     @Override
     public String getHref() {
-        String attribute = getAttribute(HREF_ATTRIBUTE_NAME);
-        LoggerProvider.getLogger().debugElementAction(getElementType(), getName(), "getting 'HREF' attribute");
-        return attribute;
+        highlightElementIfNeeded();
+        String href = executeActionReturning(() -> getLocator().getAttribute(HREF_ATTRIBUTE_NAME), "getHref");
+        LoggerProvider.getLogger().debugElementAction(
+                getElementType(),
+                getName(),
+                "retrieved href attribute: '%s'",
+                href);
+        return href;
     }
 }

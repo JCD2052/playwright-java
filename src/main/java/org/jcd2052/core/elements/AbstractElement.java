@@ -1,6 +1,7 @@
 package org.jcd2052.core.elements;
 
 import com.microsoft.playwright.Locator;
+import com.microsoft.playwright.PlaywrightException;
 import com.microsoft.playwright.options.BoundingBox;
 import com.microsoft.playwright.options.MouseButton;
 import lombok.Getter;
@@ -13,10 +14,12 @@ import org.jcd2052.core.elements.selector.Selector;
 import org.jcd2052.core.elements.interfaces.IElement;
 import org.jcd2052.core.elements.interfaces.IElementCollection;
 import org.jcd2052.core.elements.interfaces.IJsActions;
+import org.jcd2052.core.exceptions.PlaywrightExceptionParser;
 import org.jcd2052.core.logger.LoggerProvider;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -106,39 +109,33 @@ public abstract class AbstractElement implements IElement {
     @Override
     public void press(String key) {
         LoggerProvider.getLogger().debugElementAction(getElementType(), getName(), "pressed key '%s'", key);
-        getLocator().press(key);
+        executeAction(() -> getLocator().press(key), "press");
     }
 
     @Override
     public void dragAndDropTo(IElement targetElement, int steps) {
         LoggerProvider.getLogger().debugElementAction(
-                getElementType(),
-                getName(),
-                "performing stepped drag-and-drop to '%s' using %d steps",
-                targetElement.getName(),
-                steps
-        );
+                getElementType(), getName(), "performing stepped drag-and-drop to '%s'", targetElement.getName());
 
-        BoundingBox sourceBox = getLocator().boundingBox();
-        BoundingBox targetBox = targetElement.getLocator().boundingBox();
+        executeAction(() -> {
+            BoundingBox sourceBox = getLocator().boundingBox();
+            BoundingBox targetBox = targetElement.getLocator().boundingBox();
 
-        if (sourceBox == null || targetBox == null) {
-            throw new IllegalStateException(
-                    "Cannot perform dragAndDropTo: Source or target element is not visible on the screen."
-            );
-        }
+            if (sourceBox == null || targetBox == null) {
+                throw new IllegalStateException(
+                        "Cannot perform dragAndDropTo: Source or target element is not visible.");
+            }
 
-        double startX = sourceBox.x + (sourceBox.width / 2);
-        double startY = sourceBox.y + (sourceBox.height / 2);
+            double startX = sourceBox.x + (sourceBox.width / 2);
+            double startY = sourceBox.y + (sourceBox.height / 2);
+            double endX = targetBox.x + (targetBox.width / 2);
+            double endY = targetBox.y + (targetBox.height / 2);
 
-        double endX = targetBox.x + (targetBox.width / 2);
-        double endY = targetBox.y + (targetBox.height / 2);
-
-        getMouseActions().move(startX, startY);
-        getMouseActions().down();
-
-        getMouseActions().move(endX, endY, steps);
-        getMouseActions().up();
+            getMouseActions().move(startX, startY);
+            getMouseActions().down();
+            getMouseActions().move(endX, endY, steps);
+            getMouseActions().up();
+        }, "dragAndDropTo");
     }
 
     @Override
@@ -154,7 +151,8 @@ public abstract class AbstractElement implements IElement {
     @Override
     public List<String> getAllTexts() {
         highlightElementIfNeeded();
-        return Arrays.stream(getLocator().innerText().split(StringUtils.LF)).collect(Collectors.toList());
+        String innerText = executeActionReturning(() -> getLocator().innerText(), "getAllTexts");
+        return Arrays.stream(innerText.split(StringUtils.LF)).collect(Collectors.toList());
     }
 
     /**
@@ -165,7 +163,7 @@ public abstract class AbstractElement implements IElement {
     @Override
     public String getText() {
         highlightElementIfNeeded();
-        String text = getLocator().textContent();
+        String text = executeActionReturning(() -> getLocator().textContent(), "getText");
         LoggerProvider.getLogger().debugElementAction(
                 getElementType(),
                 getName(),
@@ -182,7 +180,9 @@ public abstract class AbstractElement implements IElement {
      */
     @Override
     public String getAttribute(String name) {
-        String attribute = getLocator().getAttribute(name, new Locator.GetAttributeOptions());
+        String attribute = executeActionReturning(
+                () -> getLocator().getAttribute(name, new Locator.GetAttributeOptions()),
+                "getAttribute");
         LoggerProvider.getLogger().debugElementAction(
                 getElementType(),
                 getName(),
@@ -301,7 +301,9 @@ public abstract class AbstractElement implements IElement {
      */
     protected void highlightElementIfNeeded() {
         if (elementFactory.isHighlightEnabled()) {
-            getLocator().highlight(new Locator.HighlightOptions().setStyle("outline: 3px solid red"));
+            executeAction(
+                    () -> getLocator().highlight(new Locator.HighlightOptions().setStyle("outline: 3px solid red")),
+                    "highlight");
         }
     }
 
@@ -315,6 +317,28 @@ public abstract class AbstractElement implements IElement {
     }
 
     /**
+     * Wraps void element actions in a safe execution block to parse verbose Playwright exceptions.
+     */
+    protected void executeAction(Runnable action, String actionName) {
+        try {
+            action.run();
+        } catch (PlaywrightException e) {
+            throw PlaywrightExceptionParser.parse(e, getName(), getSelector(), actionName);
+        }
+    }
+
+    /**
+     * Wraps returning element actions in a safe execution block to parse verbose Playwright exceptions.
+     */
+    protected <R> R executeActionReturning(Supplier<R> action, String actionName) {
+        try {
+            return action.get();
+        } catch (PlaywrightException e) {
+            throw PlaywrightExceptionParser.parse(e, getName(), getSelector(), actionName);
+        }
+    }
+
+    /**
      * A centralized helper method to execute click interactions with specific Playwright options.
      * <p>This applies the provided options, enforces stability configurations,
      * and handles framework-level synchronization and highlighting.</p>
@@ -323,7 +347,7 @@ public abstract class AbstractElement implements IElement {
      */
     private void clickWithOptions(Locator.ClickOptions options) {
         highlightElementIfNeeded();
-        getLocator().click(options);
+        executeAction(() -> getLocator().click(options), "click");
     }
 
     /**
@@ -331,10 +355,10 @@ public abstract class AbstractElement implements IElement {
      * <p>This applies the provided options, enforces stability configurations,
      * and handles framework-level synchronization and highlighting.</p>
      *
-     * @param options The Playwright DblclickOptions to apply (button type, position, force, etc.).
+     * @param options The Playwright DblclickOptions  class to apply (button type, position, force, etc.).
      */
     private void doubleClickWithOptions(Locator.DblclickOptions options) {
         highlightElementIfNeeded();
-        getLocator().dblclick(options);
+        executeAction(() -> getLocator().dblclick(options), "double click");
     }
 }

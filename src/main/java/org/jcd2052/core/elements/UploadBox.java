@@ -6,7 +6,7 @@ import org.jcd2052.core.elements.interfaces.IUploadBox;
 import org.jcd2052.core.logger.LoggerProvider;
 
 import java.io.File;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 
 /**
  * A concrete implementation of a file upload component.
@@ -36,15 +36,16 @@ public class UploadBox extends AbstractElement implements IUploadBox {
      * and passes it directly to Playwright's locator engine.
      * </p>
      *
-     * @param file The local file to be uploaded. Ensure the file exists on the execution machine's filesystem.
+     * @param path The local file to be uploaded. Ensure the file exists on the execution machine's filesystem.
      */
     @Override
-    public void upload(File file) {
-        getLocator().setInputFiles(Paths.get(file.getPath()));
+    public void upload(Path path) {
+        executeAction(() -> getLocator().setInputFiles(path), "upload");
+        getLocator().setInputFiles(path);
         LoggerProvider.getLogger().debugElementAction(
                 getElementType(),
                 getName(),
                 "successfully uploaded file: '%s'",
-                file.getName());
+                path.getFileName());
     }
 }

@@ -1,6 +1,5 @@
 package org.jcd2052.core.elements;
 
-import com.microsoft.playwright.Locator;
 import org.jcd2052.core.browser.services.interfaces.IElementFactory;
 import org.jcd2052.core.elements.selector.Selector;
 import org.jcd2052.core.elements.interfaces.ITextBoxElement;
@@ -35,12 +34,12 @@ public class TextBoxElement extends AbstractElement implements ITextBoxElement {
      */
     @Override
     public String getInputValue() {
-        String value = getLocator().inputValue();
+        highlightElementIfNeeded();
+        String value = executeActionReturning(() -> getLocator().inputValue(), "getInputValue");
         LoggerProvider.getLogger().debugElementAction(
                 getElementType(),
                 getName(),
-                "retrieved input value. Result: '%s'",
-                value);
+                "retrieved input value: '%s'", value);
         return value;
     }
 
@@ -54,7 +53,8 @@ public class TextBoxElement extends AbstractElement implements ITextBoxElement {
      */
     @Override
     public void fillText(String text) {
-        getLocator().fill(text, new Locator.FillOptions().setForce(true));
+        highlightElementIfNeeded();
+        executeAction(() -> getLocator().fill(text), "fillText");
         LoggerProvider.getLogger().debugElementAction(getElementType(), getName(), "was filled with text: '%s'", text);
     }
 
@@ -65,7 +65,24 @@ public class TextBoxElement extends AbstractElement implements ITextBoxElement {
      */
     @Override
     public void clearText() {
-        getLocator().clear();
+        highlightElementIfNeeded();
+        executeAction(() -> getLocator().clear(), "clearText");
         LoggerProvider.getLogger().debugElementAction(getElementType(), getName(), "was cleared");
+    }
+
+    @Override
+    public void clearAndFillText(String text) {
+        highlightElementIfNeeded();
+        executeAction(() -> {
+                    getLocator().clear();
+                    getLocator().fill(text);
+                },
+                "clearAndFillText");
+        LoggerProvider.getLogger().debugElementAction(
+                getElementType(),
+                getName(),
+                "was cleared and filled with text: '%s'",
+                text);
+
     }
 }

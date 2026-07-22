@@ -31,8 +31,9 @@ public class CheckBoxElement extends AbstractCheckableElement implements ICheckB
      */
     @Override
     public void check() {
-        getLocator().check();
-          LoggerProvider.getLogger().debugElementAction(getElementType(), getName(), "was successfully checked");
+        highlightElementIfNeeded();
+        executeAction(() -> getLocator().check(), "check");
+        LoggerProvider.getLogger().debugElementAction(getElementType(), getName(), "was checked");
     }
 
     /**
@@ -43,7 +44,8 @@ public class CheckBoxElement extends AbstractCheckableElement implements ICheckB
      */
     @Override
     public void uncheck() {
-        getLocator().uncheck();
-          LoggerProvider.getLogger().debugElementAction(getElementType(), getName(), "was successfully unchecked");
+        highlightElementIfNeeded();
+        executeAction(() -> getLocator().uncheck(), "uncheck");
+        LoggerProvider.getLogger().debugElementAction(getElementType(), getName(), "was unchecked");
     }
 }

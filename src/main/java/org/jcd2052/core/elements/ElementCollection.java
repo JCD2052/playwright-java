@@ -32,7 +32,7 @@ public class ElementCollection<T extends IElement> implements IElementCollection
     /**
      * Constructs a new {@code ElementCollection}.
      *
-     * @param selector       The base Playwright Selector selector used to find all elements in the collection.
+     * @param selector       The base Playwright selector used to find all elements in the collection.
      * @param name           A base human-readable name for the collection, appended with an index for individual elements.
      * @param elementFactory The {@link IElementFactory} responsible for creating the individual elements.
      * @param supplier       The functional supplier template for instantiating the typed wrapper components.
