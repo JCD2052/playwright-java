@@ -1,413 +1,196 @@
-# Playwright Java Automation Framework
+# Playwright-Java framework
 
-A lightweight UI automation framework for Java web tests built on top of Playwright.
-The framework is organized around Page Objects, typed element wrappers, Spring dependency injection, and TestNG execution.
+A lightweight Java UI automation framework built on [Playwright](https://playwright.dev/java/), Spring, and TestNG.
 
-## Tools Used
+The framework is organized around Page Objects, typed element wrappers, and Spring dependency
+injection, with a Just-In-Time (`Selector`) locator strategy at its core — locators are resolved
+fresh at the moment of every action, instead of being cached as raw strings or eagerly-resolved
+`Locator` objects. That makes Page Objects safe to use as Spring singletons across parallel,
+thread-isolated browser sessions.
 
-* Java 17
-* Playwright for Java
-* Spring Boot for dependency injection and property-based configuration (for test purposes, is not used in core framework)
-* TestNG for test execution and data-driven parallel runs
-* Maven for dependency and build management
-* Lombok for simple model classes
-* Logback for framework logging
+## Project structure
 
-## How It Works
+```
+src/main/java/org/jcd2052/core/
+  browser/
+    browser/          BrowserWindow, BrowserTab, PlaywrightBrowser, MouseActions, CookieManager, ...
+    configuration/     IBrowserProperties / BrowserProperties
+    factory/           IBrowserFactory / BrowserFactory (translates properties into launch options)
+    launcher/          IBrowserLauncher implementations (Chrome, Firefox, Edge, WebKit) + registry
+    services/          BrowserService, ElementFactory, ElementFinderService (JIT resolution)
+  elements/            Concrete element types (ButtonElement, TextBoxElement, DropdownElement, ...)
+    selector/          Selector (JIT locator strategy) and RoleOptions
+  pages/               AbstractForm, and table/grid support (AbstractRow, AbstractTableGridForm)
+  waiting/             ConditionalWait, a generic polling utility
+  logger/               Framework-level logging abstraction over SLF4J
 
-The framework keeps Page Objects and Elements small. Page classes describe the screen, elements wrap Playwright locators, and tests call page-level business methods.
-
-Elements store a custom `Selector` object wrapper strategy and resolve the live Playwright `Locator` dynamically at the exact millisecond an action is executed. This Just-In-Time (JIT) architecture prevents `StaleElementReferenceException` errors and keeps tests resilient against modern single-page applications (SPAs) where the DOM dynamically updates.
-
-Browser state is managed via the `BrowserService`. Each execution thread gets its own browser through `ThreadLocal`, and each started test opens a fresh Browser Context and Page. That allows TestNG data providers such as `@DataProvider(parallel = true)` to run isolated sessions in parallel without sharing cookies, cache, local storage, or active pages.
-
-## Project Structure
-
-```text
-src/main/java/org/jcd2052/core
-  browser/       Browser lifecycle, tabs, windows, launchers, configuration
-  elements/      Typed element wrappers, interfaces, and dynamic selectors
-  pages/         Base form/page abstractions, grids, and index-bound rows
-  waiting/       Generic conditional wait utility
-  logger/        Logging abstraction
-
-src/test/java/org/jcd2052/steam
-  configuration/ Example Spring test configuration
-  pages/         Example Steam Page Objects using Selector factories
-  springboottests/ Example TestNG tests
+src/test/java/org/jcd2052/
+  configuration/       SpringBootTestConfiguration — wires all framework beans from properties
+  demo/
+    pages/             Example Page Objects (login form, products table, iframe widget)
+    support/           DemoServer — bundled static file server for the demo pages
+    tests/             SpringBootBaseTests (browser lifecycle) + DemoFrameworkShowcaseTests
 ```
 
-## Browser Settings
+## Requirements
 
-Browser configuration is read from Spring properties. The example values live in `src/test/resources/application.properties`.
+* Java 17+
+* Maven
 
-```properties
-playwright.browser.headless=false
-playwright.browser.name=chrome
-playwright.browser.tracing=false
-playwright.browser.timeout=50000
-playwright.browser.page.load.timeout=1200000
-playwright.browser.highlight=false
-playwright.browser.screenshots=true
-playwright.browser.snapshots=true
-playwright.browser.tracing.folder=target/tracing
-playwright.browser.viewport.width=1600
-playwright.browser.viewport.height=900
-playwright.browser.testid.attribute=data-a-test
-playwright.browser.tracing.args=--no-sandbox,--disable-dev-shm-usage,--disable-gpu
+```xml
+<dependency>
+    <groupId>com.microsoft.playwright</groupId>
+    <artifactId>playwright</artifactId>
+    <version>1.61.0</version>
+</dependency>
 ```
 
-Supported browser names:
+## Core concept: `Selector`
 
-* `chrome`
-* `firefox`
-* `edge`
-* `webkit`
-
-Important settings:
-
-* `playwright.browser.headless` controls visible vs headless browser execution.
-* `playwright.browser.name` selects the browser launcher.
-* `playwright.browser.timeout` sets the default Playwright action timeout on created contexts.
-* `playwright.browser.page.load.timeout` sets the default navigation timeout.
-* `playwright.browser.viewport.width` and `playwright.browser.viewport.height` set context viewport size.
-* `playwright.browser.tracing` enables Playwright tracing.
-* `playwright.browser.screenshots` and `playwright.browser.snapshots` control trace detail.
-* `playwright.browser.tracing.folder` controls where trace ZIP files are written.
-* `playwright.browser.highlight` highlights elements before supported actions.
-* `playwright.browser.testid.attribute` overrides the default `data-testid` attribute globally for `Selector.byTestId()`.
-* `playwright.browser.tracing.args` passes comma-separated launch arguments to the browser.
-
-## Spring Configuration
-
-For tests, import the framework configuration and scan your own test pages:
+`Selector` is an abstract, Just-In-Time locator strategy. Instead of storing a raw string or a
+resolved `Locator`, a `Selector` knows *how* to resolve itself — against the root `Page`, against
+a parent `Locator`, or inside an `<iframe>` — at the exact moment an action runs:
 
 ```java
-package org.example.configuration;
-
-import org.jcd2052.core.browser.configuration.PlaywrightFrameworkConfiguration;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
-
-@Configuration
-@ComponentScan(basePackages = {"org.example"})
-public class TestConfiguration {
-    @Value("${playwright.browser.headless:true}")
-    private boolean isHeadless;
-    @Value("${playwright.browser.name:chrome}")
-    private String browserName;
-    @Value("${playwright.browser.tracing:false}")
-    private boolean isTracingEnabled;
-    @Value("${playwright.browser.timeout:30000}")
-    private long timeout;
-    @Value("${playwright.browser.tracing.folder:target/tracing}")
-    private String tracingFolder;
-    @Value("${playwright.browser.highlight:false}")
-    private boolean highlight;
-    @Value("${playwright.browser.screenshots:true}")
-    private boolean screenshots;
-    @Value("${playwright.browser.snapshots:true}")
-    private boolean snapshots;
-    @Value("${playwright.browser.viewport.width:1600}")
-    private Integer width;
-    @Value("${playwright.browser.viewport.height:900}")
-    private Integer height;
-    @Value("${playwright.browser.page.load.timeout:30000}")
-    private long pageLoadTimeout;
-    @Value("${playwright.browser.testid.attribute:data-testid}")
-    private String testIdAttribute;
-    @Value("${playwright.browser.tracing.args:}")
-    private String args;
-
-    @Bean
-    public IBrowserLauncherRegistry browserLauncherRegistry() {
-        return new BrowserLauncherRegistry();
-    }
-
-    @Bean
-    public IBrowserFactory browserFactory(IBrowserProperties browserProperties, IBrowserLauncherRegistry registry) {
-        return new BrowserFactory(browserProperties, registry);
-    }
-
-    @Bean
-    public IElementFactory elementFactory(
-            IElementFinderService elementFinderService,
-            IBrowserProperties browserProperties) {
-        return new ElementFactory(elementFinderService, browserProperties);
-    }
-
-    @Bean
-    public IElementFinderService elementFinderService(IBrowserService browserService) {
-        return new ElementFinderService(browserService);
-    }
-
-    @Bean
-    public IBrowserService browserService(IBrowserProperties browserProperties, IBrowserFactory browserFactory) {
-        return new BrowserService(browserProperties, browserFactory);
-    }
-
-    @Bean
-    public IBrowserProperties browserProperties() {
-        return new BrowserProperties()
-                .setHeadless(isHeadless)
-                .setName(browserName)
-                .setTracing(isTracingEnabled)
-                .setTimeout(timeout)
-                .setPageLoadTimeout(pageLoadTimeout)
-                .setWidth(width)
-                .setHeight(height)
-                .setTracingSaveFolder(tracingFolder)
-                .setHighlight(highlight)
-                .setScreenshots(screenshots)
-                .setSnapshots(snapshots)
-                .setTestIdAttribute(testIdAttribute)
-                .setArgs(Arrays.stream(args.split(","))
-                        .map(String::trim)
-                        .filter(arg -> !arg.isEmpty())
-                        .toList());
-    }
-}
+Selector searchBox = Selector.byTestId("search-input");
+Selector saveButton = Selector.byRole(AriaRole.BUTTON, "Save");
+Selector heading    = Selector.byText("Welcome back", true); // exact match
+Selector byCss       = Selector.bySelector("form[action*='login'] input");
 ```
 
-Then use it from a TestNG/Spring base test:
+Available strategies mirror Playwright's own `getBy*` methods: `bySelector` (CSS/XPath),
+`byText`, `byRole` (with an optional `RoleOptions` for advanced ARIA matching), `byLabel`,
+`byPlaceholder`, `byAltText`, `byTitle`, and `byTestId`. Every `String` variant also has a
+`Pattern` (regex) overload, and most have an `exact` boolean overload.
+
+**Chaining** scopes a child strategy to whatever the parent resolves to:
 
 ```java
-@SpringBootTest(classes = TestConfiguration.class)
-public class BaseTests extends AbstractTestNGSpringContextTests {
-    @Autowired
-    protected IBrowserService browserService;
-
-    @BeforeMethod(alwaysRun = true)
-    public void setupBrowser() {
-        browserService.start();
-        browserService.startTracing();
-    }
-
-    @AfterMethod(alwaysRun = true)
-    public void tearDown(ITestResult result) {
-        if (!result.isSuccess()) {
-            browserService.getBrowser().takeScreenshot();
-            browserService.stopAndSaveTrace("trace_" + result.getMethod().getMethodName() + ".zip");
-        }
-        browserService.close();
-    }
-}
+Selector row = Selector.byTestId("product-row").nth(2);
+Selector removeButton = row.chain(Selector.bySelector("button.remove"));
 ```
 
-## Creating Pages
-
-Create pages or localized fragments by extending `AbstractForm`. Pass a stable root `Selector` identifying the form's container.
+**iframes** are supported directly — `byFrame` crosses into the frame and resolves the inner
+strategy against its document, and frames can be nested by passing another `byFrame(...)` as the
+inner selector:
 
 ```java
-@Component
-public class ExampleStorePage extends AbstractForm {
-
-    private final ITextBoxElement searchBox;
-    private final IButtonElement searchButton;
-
-    protected ExampleStorePage(IElementFactory elementFactory) {
-        super(Selector.bySelector("#global_header"), "Store page", elementFactory);
-
-        // Target sub-components relative to their exact parent DOM sections
-        this.searchBox = getElementFactory().createTextBoxElement(
-                Selector.bySelector("form[action*='store'] input[role='combobox']"),
-                "Search box");
-        this.searchButton = getElementFactory().createButtonElement(
-                Selector.byRole(AriaRole.BUTTON, "Search"),
-                "Search button");
-    }
-
-    public void performSearch(String searchValue) {
-        searchBox.clearAndFillText(searchValue);
-        searchButton.click();
-    }
-
-    public String getSearchValue() {
-        return searchBox.getInputValue();
-    }
-}
+Selector confirmButton = Selector.byFrame(
+        "#payment-widget",
+        Selector.byRole(AriaRole.BUTTON, "Confirm"));
 ```
 
-See `src/test/java/org/jcd2052/steam/pages/SteamStorePage.java` for the real, running version of this page used by the demo tests.
+Every `Selector` also has a human-readable `toString()` (e.g. `byRole(BUTTON, name="Save")`,
+`byFrame("#payment-widget") -> byRole(BUTTON, name="Confirm")`), which is useful in logs and
+debugging when a locator stops matching.
 
-Useful page methods from `AbstractForm`:
-
-* `getName()`
-* `isVisible()`
-* `waitForLoading()`
-* `waitForLoading(timeout)`
-* `waitToBeVisible()`
-* `waitToBeVisible(timeout)`
-* `waitToBeInvisible()`
-* `waitToBeInvisible(timeout)`
-
-## Creating Elements
+## Creating elements
 
 Inject or inherit `IElementFactory`, then create typed elements by passing a `Selector` strategy:
 
 ```java
-IButtonElement saveButton = elementFactory.createButtonElement(Selector.byRole(AriaRole.BUTTON, "Save"), "Save button");
-ITextBoxElement emailInput = elementFactory.createTextBoxElement(Selector.byPlaceholder("Enter Email"), "Email input");
-IDropdownElement countryDropdown = elementFactory.createDropdownElement(Selector.byLabel("Select Country"), "Country dropdown");
-ICheckBoxElement termsCheckbox = elementFactory.createCheckBoxElement(Selector.bySelector("input[type='checkbox']"), "Terms checkbox");
-IRadioButtonElement cardRadio = elementFactory.createRadioButtonElement(Selector.byText("Credit Card"), "Card payment");
-ILabelElement errorLabel = elementFactory.createLabelElement(Selector.byTestId("error-banner"), "Error label");
-ILinkElement docsLink = elementFactory.createLinkElement(Selector.bySelector("a.docs-link"), "Docs link");
-IUploadBox avatarUpload = elementFactory.createUploadBoxElement(Selector.bySelector("input[type='file']"), "Avatar upload");
-```
+@Component
+public class LoginForm extends AbstractForm {
+    private final ITextBoxElement usernameInput;
+    private final ITextBoxElement passwordInput;
+    private final IButtonElement signInButton;
 
-Create child elements scoped to a parent element's locator:
+    protected LoginForm(IElementFactory elementFactory) {
+        super(Selector.bySelector("#login-form"), "Login form", elementFactory);
 
-```java
-IElement row = elementFactory.createCustomElement(LabelElement.class, Selector.bySelector("tr.user-row").chain(Selector.byText("John")), "John Row");
-IButtonElement editButton = row.createChildElement(IButtonElement.class, Selector.byRole(AriaRole.BUTTON, "Edit"), "Edit Button");
-```
-
-Create dynamic item collections:
-
-```java
-IElementCollection<ILabelElement> resultTitles = elementFactory.createElementsCollection(
-        Selector.bySelector("div.result-title"),
-        "Result title",
-        ILabelElement.class,
-        ExpectedCount.MORE_THAN_ZERO);
-
-List<ILabelElement> titles = resultTitles.getElements();
-```
-
-`ExpectedCount` options:
-
-* `ANY` does not wait for a specific count.
-* `MORE_THAN_ZERO` waits for at least one matching element to be attached.
-* `ZERO` asserts that no matching elements exist.
-
-## Element Methods
-
-All elements implement common methods from `IElement`:
-
-```java
-element.click();
-element.forceClick();
-element.rightClick();
-element.middleClick();
-element.click(10, 20);
-element.hover();
-element.press("Enter");
-element.dragTo(targetElement);
-element.dragAndDropTo(targetElement, 15);
-element.scrollToElement();
-element.unfocus();
-
-boolean visible = element.isVisible();
-boolean enabled = element.isEnabled();
-String text = element.getText();
-String href = element.getAttribute("href");
-List<String> lines = element.getAllTexts();
-byte[] screenshot = element.getScreenshot();
-
-element.waitToBeVisible(5000.0);
-element.waitToBeDetached(5000.0);
-element.waitForLoading();
-```
-
-Text boxes:
-
-```java
-emailInput.clearText();
-emailInput.fillText("qa@example.com");
-emailInput.clearAndFillText("new@example.com");
-String value = emailInput.getInputValue();
-```
-
-Dropdowns:
-
-```java
-countryDropdown.selectByText("Ukraine");
-countryDropdown.selectByValue("UA");
-countryDropdown.selectByIndex(2);
-String selected = countryDropdown.getSelectedOption();
-List<String> options = countryDropdown.getTexts();
-```
-
-Checkboxes and radio buttons:
-
-```java
-termsCheckbox.check();
-termsCheckbox.uncheck();
-boolean accepted = termsCheckbox.isChecked();
-boolean cardSelected = cardRadio.isChecked();
-```
-
-Uploads:
-
-```java
-avatarUpload.upload(new File("src/test/resources/avatar.png"));
-```
-
-JavaScript fallbacks:
-
-```java
-element.clickWithJs();
-element.getJsActions().scrollIntoView();
-element.getJsActions().setAttribute("data-test", "updated");
-boolean pointerEventsDisabled = element.getJsActions().isPointerEventsDisabled();
-```
-
-Browser helpers:
-
-```java
-browserService.navigateTo("https://store.steampowered.com/");
-browserService.getBrowser().reload();
-browserService.getBrowser().setViewportSize(1280, 720);
-browserService.getBrowser().takeScreenshot();
-browserService.getBrowser().openNewWindow().openNewTab();
-```
-
-Tab helpers:
-
-```java
-IBrowserTab tab = browserService.getBrowser()
-        .getCurrentBrowserWindow()
-        .getCurrentBrowserTab();
-
-tab.waitForNetworkIdle();
-tab.reloadTab();
-tab.goBack();
-tab.goForward();
-String url = tab.getCurrentUrl();
-String title = tab.getTitle();
-```
-
-## Complex Grid and Row Automation
-
-The framework supports structured grid layout configurations completely out of the box using `AbstractTableGridForm` and `AbstractRow`.
-
-Row generation completely avoids fragile string concatenation (`//tr[5]`). Instead, rows natively wrap generic structural definitions using Playwright's `.nth()` filtering methods. This makes rows compatible with any locator strategy (CSS, roles, text, test-IDs).
-
-```java
-public class UserRow extends AbstractRow<UserModel> {
-    public UserRow(int position, IElementFactory factory) {
-        super(
-            position,
-            Selector.bySelector("td"),                     // Cell locator
-            Selector.byRole(AriaRole.ROW),                 // Generic row matching template
-            "User Data Row",
-            factory
-        );
+        this.usernameInput = getElementFactory().createTextBoxElement(
+                Selector.byTestId("username-input"), "Username input");
+        this.passwordInput = getElementFactory().createTextBoxElement(
+                Selector.byTestId("password-input"), "Password input");
+        this.signInButton = getElementFactory().createButtonElement(
+                Selector.byRole(AriaRole.BUTTON, "Sign In"), "Sign In button");
     }
 
-    @Override
-    public UserModel getModelFromRow() {
-        List<ILabelElement> cells = getCellElements();
-        return new UserModel(cells.get(0).getText(), cells.get(1).getText());
+    public void signIn(String username, String password) {
+        usernameInput.clearAndFillText(username);
+        passwordInput.clearAndFillText(password);
+        signInButton.click();
     }
 }
 ```
 
-## Creating Custom Elements
+Built-in element types: `IButtonElement`, `ITextBoxElement`, `ILabelElement`, `IDropdownElement`,
+`ICheckBoxElement`, `IRadioButtonElement`, `ILinkElement`, `IUploadBox`. All of them expose the
+common `IElement` surface — `click()`, `doubleClick()`, `rightClick()`, `middleClick()`,
+`hover()`, `dragTo(...)`, `getText()`, `getAttribute(...)`, `isVisible()`, `isEnabled()`,
+`waitToBeVisible()`/`waitToBeDetached()` (with or without an explicit timeout), `getScreenshot()`,
+and JS-action fallbacks via `getJsActions()`.
 
-Use custom elements when a reusable component has behavior that is more specific than a generic button, label, or text box.
+Create child elements scoped to a parent element's locator:
+
+```java
+IButtonElement removeButton = row.createChildElement(
+        IButtonElement.class, Selector.bySelector("button.remove"), "Remove button");
+```
+
+## Useful page methods from `AbstractForm`
+
+* `getName()`
+* `isVisible()`
+* `waitForLoading()` / `waitForLoading(timeout)`
+* `waitToBeVisible()` / `waitToBeVisible(timeout)`
+* `waitToBeInvisible()` / `waitToBeInvisible(timeout)`
+
+## Complex grid and row automation
+
+`AbstractRow`/`AbstractTableGridForm` avoid fragile string-index locators (`//tr[5]`) entirely —
+each row gets its own lazily-evaluated `Selector.nth(index)`, and rows are exposed both as
+interactive Page Objects and as plain data models:
+
+```java
+public class ProductRow extends AbstractRow<Product> {
+    private final ILabelElement nameCell;
+    private final ILabelElement priceCell;
+    private final IButtonElement removeButton;
+
+    protected ProductRow(int position, Selector cellLocator, Selector rowLocator, IElementFactory elementFactory) {
+        super(position, cellLocator, rowLocator, "Product row " + position, elementFactory);
+
+        this.nameCell = getFormLabel().createChildElement(ILabelElement.class, Selector.bySelector("td.name"), "Name cell");
+        this.priceCell = getFormLabel().createChildElement(ILabelElement.class, Selector.bySelector("td.price"), "Price cell");
+        this.removeButton = getFormLabel().createChildElement(IButtonElement.class, Selector.bySelector("button.remove"), "Remove button");
+    }
+
+    public void remove() {
+        removeButton.click();
+    }
+
+    @Override
+    public Product getModelFromRow() {
+        return new Product(nameCell.getText(), new BigDecimal(priceCell.getText().replace("$", "")));
+    }
+}
+
+@Component
+public class ProductsPage extends AbstractTableGridForm<Product, ProductRow> {
+    private static final Selector ROW_LOCATOR = Selector.byTestId("product-row");
+    private static final Selector CELL_LOCATOR = Selector.bySelector("td");
+
+    protected ProductsPage(IElementFactory elementFactory) {
+        super(Selector.byTestId("products-table"), ROW_LOCATOR, "Products", elementFactory);
+    }
+
+    @Override
+    public ProductRow getRow(int index) {
+        return new ProductRow(index, CELL_LOCATOR, ROW_LOCATOR, getElementFactory());
+    }
+}
+```
+
+`ITableGridForm` gives you `getModelsFromRows()`, `findModel(predicate)`, `getRowOrThrow(predicate)`,
+and friends, so tests read and assert against plain data models without ever touching a `Locator`
+directly. See `src/test/java/org/jcd2052/demo/pages/DemoProductsPage.java` and
+`DemoProductRow.java` for the real, running version of this pattern.
+
+## Creating custom elements
+
+Use custom elements when a reusable component has behavior that is more specific than a generic
+button, label, or text box.
 
 ```java
 public class PriceElement extends LabelElement {
@@ -421,15 +204,12 @@ public class PriceElement extends LabelElement {
 }
 ```
 
-Create it with the factory, which resolves the constructor via reflection:
+Create it with the factory, which resolves the constructor via reflection (every custom element
+must expose a `(Selector, String, IElementFactory)` constructor):
 
 ```java
 PriceElement price = elementFactory.createCustomElement(
-        PriceElement.class,
-        Selector.byTestId("item-price"),
-        "Product price");
-
-BigDecimal amount = price.getAmount();
+        PriceElement.class, Selector.byTestId("item-price"), "Product price");
 ```
 
 You can also use a supplier when the element needs custom construction logic:
@@ -441,11 +221,14 @@ PriceElement price = elementFactory.createCustomElement(
         "Product price");
 ```
 
-Custom elements can still use all inherited methods such as `click()`, `getText()`, `isVisible()`, child element creation, waits, screenshots, and JavaScript actions.
+Custom elements can still use all inherited methods such as `click()`, `getText()`, `isVisible()`,
+child element creation, waits, screenshots, and JavaScript actions.
 
-## Creating Custom Target Attributes
+## Creating custom target attributes
 
-Because `Selector` is an open abstract strategy class, adding support for custom frontend framework attributes (like Angular's `ng-model` or internal corporate wrappers) is straightforward without modifying the core framework code:
+Because `Selector` is an open abstract strategy class, adding support for custom frontend
+framework attributes (like Angular's `ng-model` or internal corporate wrappers) is straightforward
+without modifying the core framework code:
 
 ```java
 public class CustomSelector {
@@ -455,21 +238,53 @@ public class CustomSelector {
 }
 ```
 
-## Creating Your Own Browser Settings
+## Session reuse (storage state)
+
+Playwright can only apply a saved storage state (cookies + local storage) when a *new* browser
+window/context is created — there's no way to inject it into an already-open one. The framework
+exposes both halves of that workflow:
+
+```java
+// Once, after a real UI login:
+browser.getCurrentBrowserWindow().saveStorageState(Path.of("target/storage-state.json"));
+
+// Later, in any test — open a window already signed in:
+IBrowserWindow window = browser.openNewWindow(Path.of("target/storage-state.json"));
+```
+
+`openNewWindow(Path)` overrides `IBrowserProperties.getStorageStatePath()` for that one window
+only, so different windows in the same test can each start signed in as a different user.
+
+## Creating your own browser settings
 
 The usual path is property-based configuration:
 
 ```properties
-playwright.browser.name=firefox
+playwright.browser.name=chrome
 playwright.browser.headless=true
 playwright.browser.timeout=30000
 playwright.browser.page.load.timeout=60000
-playwright.browser.viewport.width=1366
-playwright.browser.viewport.height=768
+playwright.browser.viewport.width=1600
+playwright.browser.viewport.height=900
+playwright.browser.tracing.args=--no-sandbox,--disable-dev-shm-usage
+
+# Optional emulation / session settings (all unset by default, framework falls back to
+# Playwright's own defaults for each):
 playwright.browser.testid.attribute=data-test
+playwright.browser.locale=en-US
+playwright.browser.timezone=Europe/Kyiv
+playwright.browser.geolocation.latitude=50.4501
+playwright.browser.geolocation.longitude=30.5234
+playwright.browser.permissions=geolocation,notifications
+playwright.browser.user-agent=Mozilla/5.0 (custom agent)
+playwright.browser.device.scale.factor=2.0
+playwright.browser.mobile=false
+playwright.browser.has.touch=false
+playwright.browser.storage.state.path=target/storage-state.json
 ```
 
-For full programmatic control, provide your own `IBrowserProperties` bean in a custom Spring configuration instead of relying on property values:
+For full programmatic control, provide your own `IBrowserProperties` bean in a custom Spring
+configuration instead of relying on property values:
 
 ```java
 @Configuration
@@ -482,20 +297,16 @@ public class CustomBrowserConfiguration {
                 .setHeadless(true)
                 .setTimeout(30000L)
                 .setPageLoadTimeout(60000L)
-                .setWidth(1366)
-                .setHeight(768)
-                .setTracing(false)
-                .setScreenshots(true)
-                .setSnapshots(true)
-                .setHighlight(false)
-                .setTracingSaveFolder("target/tracing")
+                .setWidth(1600)
+                .setHeight(900)
                 .setTestIdAttribute("data-test")
                 .setArgs(List.of("--no-sandbox", "--disable-dev-shm-usage"));
     }
 }
 ```
 
-To add a new browser launcher, implement `IBrowserLauncher` and register it in a custom `IBrowserLauncherRegistry` bean:
+To add a new browser launcher, implement `IBrowserLauncher` and register it in a custom
+`IBrowserLauncherRegistry` bean:
 
 ```java
 public class ChromiumLauncher implements IBrowserLauncher {
@@ -524,54 +335,43 @@ public class CustomLauncherConfiguration {
 }
 ```
 
-## Demo With Existing Tests
+## Demo suite
 
-The repository contains a small Steam demo suite:
+The repository ships a small, fully offline demo suite instead of relying on a live third-party
+site — `DemoServer` (`src/test/java/org/jcd2052/demo/support`) serves a handful of bundled static
+pages (`src/test/resources/demo-site`) on `localhost`, so the suite is fast, deterministic, and
+safe to run in CI: no network access beyond `localhost`, and nothing outside this repository can
+ever break these tests.
 
-* `SpringBootBaseTests` starts a browser before each method, starts tracing, saves artifacts on failure, and closes the browser.
-* `SpringBootSteamTests.testSearch` uses a parallel TestNG data provider to search for several games.
-* `SpringBootSteamTests.testAgeCheck` opens an age-check page, fills dropdowns, and verifies the product page.
+* `index.html` — a sign-in form (text inputs, checkbox, dropdown, button)
+* `table.html` — a products table, exercising `AbstractRow`/`AbstractTableGridForm`
+* `frame.html` + `widget.html` — a widget embedded in an `<iframe>`, exercising `Selector.byFrame`
 
-Example from the current suite:
+`DemoFrameworkShowcaseTests` (`src/test/java/org/jcd2052/demo/tests`) drives all three pages
+through their respective Page Objects (`DemoLoginPage`, `DemoProductsPage`/`DemoProductRow`,
+`DemoFramePage`). `SpringBootBaseTests` in the same package handles browser start-up, tracing, and
+teardown (taking a screenshot and saving a trace on failure) and is the base class for any new
+test suite.
 
-```java
-@DataProvider(parallel = true)
-public Object[][] dataProviderMethod() {
-    return new Object[][]{
-            {"Battlefield 6"}, {"Battlefield 3"}, {"Battlefield 4"}
-    };
-}
+## Testing the framework itself
 
-@Test(dataProvider = "dataProviderMethod")
-public void testSearch(String searchValue) {
-    storePage.performSearch(searchValue);
+`Page`, `Locator`, `FrameLocator`, `Playwright`, `BrowserType`, and `Browser` are all plain
+interfaces in the Playwright Java client, so the framework's own core logic is unit-testable with
+Mockito, without a real browser:
 
-    SoftAssert softAssert = new SoftAssert();
-    softAssert.assertTrue(searchResultPage.getSearchTags().contains(String.format("\"%s\" ", searchValue)));
-    softAssert.assertEquals(searchResultPage.getValueFromSearch(), searchValue);
-    softAssert.assertAll();
-}
-```
+* `SelectorTest` — every `byX` strategy, `chain()`, `nth()`, `byFrame()` (including nesting), and `toString()`
+* `ElementFinderServiceTest` — the JIT resolution chain from `IBrowserService` down to `Page`
+* `ElementFactoryTest` — reflection-based element instantiation and the interface registry
+* `BrowserFactoryTest` — launch-option translation and the unsupported-browser-name error path
+* `BrowserLauncherRegistryTest` — default browser registrations and case-insensitive lookup
 
-Age-check example:
+## Extending the framework
 
-```java
-@Test
-public void testAgeCheck() {
-    browserService.navigateTo("https://store.steampowered.com/agecheck/app/3240220/");
-    ageCheckPage.fillTheForm(30, "May", 1995);
-
-    SoftAssert softAssert = new SoftAssert();
-    softAssert.assertTrue(steamApplicationPage.waitForLoading());
-    softAssert.assertEquals(steamApplicationPage.getApplicationName(), "Grand Theft Auto V Enhanced");
-    softAssert.assertAll();
-}
-```
-
-## Notes For Scaling
-
-* Keep tests focused on page-level behavior methods, not raw element operations.
-* Prefer user-facing semantic selectors such as ARIA roles or text content using `Selector.byRole()` and `Selector.byText()`.
-* Keep browser settings environment-specific through properties.
-* Use `@DataProvider(parallel = true)` only when tests are independent and do not depend on shared backend state.
-* Add custom elements for repeated domain components such as grids, rows, price blocks, date pickers, and upload widgets.
+* Add new element types by implementing `IElement` (or extending `AbstractElement`) and
+  registering the mapping via `ElementFactory.registerElement(...)`.
+* Add new locator strategies as static methods on `Selector`, or external helper classes like the
+  `CustomSelector.byNgModel` example above.
+* Add new browser launchers by implementing `IBrowserLauncher` and registering them in a custom
+  `IBrowserLauncherRegistry` bean.
+* Add custom elements for repeated domain components such as grids, rows, price blocks, date
+  pickers, and upload widgets.
