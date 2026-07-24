@@ -13,6 +13,7 @@ import org.testng.asserts.SoftAssert;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.concurrent.TimeoutException;
 import java.math.BigDecimal;
 
 /**
@@ -70,10 +71,12 @@ public class DemoFrameworkShowcaseTests extends SpringBootBaseTests {
     }
 
     @Test
-    public void productRowRemoveButtonRemovesTheRow() {
+    public void productRowRemoveButtonRemovesTheRow() throws TimeoutException {
         browserService.navigateTo(demoServer.getBaseUrl() + "/table.html");
 
         productsPage.getRowOrThrow(product -> product.name().equals("Keyboard")).remove();
+        productsPage.waitForRowCount(2);
+
         SoftAssert softAssert = new SoftAssert();
         softAssert.assertEquals(productsPage.getModelsFromRows().size(), 2);
         softAssert.assertFalse(productsPage.findModel(product -> product.name().equals("Keyboard")).isPresent());

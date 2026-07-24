@@ -14,6 +14,7 @@ import org.jcd2052.core.logger.LoggerProvider;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.function.Supplier;
 
 /**
  * Concrete implementation of the {@link IBrowserService}.
@@ -23,14 +24,15 @@ import java.nio.file.Paths;
  * mechanism for the browser instances. This ensures that each executing thread
  * (e.g., each parallel TestNG method) gets its own completely isolated browser session.</p>
  */
-public class BrowserService implements IBrowserService {
+public class BrowserService<T extends IBrowserProperties> implements IBrowserService<T> {
     /**
      * Thread-local storage to hold a separate browser instance for each executing thread,
      * guaranteeing thread safety during parallel test execution.
      */
     private final ThreadLocal<IBrowser> threadLocalBrowser = new ThreadLocal<>();
-    private final IBrowserProperties browserProperties;
-    private final IBrowserFactory browserFactory;
+    private final T browserProperties;
+    private final IBrowserFactory<T> browserFactory;
+    private final Supplier<Playwright> playwrightSupplier;
 
     /**
      * Constructs a new {@code BrowserService}.
@@ -38,9 +40,34 @@ public class BrowserService implements IBrowserService {
      * @param browserProperties The configuration properties for the browser (tracing, headless, etc.).
      * @param browserFactory    The factory responsible for instantiating the actual Playwright browsers.
      */
-    public BrowserService(IBrowserProperties browserProperties, IBrowserFactory browserFactory) {
+    public BrowserService(T browserProperties, IBrowserFactory<T> browserFactory) {
+        this(browserProperties, browserFactory, Playwright::create);
+    }
+
+    /**
+     * Constructs a new {@code BrowserService} with a custom source for the underlying
+     * {@link Playwright} connection.
+     * <p>
+     * This overload exists primarily so unit tests can substitute a mocked {@link Playwright}
+     * instance instead of launching a real driver process via {@link Playwright#create()}.
+     * Production code should generally use {@link #BrowserService(IBrowserProperties, IBrowserFactory)}.
+     *
+     * @param browserProperties  The configuration properties for the browser (tracing, headless, etc.).
+     * @param browserFactory     The factory responsible for instantiating the actual Playwright browsers.
+     * @param playwrightSupplier Supplies the {@link Playwright} connection to use for each new browser.
+     */
+    public BrowserService(
+            T browserProperties,
+            IBrowserFactory<T> browserFactory,
+            Supplier<Playwright> playwrightSupplier) {
         this.browserProperties = browserProperties;
         this.browserFactory = browserFactory;
+        this.playwrightSupplier = playwrightSupplier;
+    }
+
+    @Override
+    public T getBrowserProperties() {
+        return browserProperties;
     }
 
     /**
@@ -124,7 +151,7 @@ public class BrowserService implements IBrowserService {
      * @throws IllegalArgumentException if the provided factory is null.
      */
     @Override
-    public void setBrowser(IBrowserFactory browserFactory) {
+    public void setBrowser(IBrowserFactory<T> browserFactory) {
         if (browserFactory == null) {
             throw new IllegalArgumentException("Browser factory cannot be null");
         }
@@ -163,9 +190,9 @@ public class BrowserService implements IBrowserService {
     /**
      * Helper method to initialize the core Playwright connection.
      *
-     * @return A newly created {@link Playwright} instance.
+     * @return A {@link Playwright} instance from the configured supplier.
      */
     private Playwright getPlaywright() {
-        return Playwright.create();
+        return playwrightSupplier.get();
     }
 }

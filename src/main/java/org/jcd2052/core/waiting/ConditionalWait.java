@@ -48,18 +48,19 @@ public class ConditionalWait implements IConditionalWait {
                 .orElseThrow(() -> new IllegalArgumentException("Condition cannot be null"));
 
         Duration actualTimeout = this.resolveConditionTimeout(timeout);
+        long actualTimeoutMillis = actualTimeout.toMillis();
         long actualPollingIntervalMillis = this.resolvePollingInterval(pollingInterval).toMillis();
         String contextMessage = this.resolveMessage(message);
 
-        double startTimeInSeconds = this.getCurrentTimeInSeconds();
+        long startTimeMillis = System.currentTimeMillis();
 
         while (!this.isConditionSatisfied(safeCondition, exceptionsToIgnore)) {
-            double currentTimeInSeconds = this.getCurrentTimeInSeconds();
+            long elapsedMillis = System.currentTimeMillis() - startTimeMillis;
 
-            if (currentTimeInSeconds - startTimeInSeconds > (double) actualTimeout.getSeconds()) {
+            if (elapsedMillis > actualTimeoutMillis) {
                 String exceptionMessage = String.format(
-                        "Timed out after %1$s seconds during wait for condition '%2$s'",
-                        actualTimeout.getSeconds(),
+                        "Timed out after %1$d ms during wait for condition '%2$s'",
+                        actualTimeoutMillis,
                         contextMessage);
                 throw new TimeoutException(exceptionMessage);
             }
@@ -70,13 +71,6 @@ public class ConditionalWait implements IConditionalWait {
                 Thread.currentThread().interrupt();
             }
         }
-    }
-
-    /**
-     * Retrieves the current system time in seconds with high precision.
-     */
-    private double getCurrentTimeInSeconds() {
-        return (double) System.nanoTime() / 1_000_000_000.0;
     }
 
     private boolean isConditionSatisfied(

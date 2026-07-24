@@ -10,14 +10,14 @@ import org.jcd2052.core.elements.selector.Selector;
  * Implementation of the element finder service that interacts with the ThreadLocal browser instance.
  */
 public class ElementFinderService implements IElementFinderService {
-    private final IBrowserService browserService;
+    private final IBrowserService<?> browserService;
 
     /**
      * Instantiates the element finder service.
      *
      * @param browserService the browser service supplying the active page
      */
-    public ElementFinderService(IBrowserService browserService) {
+    public ElementFinderService(IBrowserService<?> browserService) {
         this.browserService = browserService;
     }
 

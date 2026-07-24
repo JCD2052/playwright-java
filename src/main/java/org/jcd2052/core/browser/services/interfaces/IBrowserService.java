@@ -1,6 +1,7 @@
 package org.jcd2052.core.browser.services.interfaces;
 
 import org.jcd2052.core.browser.browser.interfaces.IBrowser;
+import org.jcd2052.core.browser.configuration.IBrowserProperties;
 import org.jcd2052.core.browser.factory.IBrowserFactory;
 
 /**
@@ -9,8 +10,14 @@ import org.jcd2052.core.browser.factory.IBrowserFactory;
  * and providing access to {@link IBrowser} instances. It ensures that browser sessions
  * are properly allocated to executing threads (crucial for parallel test execution)
  * and manages recording capabilities like Playwright Tracing.</p>
+ * <p>
+ * Parameterized over {@code T} so that projects with configuration needs beyond the framework's
+ * built-in properties can supply their own interface extending {@link IBrowserProperties} and get
+ * it back, fully typed, via {@link #getBrowserProperties()} — no casting required.
+ *
+ * @param <T> the concrete {@link IBrowserProperties} type this service was configured with
  */
-public interface IBrowserService {
+public interface IBrowserService<T extends IBrowserProperties> {
     /**
      * Begins recording Playwright traces (screenshots, DOM snapshots) for the current
      * browser context, if tracing is enabled in the configuration.
@@ -47,13 +54,20 @@ public interface IBrowserService {
      *
      * @param browserFactory The {@link IBrowserFactory} used to instantiate the new browser.
      */
-    void setBrowser(IBrowserFactory browserFactory);
+    void setBrowser(IBrowserFactory<T> browserFactory);
 
     /**
      * Gracefully terminates the active browser instance and cleans up any
      * underlying thread-local references to prevent memory leaks between test suites.
      */
     void close();
+
+    /**
+     * The browser properties this service was constructed with, in their original, fully-typed form.
+     *
+     * @return the configured properties instance.
+     */
+    T getBrowserProperties();
 
     /**
      * Convenience default method to initialize the browser session for the current executing test.

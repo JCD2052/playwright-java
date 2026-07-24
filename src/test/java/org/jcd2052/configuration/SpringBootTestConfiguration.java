@@ -13,11 +13,14 @@ import org.jcd2052.core.browser.services.ElementFinderService;
 import org.jcd2052.core.browser.services.interfaces.IBrowserService;
 import org.jcd2052.core.browser.services.interfaces.IElementFactory;
 import org.jcd2052.core.browser.services.interfaces.IElementFinderService;
+import org.jcd2052.core.waiting.ConditionalWait;
+import org.jcd2052.core.waiting.IConditionalWait;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 
@@ -77,8 +80,9 @@ public class SpringBootTestConfiguration {
     }
 
     @Bean
-    public IBrowserFactory browserFactory(IBrowserProperties browserProperties, IBrowserLauncherRegistry registry) {
-        return new BrowserFactory(browserProperties, registry);
+    public IBrowserFactory<IBrowserProperties> browserFactory(
+            IBrowserProperties browserProperties, IBrowserLauncherRegistry registry) {
+        return new BrowserFactory<>(browserProperties, registry);
     }
 
     @Bean
@@ -89,13 +93,19 @@ public class SpringBootTestConfiguration {
     }
 
     @Bean
-    public IElementFinderService elementFinderService(IBrowserService browserService) {
+    public IElementFinderService elementFinderService(IBrowserService<IBrowserProperties> browserService) {
         return new ElementFinderService(browserService);
     }
 
     @Bean
-    public IBrowserService browserService(IBrowserProperties browserProperties, IBrowserFactory browserFactory) {
-        return new BrowserService(browserProperties, browserFactory);
+    public IBrowserService<IBrowserProperties> browserService(
+            IBrowserProperties browserProperties, IBrowserFactory<IBrowserProperties> browserFactory) {
+        return new BrowserService<>(browserProperties, browserFactory);
+    }
+
+    @Bean
+    public IConditionalWait conditionalWait() {
+        return new ConditionalWait(Duration.ofMillis(timeout), Duration.ofMillis(500));
     }
 
     @Bean

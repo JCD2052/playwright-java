@@ -1,6 +1,7 @@
 package org.jcd2052.demo.tests;
 
 import org.jcd2052.configuration.SpringBootTestConfiguration;
+import org.jcd2052.core.browser.configuration.IBrowserProperties;
 import org.jcd2052.core.browser.services.interfaces.IBrowserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -13,7 +14,7 @@ import org.testng.annotations.BeforeMethod;
 public class SpringBootBaseTests extends AbstractTestNGSpringContextTests {
     private static final String TRACING_FOLDER_TEMPLATE = "trace_%s_%s.zip";
     @Autowired
-    protected IBrowserService browserService;
+    protected IBrowserService<IBrowserProperties> browserService;
 
     @BeforeMethod(alwaysRun = true)
     public void setupBrowser() {
