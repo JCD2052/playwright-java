@@ -22,7 +22,7 @@ import static org.testng.Assert.assertSame;
 public class ElementFinderServiceTest {
     @Test
     public void findElementResolvesTheSelectorAgainstTheCurrentThreadsPage() {
-        IBrowserService browserService = mock(IBrowserService.class);
+        IBrowserService<?> browserService = mock(IBrowserService.class);
         IBrowser browser = mock(IBrowser.class);
         IBrowserWindow window = mock(IBrowserWindow.class);
         IBrowserTab tab = mock(IBrowserTab.class);
@@ -45,7 +45,7 @@ public class ElementFinderServiceTest {
 
     @Test
     public void findElementAlwaysReReadsTheCurrentPage() {
-        IBrowserService browserService = mock(IBrowserService.class);
+        IBrowserService<?> browserService = mock(IBrowserService.class);
         IBrowser browser = mock(IBrowser.class);
         IBrowserWindow window = mock(IBrowserWindow.class);
         IBrowserTab tab = mock(IBrowserTab.class);

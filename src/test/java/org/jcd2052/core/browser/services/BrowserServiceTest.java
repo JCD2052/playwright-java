@@ -31,10 +31,10 @@ public class BrowserServiceTest {
         Playwright playwright = mock(Playwright.class);
         Browser rawBrowser = mock(Browser.class);
         IBrowserProperties properties = mock(IBrowserProperties.class);
-        IBrowserFactory factory = mock(IBrowserFactory.class);
+        IBrowserFactory<IBrowserProperties> factory = mock(IBrowserFactory.class);
         when(factory.createBrowser(playwright)).thenReturn(rawBrowser);
 
-        BrowserService service = new BrowserService(properties, factory, () -> playwright);
+        BrowserService<IBrowserProperties> service = new BrowserService<>(properties, factory, () -> playwright);
 
         IBrowser first = service.getBrowser();
         IBrowser second = service.getBrowser();
@@ -49,10 +49,10 @@ public class BrowserServiceTest {
         Browser firstRawBrowser = mock(Browser.class);
         Browser secondRawBrowser = mock(Browser.class);
         IBrowserProperties properties = mock(IBrowserProperties.class);
-        IBrowserFactory factory = mock(IBrowserFactory.class);
+        IBrowserFactory<IBrowserProperties> factory = mock(IBrowserFactory.class);
         when(factory.createBrowser(playwright)).thenReturn(firstRawBrowser, secondRawBrowser);
 
-        BrowserService service = new BrowserService(properties, factory, () -> playwright);
+        BrowserService<IBrowserProperties> service = new BrowserService<>(properties, factory, () -> playwright);
         IBrowser firstBrowser = service.getBrowser();
 
         service.setBrowser(factory);
@@ -69,25 +69,24 @@ public class BrowserServiceTest {
         Playwright playwright = mock(Playwright.class);
         Browser rawBrowser = mock(Browser.class);
         IBrowserProperties properties = mock(IBrowserProperties.class);
-        IBrowserFactory factory = mock(IBrowserFactory.class);
+        IBrowserFactory<IBrowserProperties> factory = mock(IBrowserFactory.class);
         when(factory.createBrowser(playwright)).thenReturn(rawBrowser);
 
-        BrowserService service = new BrowserService(properties, factory, () -> playwright);
+        BrowserService<IBrowserProperties> service = new BrowserService<>(properties, factory, () -> playwright);
         IBrowser browser = service.getBrowser();
 
         service.close();
 
         assertTrue(browser.isClosed());
         verify(rawBrowser).close();
-        // A subsequent getBrowser() call must not reuse the closed instance.
         assertNotSame(service.getBrowser(), browser);
     }
 
     @Test
     public void setBrowserRejectsANullFactory() {
         IBrowserProperties properties = mock(IBrowserProperties.class);
-        IBrowserFactory factory = mock(IBrowserFactory.class);
-        BrowserService service = new BrowserService(properties, factory, () -> mock(Playwright.class));
+        IBrowserFactory<IBrowserProperties> factory = mock(IBrowserFactory.class);
+        BrowserService<IBrowserProperties> service = new BrowserService<>(properties, factory, () -> mock(Playwright.class));
 
         expectThrows(IllegalArgumentException.class, () -> service.setBrowser(null));
     }

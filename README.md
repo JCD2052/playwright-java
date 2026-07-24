@@ -31,10 +31,11 @@ src/main/java/org/jcd2052/core
   waiting/       Generic conditional wait utility
   logger/        Logging abstraction
 
-src/test/java/org/jcd2052/steam
-  configuration/ Example Spring test configuration
-  pages/         Example Steam Page Objects using Selector factories
-  springboottests/ Example TestNG tests
+src/test/java/org/jcd2052
+  configuration/ Spring test configuration wiring all framework beans from properties
+  demo/pages/    Example Page Objects (login form, products table, iframe widget)
+  demo/support/  DemoServer — bundled static file server for the demo pages
+  demo/tests/    SpringBootBaseTests (browser lifecycle) + DemoFrameworkShowcaseTests
 ```
 
 ## Browser Settings
@@ -85,10 +86,10 @@ For tests, import the framework configuration and scan your own test pages:
 ```java
 package org.example.configuration;
 
-import org.jcd2052.core.browser.configuration.PlaywrightFrameworkConfiguration;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
 
 @Configuration
 @ComponentScan(basePackages = {"org.example"})
@@ -126,8 +127,8 @@ public class TestConfiguration {
     }
 
     @Bean
-    public IBrowserFactory browserFactory(IBrowserProperties browserProperties, IBrowserLauncherRegistry registry) {
-        return new BrowserFactory(browserProperties, registry);
+    public IBrowserFactory<IBrowserProperties> browserFactory(IBrowserProperties browserProperties, IBrowserLauncherRegistry registry) {
+        return new BrowserFactory<>(browserProperties, registry);
     }
 
     @Bean
@@ -138,13 +139,13 @@ public class TestConfiguration {
     }
 
     @Bean
-    public IElementFinderService elementFinderService(IBrowserService browserService) {
+    public IElementFinderService elementFinderService(IBrowserService<IBrowserProperties> browserService) {
         return new ElementFinderService(browserService);
     }
 
     @Bean
-    public IBrowserService browserService(IBrowserProperties browserProperties, IBrowserFactory browserFactory) {
-        return new BrowserService(browserProperties, browserFactory);
+    public IBrowserService<IBrowserProperties> browserService(IBrowserProperties browserProperties, IBrowserFactory<IBrowserProperties> browserFactory) {
+        return new BrowserService<>(browserProperties, browserFactory);
     }
 
     @Bean
@@ -176,7 +177,7 @@ Then use it from a TestNG/Spring base test:
 @SpringBootTest(classes = TestConfiguration.class)
 public class BaseTests extends AbstractTestNGSpringContextTests {
     @Autowired
-    protected IBrowserService browserService;
+    protected IBrowserService<IBrowserProperties> browserService;
 
     @BeforeMethod(alwaysRun = true)
     public void setupBrowser() {
@@ -194,6 +195,26 @@ public class BaseTests extends AbstractTestNGSpringContextTests {
     }
 }
 ```
+
+### Using a custom `IBrowserProperties`
+
+`BrowserFactory`, `IBrowserFactory`, `BrowserService`, and `IBrowserService` are all parameterized
+over `T extends IBrowserProperties`, so a project with configuration needs beyond the built-in
+properties (a proxy profile, an environment name, feature flags, ...) can define its own interface
+extending `IBrowserProperties` and get it back fully typed — no casting required:
+
+```java
+public interface IMyBrowserProperties extends IBrowserProperties {
+    String getEnvironmentName();
+}
+
+// Elsewhere, once you have a reference typed to your extension:
+IBrowserService<IMyBrowserProperties> browserService = ...;
+String env = browserService.getBrowserProperties().getEnvironmentName();
+```
+
+If you don't need anything beyond the built-in properties, use `IBrowserProperties` itself as `T`,
+exactly as the example above does.
 
 ## Creating Pages
 
@@ -229,7 +250,7 @@ public class ExampleStorePage extends AbstractForm {
 }
 ```
 
-See `src/test/java/org/jcd2052/steam/pages/SteamStorePage.java` for the real, running version of this page used by the demo tests.
+See `src/test/java/org/jcd2052/demo/pages/DemoLoginPage.java` for the real, running version of this pattern.
 
 Useful page methods from `AbstractForm`:
 
@@ -357,7 +378,7 @@ boolean pointerEventsDisabled = element.getJsActions().isPointerEventsDisabled()
 Browser helpers:
 
 ```java
-browserService.navigateTo("https://store.steampowered.com/");
+browserService.navigateTo("https://example.com/");
 browserService.getBrowser().reload();
 browserService.getBrowser().setViewportSize(1280, 720);
 browserService.getBrowser().takeScreenshot();
@@ -404,6 +425,27 @@ public class UserRow extends AbstractRow<UserModel> {
     }
 }
 ```
+
+## Waiting for Custom Conditions
+
+`IElement`'s waits (`waitToBeVisible()`, `waitToBeDetached()`, ...) only cover a single element.
+For conditions that span multiple elements or a collection — "wait until the table has exactly N
+rows", "wait until the spinner is gone *and* the results count is positive" — inject
+`IConditionalWait` and express the condition as a `BooleanSupplier`:
+
+```java
+public void waitForRowCount(int expectedCount) throws TimeoutException {
+    conditionalWait.waitForTrue(
+            () -> getModelsFromRows().size() == expectedCount,
+            "Products table never reached " + expectedCount + " row(s)");
+}
+```
+
+`waitFor(...)` returns a boolean instead of throwing, for conditional logic rather than hard
+assertions. Both accept an optional custom `timeout`/`pollingInterval` per call, and an optional
+set of exception types to treat as "not yet satisfied" instead of propagating (useful while an
+element is still attaching to the DOM). See `DemoProductsPage.waitForRowCount(...)` for the real,
+running version of this pattern.
 
 ## Creating Custom Elements
 
@@ -453,6 +495,26 @@ public class CustomSelector {
         return Selector.bySelector(String.format("[ng-model='%s']", name));
     }
 }
+```
+
+## Exceptions
+
+Every action wrapped by `AbstractElement` (click, fill, waits, ...) translates raw Playwright
+errors into one of two unchecked exceptions, both carrying the original exception as `getCause()`:
+
+* `ElementTimeoutException` — the element never reached an actionable state in time.
+* `ElementActionException` — the action itself failed (e.g. the element was detached from the
+  DOM mid-action, or its context closed).
+
+Both extend `BasePlaywrightException`, so you can catch broadly or specifically. The message is
+compacted from Playwright's often-verbose output and always includes the element name, the action
+attempted, and the `Selector` strategy that was used — e.g.:
+
+```
+Failed to perform 'click' on element 'Save button'.
+Reason: Target closed
+Locator Strategy: byRole(BUTTON, name="Save")
+(The element was likely removed from the DOM during the action).
 ```
 
 ## Creating Your Own Browser Settings
@@ -526,44 +588,29 @@ public class CustomLauncherConfiguration {
 
 ## Demo With Existing Tests
 
-The repository contains a small Steam demo suite:
+The repository ships a small, fully offline demo suite instead of relying on a live third-party
+site — `DemoServer` serves a handful of bundled static pages (`src/test/resources/demo-site`) on
+`localhost`, so the suite is fast, deterministic, and safe to run in CI: no network access beyond
+`localhost`, and nothing outside this repository can ever break these tests.
 
-* `SpringBootBaseTests` starts a browser before each method, starts tracing, saves artifacts on failure, and closes the browser.
-* `SpringBootSteamTests.testSearch` uses a parallel TestNG data provider to search for several games.
-* `SpringBootSteamTests.testAgeCheck` opens an age-check page, fills dropdowns, and verifies the product page.
+* `index.html` — a sign-in form (text inputs, checkbox, dropdown, button)
+* `table.html` — a products table, exercising `AbstractRow`/`AbstractTableGridForm`
+* `frame.html` + `widget.html` — a widget embedded in an `<iframe>`, exercising `Selector.byFrame`
 
-Example from the current suite:
-
-```java
-@DataProvider(parallel = true)
-public Object[][] dataProviderMethod() {
-    return new Object[][]{
-            {"Battlefield 6"}, {"Battlefield 3"}, {"Battlefield 4"}
-    };
-}
-
-@Test(dataProvider = "dataProviderMethod")
-public void testSearch(String searchValue) {
-    storePage.performSearch(searchValue);
-
-    SoftAssert softAssert = new SoftAssert();
-    softAssert.assertTrue(searchResultPage.getSearchTags().contains(String.format("\"%s\" ", searchValue)));
-    softAssert.assertEquals(searchResultPage.getValueFromSearch(), searchValue);
-    softAssert.assertAll();
-}
-```
-
-Age-check example:
+`DemoFrameworkShowcaseTests` drives all three pages through their respective Page Objects
+(`DemoLoginPage`, `DemoProductsPage`/`DemoProductRow`, `DemoFramePage`). `SpringBootBaseTests` in
+the same package handles browser start-up, tracing, and teardown (taking a screenshot and saving a
+trace on failure) and is the base class for any new test suite:
 
 ```java
 @Test
-public void testAgeCheck() {
-    browserService.navigateTo("https://store.steampowered.com/agecheck/app/3240220/");
-    ageCheckPage.fillTheForm(30, "May", 1995);
+public void loginFormFillsAndSubmits() {
+    browserService.navigateTo(demoServer.getBaseUrl() + "/index.html");
+
+    String status = loginPage.signIn("qa-engineer", "hunter2", true, "ua");
 
     SoftAssert softAssert = new SoftAssert();
-    softAssert.assertTrue(steamApplicationPage.waitForLoading());
-    softAssert.assertEquals(steamApplicationPage.getApplicationName(), "Grand Theft Auto V Enhanced");
+    softAssert.assertEquals(status, "Welcome, qa-engineer! (remembered) [ua]");
     softAssert.assertAll();
 }
 ```

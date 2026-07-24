@@ -14,11 +14,11 @@ import org.jcd2052.core.browser.launcher.IBrowserLauncherRegistry;
  * It leverages Spring's dependency injection to discover all registered {@link IBrowserLauncher}
  * beans and selects the appropriate launcher based on the provided {@link IBrowserProperties}.
  */
-public class BrowserFactory implements IBrowserFactory {
+public class BrowserFactory<T extends IBrowserProperties> implements IBrowserFactory<T> {
     /**
      * The configuration properties defining which browser to launch and its settings.
      */
-    private final IBrowserProperties browserProperties;
+    private final T browserProperties;
     /**
      * A registry mapping browser names (e.g., "chrome", "firefox") to their respective launchers.
      */
@@ -35,9 +35,14 @@ public class BrowserFactory implements IBrowserFactory {
      * @param browserProperties The framework configuration properties defining browser settings (e.g., headless mode, timeouts).
      * @param launcherRegistry  The centralized registry containing all available {@link IBrowserLauncher} implementations.
      */
-    public BrowserFactory(IBrowserProperties browserProperties, IBrowserLauncherRegistry launcherRegistry) {
+    public BrowserFactory(T browserProperties, IBrowserLauncherRegistry launcherRegistry) {
         this.browserProperties = browserProperties;
         this.launcherRegistry = launcherRegistry;
+    }
+
+    @Override
+    public T getBrowserProperties() {
+        return browserProperties;
     }
 
     /**

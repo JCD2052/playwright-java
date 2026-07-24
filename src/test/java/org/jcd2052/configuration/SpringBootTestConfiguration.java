@@ -80,8 +80,9 @@ public class SpringBootTestConfiguration {
     }
 
     @Bean
-    public IBrowserFactory browserFactory(IBrowserProperties browserProperties, IBrowserLauncherRegistry registry) {
-        return new BrowserFactory(browserProperties, registry);
+    public IBrowserFactory<IBrowserProperties> browserFactory(
+            IBrowserProperties browserProperties, IBrowserLauncherRegistry registry) {
+        return new BrowserFactory<>(browserProperties, registry);
     }
 
     @Bean
@@ -92,13 +93,14 @@ public class SpringBootTestConfiguration {
     }
 
     @Bean
-    public IElementFinderService elementFinderService(IBrowserService browserService) {
+    public IElementFinderService elementFinderService(IBrowserService<IBrowserProperties> browserService) {
         return new ElementFinderService(browserService);
     }
 
     @Bean
-    public IBrowserService browserService(IBrowserProperties browserProperties, IBrowserFactory browserFactory) {
-        return new BrowserService(browserProperties, browserFactory);
+    public IBrowserService<IBrowserProperties> browserService(
+            IBrowserProperties browserProperties, IBrowserFactory<IBrowserProperties> browserFactory) {
+        return new BrowserService<>(browserProperties, browserFactory);
     }
 
     @Bean

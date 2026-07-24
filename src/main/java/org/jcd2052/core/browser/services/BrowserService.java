@@ -24,14 +24,14 @@ import java.util.function.Supplier;
  * mechanism for the browser instances. This ensures that each executing thread
  * (e.g., each parallel TestNG method) gets its own completely isolated browser session.</p>
  */
-public class BrowserService implements IBrowserService {
+public class BrowserService<T extends IBrowserProperties> implements IBrowserService<T> {
     /**
      * Thread-local storage to hold a separate browser instance for each executing thread,
      * guaranteeing thread safety during parallel test execution.
      */
     private final ThreadLocal<IBrowser> threadLocalBrowser = new ThreadLocal<>();
-    private final IBrowserProperties browserProperties;
-    private final IBrowserFactory browserFactory;
+    private final T browserProperties;
+    private final IBrowserFactory<T> browserFactory;
     private final Supplier<Playwright> playwrightSupplier;
 
     /**
@@ -40,7 +40,7 @@ public class BrowserService implements IBrowserService {
      * @param browserProperties The configuration properties for the browser (tracing, headless, etc.).
      * @param browserFactory    The factory responsible for instantiating the actual Playwright browsers.
      */
-    public BrowserService(IBrowserProperties browserProperties, IBrowserFactory browserFactory) {
+    public BrowserService(T browserProperties, IBrowserFactory<T> browserFactory) {
         this(browserProperties, browserFactory, Playwright::create);
     }
 
@@ -57,12 +57,17 @@ public class BrowserService implements IBrowserService {
      * @param playwrightSupplier Supplies the {@link Playwright} connection to use for each new browser.
      */
     public BrowserService(
-            IBrowserProperties browserProperties,
-            IBrowserFactory browserFactory,
+            T browserProperties,
+            IBrowserFactory<T> browserFactory,
             Supplier<Playwright> playwrightSupplier) {
         this.browserProperties = browserProperties;
         this.browserFactory = browserFactory;
         this.playwrightSupplier = playwrightSupplier;
+    }
+
+    @Override
+    public T getBrowserProperties() {
+        return browserProperties;
     }
 
     /**
@@ -146,7 +151,7 @@ public class BrowserService implements IBrowserService {
      * @throws IllegalArgumentException if the provided factory is null.
      */
     @Override
-    public void setBrowser(IBrowserFactory browserFactory) {
+    public void setBrowser(IBrowserFactory<T> browserFactory) {
         if (browserFactory == null) {
             throw new IllegalArgumentException("Browser factory cannot be null");
         }

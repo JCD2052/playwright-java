@@ -49,7 +49,7 @@ public class BrowserFactoryTest {
         when(registry.getLauncher("chrome")).thenReturn(launcher);
         when(launcher.launch(eq(playwright), any(BrowserType.LaunchOptions.class))).thenReturn(launchedBrowser);
 
-        Browser result = new BrowserFactory(properties, registry).createBrowser(playwright);
+        Browser result = new BrowserFactory<>(properties, registry).createBrowser(playwright);
 
         assertSame(result, launchedBrowser);
 
@@ -72,7 +72,7 @@ public class BrowserFactoryTest {
         when(properties.getName()).thenReturn("netscape-navigator");
         when(registry.getLauncher("netscape-navigator")).thenReturn(null);
 
-        BrowserFactory factory = new BrowserFactory(properties, registry);
+        BrowserFactory<IBrowserProperties> factory = new BrowserFactory<>(properties, registry);
 
         IllegalArgumentException exception = expectThrows(IllegalArgumentException.class,
                 () -> factory.createBrowser(playwright));
@@ -94,7 +94,7 @@ public class BrowserFactoryTest {
         when(playwright.selectors()).thenReturn(selectors);
         when(registry.getLauncher("chrome")).thenReturn(launcher);
 
-        new BrowserFactory(properties, registry).createBrowser(playwright);
+        new BrowserFactory<>(properties, registry).createBrowser(playwright);
 
         verify(selectors).setTestIdAttribute("data-test");
     }
@@ -112,7 +112,7 @@ public class BrowserFactoryTest {
         when(properties.getName()).thenReturn("chrome");
         when(registry.getLauncher("chrome")).thenReturn(launcher);
 
-        new BrowserFactory(properties, registry).createBrowser(playwright);
+        new BrowserFactory<>(properties, registry).createBrowser(playwright);
 
         verify(playwright, never()).selectors();
     }
@@ -130,7 +130,7 @@ public class BrowserFactoryTest {
         when(properties.getName()).thenReturn("firefox");
         when(registry.getLauncher("firefox")).thenReturn(launcher);
 
-        new BrowserFactory(properties, registry).createBrowser(playwright);
+        new BrowserFactory<>(properties, registry).createBrowser(playwright);
 
         ArgumentCaptor<BrowserType.LaunchOptions> captor = ArgumentCaptor.forClass(BrowserType.LaunchOptions.class);
         verify(launcher).launch(eq(playwright), captor.capture());
