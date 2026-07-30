@@ -4,9 +4,18 @@ import com.microsoft.playwright.Mouse;
 import io.github.jcd2052.browser.browser.interfaces.IMouseActions;
 import io.github.jcd2052.logger.LoggerProvider;
 
+/**
+ * Default {@link IMouseActions} implementation, wrapping Playwright's page-level {@link Mouse}
+ * for raw, coordinate-based mouse control.
+ */
 public class MouseActions implements IMouseActions {
     private final Mouse mouse;
 
+    /**
+     * Wraps the given page's mouse.
+     *
+     * @param mouse the Playwright {@link Mouse} instance to delegate to
+     */
     public MouseActions(Mouse mouse) {
         this.mouse = mouse;
     }

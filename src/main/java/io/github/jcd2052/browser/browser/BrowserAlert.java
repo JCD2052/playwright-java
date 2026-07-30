@@ -4,9 +4,18 @@ import com.microsoft.playwright.Dialog;
 import io.github.jcd2052.browser.browser.interfaces.IAlert;
 import io.github.jcd2052.logger.LoggerProvider;
 
+/**
+ * Default {@link IAlert} implementation, wrapping a Playwright {@link Dialog} (JavaScript
+ * {@code alert}, {@code confirm}, or {@code prompt}) intercepted via a page's dialog handler.
+ */
 public class BrowserAlert implements IAlert {
     private final Dialog dialog;
 
+    /**
+     * Wraps a native Playwright dialog.
+     *
+     * @param dialog the intercepted {@link Dialog} instance to delegate to
+     */
     public BrowserAlert(Dialog dialog) {
         this.dialog = dialog;
     }

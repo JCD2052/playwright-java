@@ -2,6 +2,10 @@ package io.github.jcd2052.logger;
 
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Default {@link ILogger} implementation, delegating to an SLF4J {@code Logger} obtained via
+ * Lombok's {@link Slf4j @Slf4j}.
+ */
 @Slf4j
 public class Logger implements ILogger {
     @Override

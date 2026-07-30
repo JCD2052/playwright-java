@@ -80,6 +80,15 @@ public abstract class AbstractForm implements IForm {
         return getFormLabel().waitToBeDetached(timeout);
     }
 
+    /**
+     * Reflectively collects every {@link IElement}-typed field declared on this form (including
+     * inherited fields from superclasses), keyed by field name.
+     * <p>
+     * Intended for framework-level tooling (e.g. reporting, debugging) rather than everyday page
+     * object code.
+     *
+     * @return a map of field name to the corresponding {@link IElement} instance
+     */
     protected Map<String, IElement> getAllElements() {
         Map<String, IElement> elementsMap = new HashMap<>();
         Class<?> currentClass = this.getClass();

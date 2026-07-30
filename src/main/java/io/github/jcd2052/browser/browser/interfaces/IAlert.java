@@ -1,5 +1,9 @@
 package io.github.jcd2052.browser.browser.interfaces;
 
+/**
+ * Represents a native browser dialog (JavaScript {@code alert}, {@code confirm}, or
+ * {@code prompt}) intercepted during page interaction.
+ */
 public interface IAlert {
     /** @return The message text displayed inside the alert. */
     String getMessage();
@@ -10,7 +14,9 @@ public interface IAlert {
     /** Declines/Dismisses the alert (clicks "Cancel"). */
     void decline();
 
-    /** * Fills a prompt dialog with text and accepts it.
+    /**
+     * Fills a prompt dialog with text and accepts it.
+     *
      * @param text The string to type into the prompt.
      */
     void fillText(String text);

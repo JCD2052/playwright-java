@@ -7,9 +7,17 @@ import io.github.jcd2052.logger.LoggerProvider;
 
 import java.util.List;
 
+/**
+ * Default {@link ICookieManager} implementation, backed by a Playwright {@link BrowserContext}.
+ */
 public class CookieManager implements ICookieManager {
     private final BrowserContext browserContext;
 
+    /**
+     * Wraps the given browser context's cookie jar.
+     *
+     * @param browserContext the {@link BrowserContext} whose cookies this manager exposes
+     */
     public CookieManager(BrowserContext browserContext) {
         this.browserContext = browserContext;
     }

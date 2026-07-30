@@ -7,6 +7,11 @@ import lombok.experimental.Accessors;
 
 import java.util.regex.Pattern;
 
+/**
+ * Configuration options for {@link Selector#byRole(com.microsoft.playwright.options.AriaRole, RoleOptions)},
+ * mirroring Playwright's {@link Page.GetByRoleOptions}/{@link Locator.GetByRoleOptions}. Only the
+ * fields that are set are applied; everything else falls back to Playwright's own defaults.
+ */
 @Data
 @Accessors(chain = true)
 public class RoleOptions {

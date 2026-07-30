@@ -4,10 +4,20 @@ import com.microsoft.playwright.WebStorage;
 import io.github.jcd2052.browser.browser.interfaces.IStorageManager;
 import io.github.jcd2052.logger.LoggerProvider;
 
+/**
+ * Default {@link IStorageManager} implementation, wrapping Playwright's {@link WebStorage} for
+ * either {@code localStorage} or {@code sessionStorage}, depending on how it was constructed.
+ */
 public class StorageManager implements IStorageManager {
     private final WebStorage webStorage;
     private final String storageType;
 
+    /**
+     * Wraps the given web storage.
+     *
+     * @param webStorage  the Playwright {@link WebStorage} instance to delegate to
+     * @param storageType a human-readable label for this storage (e.g. {@code "localStorage"}), used in log messages
+     */
     public StorageManager(WebStorage webStorage, String storageType) {
         this.webStorage = webStorage;
         this.storageType = storageType;

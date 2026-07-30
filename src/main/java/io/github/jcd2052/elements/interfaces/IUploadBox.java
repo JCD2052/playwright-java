@@ -21,10 +21,20 @@ public interface IUploadBox extends IElement {
      * advanced event interception to handle modern, custom OS-level file chooser dialogs.
      * </p>
      *
-     * @param file The {@link File} object representing the local file to be uploaded.
+     * @param path The {@link Path} object representing path to file to upload.
      */
     void upload(Path path);
 
+    /**
+     * Uploads the specified local file to the associated web element.
+     * <p>
+     * Depending on the specific implementation, this method may inject the file path directly
+     * into a standard {@code <input type="file">} element, or it may utilize Playwright's
+     * advanced event interception to handle modern, custom OS-level file chooser dialogs.
+     * </p>
+     *
+     * @param file The {@link File} object representing the local file to be uploaded.
+     */
     default void upload(File file) {
         upload(file.toPath());
     }
