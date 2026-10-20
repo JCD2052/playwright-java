@@ -71,10 +71,7 @@ public class TextBoxElement extends AbstractElement implements ITextBoxElement {
     @Override
     public void clearAndFillText(String text) {
         highlightElementIfNeeded();
-        executeAction(() -> {
-                    getLocator().clear();
-                    getLocator().fill(text);
-                },
-                LogAction.TEXT_CLEARED_AND_FILLED, text);
+        // Locator.fill() already replaces the current value, so no separate clear() is needed.
+        executeAction(() -> getLocator().fill(text), LogAction.TEXT_CLEARED_AND_FILLED, text);
     }
 }

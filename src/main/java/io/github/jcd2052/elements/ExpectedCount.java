@@ -9,8 +9,10 @@ package io.github.jcd2052.elements;
 public enum ExpectedCount {
     /**
      * Expects exactly zero matching elements in the DOM.
-     * <p>When applied, the framework will explicitly assert that the locator count is 0,
-     * making it ideal for verifying the absence or disappearance of elements.</p>
+     * <p>When applied, the framework will wait (up to the default timeout) until no matching element
+     * remains attached, making it ideal for verifying the absence or disappearance of elements.
+     * If elements are still present when the timeout expires, an
+     * {@link io.github.jcd2052.exceptions.ElementTimeoutException} is thrown.</p>
      */
     ZERO,
     /**

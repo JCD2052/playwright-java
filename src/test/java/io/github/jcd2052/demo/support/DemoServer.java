@@ -11,7 +11,6 @@ import java.net.InetSocketAddress;
 /**
  * A minimal, dependency-free static file server that hosts the bundled demo pages
  * ({@code src/test/resources/demo-site}) used by the framework's offline demo test suite.
- * </p>
  * <p>
  * Built on the JDK's own {@link HttpServer} so no extra Maven dependency is required.
  * </p>

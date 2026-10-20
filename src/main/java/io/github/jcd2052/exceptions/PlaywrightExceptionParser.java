@@ -6,11 +6,35 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import io.github.jcd2052.elements.selector.Selector;
 
+import java.util.List;
+
 /**
  * Utility class to parse verbose Playwright exceptions into compact, readable framework exceptions.
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class PlaywrightExceptionParser {
+    /**
+     * Message fragments Playwright uses when the connection to the driver or browser is gone for good:
+     * the {@code Playwright} instance was closed, its driver process died, or the browser was closed.
+     */
+    private static final List<String> CONNECTION_LOST_MARKERS = List.of(
+            "Playwright connection closed",
+            "pipe closed",
+            "Target page, context or browser has been closed",
+            "Browser has been closed");
+
+    /**
+     * Checks whether an exception means the browser connection is permanently lost, so the browser
+     * can only be replaced, not retried.
+     *
+     * @param e the raw Playwright exception
+     * @return {@code true} if the driver or browser connection is gone
+     */
+    public static boolean isConnectionLost(PlaywrightException e) {
+        String message = e.getMessage();
+        return message != null && CONNECTION_LOST_MARKERS.stream().anyMatch(message::contains);
+    }
+
     /**
      * Parses a raw PlaywrightException and returns a compact Custom Exception.
      *

@@ -1,6 +1,8 @@
 package io.github.jcd2052.browser.browser;
 
 import com.microsoft.playwright.BrowserContext;
+import com.microsoft.playwright.Page;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import io.github.jcd2052.browser.browser.interfaces.IBrowserTab;
@@ -8,6 +10,8 @@ import io.github.jcd2052.browser.browser.interfaces.IBrowserWindow;
 import io.github.jcd2052.browser.browser.interfaces.ICookieManager;
 
 import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -32,6 +36,12 @@ public class BrowserWindow implements IBrowserWindow {
     @Setter
     private IBrowserTab currentBrowserTab;
     private final ICookieManager cookieManager;
+    /**
+     * Tab wrappers keyed by their Playwright page, so every lookup of the same page returns the same
+     * {@link IBrowserTab} instance. Entries are removed when their page closes.
+     */
+    @Getter(AccessLevel.NONE)
+    private final Map<Page, IBrowserTab> browserTabs = new LinkedHashMap<>();
 
     /**
      * Constructs a new {@code BrowserWindow} instance.
@@ -41,6 +51,7 @@ public class BrowserWindow implements IBrowserWindow {
     public BrowserWindow(BrowserContext context) {
         this.browserContext = context;
         this.cookieManager = new CookieManager(context);
+        context.pages().forEach(this::getOrCreateTab);
     }
 
     /**
@@ -51,13 +62,14 @@ public class BrowserWindow implements IBrowserWindow {
      */
     @Override
     public IBrowserTab openNewTab() {
-        IBrowserTab browserTab = new BrowserTab(browserContext.newPage());
+        IBrowserTab browserTab = getOrCreateTab(browserContext.newPage());
         setCurrentBrowserTab(browserTab);
         return browserTab;
     }
 
     /**
-     * Retrieves all currently open tabs within this browser window context.
+     * Retrieves all currently open tabs within this browser window context, including popups
+     * opened by the page itself. The same page always maps to the same {@link IBrowserTab} instance.
      *
      * @return A collection of {@link IBrowserTab} objects currently open in this window.
      */
@@ -65,7 +77,7 @@ public class BrowserWindow implements IBrowserWindow {
     public Collection<IBrowserTab> getBrowserTabs() {
         return browserContext.pages()
                 .stream()
-                .map(BrowserTab::new)
+                .map(this::getOrCreateTab)
                 .collect(Collectors.toList());
     }
 
@@ -84,5 +96,34 @@ public class BrowserWindow implements IBrowserWindow {
     @Override
     public void closeWindow() {
         browserContext.close();
+    }
+
+    /**
+     * Returns the cached wrapper for the given page, creating and registering it on first sight.
+     *
+     * @param page the Playwright page to wrap
+     * @return the {@link IBrowserTab} wrapping {@code page}
+     */
+    private IBrowserTab getOrCreateTab(Page page) {
+        IBrowserTab tab = browserTabs.get(page);
+        if (tab == null) {
+            tab = new BrowserTab(page);
+            browserTabs.put(page, tab);
+            page.onClose(this::forgetTab);
+        }
+        return tab;
+    }
+
+    /**
+     * Drops a closed page's wrapper. If it was the current tab, the most recently opened
+     * remaining tab becomes current (or {@code null} if none are left).
+     *
+     * @param page the page that was closed
+     */
+    private void forgetTab(Page page) {
+        IBrowserTab closedTab = browserTabs.remove(page);
+        if (closedTab != null && closedTab == currentBrowserTab) {
+            currentBrowserTab = browserTabs.values().stream().reduce((first, second) -> second).orElse(null);
+        }
     }
 }
