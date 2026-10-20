@@ -1,5 +1,6 @@
 package io.github.jcd2052.browser.services;
 
+import io.github.jcd2052.browser.services.interfaces.ILocalizationService;
 import lombok.Getter;
 import io.github.jcd2052.browser.configuration.IBrowserProperties;
 import io.github.jcd2052.browser.services.interfaces.IElementFactory;
@@ -58,6 +59,8 @@ public class ElementFactory implements IElementFactory {
      */
     @Getter
     private final IBrowserProperties browserProperties;
+    @Getter
+    private final ILocalizationService localizationService;
     private final Map<Class<? extends IElement>, Class<? extends IElement>> elementRegistry = new HashMap<>();
 
     /**
@@ -66,9 +69,13 @@ public class ElementFactory implements IElementFactory {
      * @param elementFinderService The service used to evaluate Selector strategies into Playwright Locators.
      * @param browserProperties    The global browser configuration properties.
      */
-    public ElementFactory(IElementFinderService elementFinderService, IBrowserProperties browserProperties) {
+    public ElementFactory(
+            IElementFinderService elementFinderService,
+            IBrowserProperties browserProperties,
+            ILocalizationService localizationService) {
         this.elementFinderService = elementFinderService;
         this.browserProperties = browserProperties;
+        this.localizationService = localizationService;
         registerDefaultElements();
     }
 

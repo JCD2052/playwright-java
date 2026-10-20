@@ -3,7 +3,7 @@ package io.github.jcd2052.elements;
 import io.github.jcd2052.browser.services.interfaces.IElementFactory;
 import io.github.jcd2052.elements.selector.Selector;
 import io.github.jcd2052.elements.interfaces.ITextBoxElement;
-import io.github.jcd2052.logger.LoggerProvider;
+import io.github.jcd2052.logger.i18n.LogAction;
 
 /**
  * A concrete representation of a text input field or text area within the web application.
@@ -35,12 +35,7 @@ public class TextBoxElement extends AbstractElement implements ITextBoxElement {
     @Override
     public String getInputValue() {
         highlightElementIfNeeded();
-        String value = executeActionReturning(() -> getLocator().inputValue(), "getInputValue");
-        LoggerProvider.getLogger().debugElementAction(
-                getElementType(),
-                getName(),
-                "retrieved input value: '%s'", value);
-        return value;
+        return executeActionReturning(() -> getLocator().inputValue(), LogAction.INPUT_VALUE_READ);
     }
 
     /**
@@ -54,8 +49,7 @@ public class TextBoxElement extends AbstractElement implements ITextBoxElement {
     @Override
     public void fillText(String text) {
         highlightElementIfNeeded();
-        executeAction(() -> getLocator().fill(text), "fillText");
-        LoggerProvider.getLogger().debugElementAction(getElementType(), getName(), "was filled with text: '%s'", text);
+        executeAction(() -> getLocator().fill(text), LogAction.TEXT_ENTERED, text);
     }
 
     /**
@@ -66,10 +60,14 @@ public class TextBoxElement extends AbstractElement implements ITextBoxElement {
     @Override
     public void clearText() {
         highlightElementIfNeeded();
-        executeAction(() -> getLocator().clear(), "clearText");
-        LoggerProvider.getLogger().debugElementAction(getElementType(), getName(), "was cleared");
+        executeAction(() -> getLocator().clear(), LogAction.TEXT_CLEARED);
     }
 
+    /**
+     * Clears any existing text and enters the specified text into the text box.
+     *
+     * @param text The string value to enter after clearing.
+     */
     @Override
     public void clearAndFillText(String text) {
         highlightElementIfNeeded();
@@ -77,12 +75,6 @@ public class TextBoxElement extends AbstractElement implements ITextBoxElement {
                     getLocator().clear();
                     getLocator().fill(text);
                 },
-                "clearAndFillText");
-        LoggerProvider.getLogger().debugElementAction(
-                getElementType(),
-                getName(),
-                "was cleared and filled with text: '%s'",
-                text);
-
+                LogAction.TEXT_CLEARED_AND_FILLED, text);
     }
 }

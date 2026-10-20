@@ -1,0 +1,42 @@
+{
+  "element_clicked": "Clicked on '%s'",
+  "element_double_clicked": "Double-clicked on '%s'",
+  "element_force_clicked": "Force-clicked on '%s'",
+  "element_right_clicked": "Right-clicked on '%s'",
+  "element_middle_clicked": "Middle-clicked on '%s'",
+  "element_clicked_at": "Clicked on '%1$s' at coordinates (x: %2$s, y: %3$s)",
+
+  "key_pressed": "Pressed key '%2$s' on '%1$s'",
+  "element_hovered": "Hovered over '%s'",
+  "element_focused": "Focused on '%s'",
+  "element_highlighted": "Highlighted element '%s'",
+  "element_dragged_to": "Dragged '%1$s' to '%2$s'",
+
+  "text_read": "Read text from '%s'",
+  "texts_read": "Read all texts from '%s'",
+  "attribute_read": "Read attribute '%2$s' from '%1$s'",
+  "input_value_read": "Read input value from '%s'",
+  "link_href_read": "Read href attribute from '%s'",
+
+  "element_visibility_checked": "Checked visibility of '%s'",
+  "element_enabled_checked": "Checked if '%s' is enabled",
+
+  "text_entered": "Typed text '%2$s' into '%1$s'",
+  "text_cleared": "Cleared text from '%s'",
+  "text_cleared_and_filled": "Cleared and filled text '%2$s' into '%1$s'",
+
+  "element_checked": "Checked the '%s'",
+  "element_unchecked": "Unchecked the '%s'",
+  "file_uploaded": "Uploaded file '%2$s' to '%1$s'",
+
+  "dropdown_option_read": "Read selected option from '%s'",
+  "dropdown_options_read": "Read all options from '%s'",
+  "option_selected_by_value": "Selected option with value '%2$s' from '%1$s'",
+  "option_selected_by_index": "Selected option at index %2$d from '%1$s'",
+  "option_selected_by_text": "Selected option with text '%2$s' from '%1$s'",
+
+  "wait_for_visible": "Waiting for element '%s' to become visible",
+  "wait_for_enabled": "Waiting for element '%s' to become enabled",
+  "element_not_found": "Could not locate element '%s'",
+  "action_failed": "Failed to interact with '%1$s'. Reason: %2$s"
+}

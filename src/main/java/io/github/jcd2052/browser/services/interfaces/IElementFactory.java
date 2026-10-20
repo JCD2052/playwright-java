@@ -76,6 +76,8 @@ public interface IElementFactory {
      */
     IElementFinderService getElementFinderService();
 
+    ILocalizationService getLocalizationService();
+
     /**
      * Checks if visual highlighting is enabled for elements during interaction.
      *

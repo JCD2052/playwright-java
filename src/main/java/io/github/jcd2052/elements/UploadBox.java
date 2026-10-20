@@ -3,7 +3,7 @@ package io.github.jcd2052.elements;
 import io.github.jcd2052.browser.services.interfaces.IElementFactory;
 import io.github.jcd2052.elements.selector.Selector;
 import io.github.jcd2052.elements.interfaces.IUploadBox;
-import io.github.jcd2052.logger.LoggerProvider;
+import io.github.jcd2052.logger.i18n.LogAction;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -36,16 +36,12 @@ public class UploadBox extends AbstractElement implements IUploadBox {
      * and passes it directly to Playwright's locator engine.
      * </p>
      *
-     * @param path The local file to be uploaded. Ensure the file exists on the execution machine's filesystem.
+     * @param filePath The local file to be uploaded. Ensure the file exists on the execution machine's filesystem.
      */
     @Override
-    public void upload(Path path) {
-        executeAction(() -> getLocator().setInputFiles(path), "upload");
-        getLocator().setInputFiles(path);
-        LoggerProvider.getLogger().debugElementAction(
-                getElementType(),
-                getName(),
-                "successfully uploaded file: '%s'",
-                path.getFileName());
+    public void upload(Path filePath) {
+        executeAction(
+                () -> getLocator().setInputFiles(filePath),
+                LogAction.FILE_UPLOADED, filePath.getFileName().toString());
     }
 }
