@@ -3,7 +3,7 @@ package io.github.jcd2052.elements;
 import io.github.jcd2052.browser.services.interfaces.IElementFactory;
 import io.github.jcd2052.elements.selector.Selector;
 import io.github.jcd2052.elements.interfaces.ICheckBoxElement;
-import io.github.jcd2052.logger.LoggerProvider;
+import io.github.jcd2052.logger.i18n.LogAction;
 
 /**
  * A concrete representation of a checkbox element within the web application.
@@ -32,8 +32,7 @@ public class CheckBoxElement extends AbstractCheckableElement implements ICheckB
     @Override
     public void check() {
         highlightElementIfNeeded();
-        executeAction(() -> getLocator().check(), "check");
-        LoggerProvider.getLogger().debugElementAction(getElementType(), getName(), "was checked");
+        executeAction(() -> getLocator().check(), LogAction.ELEMENT_CHECKED);
     }
 
     /**
@@ -45,7 +44,6 @@ public class CheckBoxElement extends AbstractCheckableElement implements ICheckB
     @Override
     public void uncheck() {
         highlightElementIfNeeded();
-        executeAction(() -> getLocator().uncheck(), "uncheck");
-        LoggerProvider.getLogger().debugElementAction(getElementType(), getName(), "was unchecked");
+        executeAction(() -> getLocator().uncheck(), LogAction.ELEMENT_UNCHECKED);
     }
 }

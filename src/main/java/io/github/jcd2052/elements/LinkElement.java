@@ -3,7 +3,7 @@ package io.github.jcd2052.elements;
 import io.github.jcd2052.browser.services.interfaces.IElementFactory;
 import io.github.jcd2052.elements.selector.Selector;
 import io.github.jcd2052.elements.interfaces.ILinkElement;
-import io.github.jcd2052.logger.LoggerProvider;
+import io.github.jcd2052.logger.i18n.LogAction;
 
 /**
  * A concrete representation of a hyperlink element (typically an HTML {@code <a>} tag) within the web application.
@@ -38,12 +38,6 @@ public class LinkElement extends AbstractElement implements ILinkElement {
     @Override
     public String getHref() {
         highlightElementIfNeeded();
-        String href = executeActionReturning(() -> getLocator().getAttribute(HREF_ATTRIBUTE_NAME), "getHref");
-        LoggerProvider.getLogger().debugElementAction(
-                getElementType(),
-                getName(),
-                "retrieved href attribute: '%s'",
-                href);
-        return href;
+        return executeActionReturning(() -> getLocator().getAttribute(HREF_ATTRIBUTE_NAME), LogAction.LINK_HREF_READ);
     }
 }

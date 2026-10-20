@@ -1,0 +1,42 @@
+{
+  "element_clicked": "Натиснуто на '%s'",
+  "element_double_clicked": "Двічі натиснуто на '%s'",
+  "element_force_clicked": "Примусово натиснуто на '%s'",
+  "element_right_clicked": "Натиснуто правою кнопкою миші на '%s'",
+  "element_middle_clicked": "Натиснуто середньою кнопкою миші на '%s'",
+  "element_clicked_at": "Натиснуто на '%1$s' за координатами (x: %2$s, y: %3$s)",
+
+  "key_pressed": "Натиснуто клавішу '%2$s' на '%1$s'",
+  "element_hovered": "Курсор наведено на '%s'",
+  "element_focused": "Сфокусовано на '%s'",
+  "element_highlighted": "Підсвічено елемент '%s'",
+  "element_dragged_to": "Перетягнуто '%1$s' до '%2$s'",
+
+  "text_read": "Прочитано текст з '%s'",
+  "texts_read": "Прочитано всі тексти з '%s'",
+  "attribute_read": "Прочитано атрибут '%2$s' з '%1$s'",
+  "input_value_read": "Прочитано значення вводу з '%s'",
+  "link_href_read": "Прочитано атрибут href з '%s'",
+
+  "element_visibility_checked": "Перевірено видимість '%s'",
+  "element_enabled_checked": "Перевірено доступність '%s'",
+
+  "text_entered": "Введено текст '%2$s' у '%1$s'",
+  "text_cleared": "Очищено текст з '%s'",
+  "text_cleared_and_filled": "Очищено та введено текст '%2$s' у '%1$s'",
+
+  "element_checked": "Відмічено '%s'",
+  "element_unchecked": "Знято відмітку з '%s'",
+  "file_uploaded": "Завантажено файл '%2$s' до '%1$s'",
+
+  "dropdown_option_read": "Прочитано обрану опцію з '%s'",
+  "dropdown_options_read": "Прочитано всі опції з '%s'",
+  "option_selected_by_value": "Обрано опцію зі значенням '%2$s' у '%1$s'",
+  "option_selected_by_index": "Обрано опцію за індексом %2$d у '%1$s'",
+  "option_selected_by_text": "Обрано опцію з текстом '%2$s' у '%1$s'",
+
+  "wait_for_visible": "Очікування появи видимості елемента '%s'",
+  "wait_for_enabled": "Очікування доступності елемента '%s'",
+  "element_not_found": "Не вдалося знайти елемент '%s'",
+  "action_failed": "Не вдалося взаємодіяти з '%1$s'. Причина: %2$s"
+}

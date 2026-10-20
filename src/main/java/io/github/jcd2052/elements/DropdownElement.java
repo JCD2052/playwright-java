@@ -5,7 +5,7 @@ import com.microsoft.playwright.options.SelectOption;
 import io.github.jcd2052.browser.services.interfaces.IElementFactory;
 import io.github.jcd2052.elements.selector.Selector;
 import io.github.jcd2052.elements.interfaces.IDropdownElement;
-import io.github.jcd2052.logger.LoggerProvider;
+import io.github.jcd2052.logger.i18n.LogAction;
 
 import java.util.List;
 import java.util.function.Function;
@@ -44,7 +44,7 @@ public class DropdownElement extends AbstractElement implements IDropdownElement
     public String getSelectedOption() {
         return executeActionReturning(
                 () -> getLocator().locator(SELECTOR_FOR_SELECTED_OPTION).innerText(),
-                "selectOption from dropdown");
+                LogAction.DROPDOWN_OPTION_READ);
     }
 
     /**
@@ -61,7 +61,7 @@ public class DropdownElement extends AbstractElement implements IDropdownElement
                         .stream()
                         .map(Locator::textContent)
                         .collect(Collectors.toList()),
-                "getting texts from dropdown");
+                LogAction.DROPDOWN_OPTIONS_READ);
     }
 
     /**
@@ -73,11 +73,7 @@ public class DropdownElement extends AbstractElement implements IDropdownElement
     public void selectByValue(String option) {
         executeAction(
                 () -> selectByOption(selectOption -> selectOption.setValue(option)),
-                "selectByValue");
-        LoggerProvider.getLogger().debugElementAction(
-                getElementType(),
-                getName(),
-                "selecting option by value: '%s'",
+                LogAction.OPTION_SELECTED_BY_VALUE,
                 option);
     }
 
@@ -90,11 +86,7 @@ public class DropdownElement extends AbstractElement implements IDropdownElement
     public void selectByIndex(int index) {
         executeAction(
                 () -> selectByOption(selectOption -> selectOption.setIndex(index)),
-                "selectByIndex");
-        LoggerProvider.getLogger().debugElementAction(
-                getElementType(),
-                getName(),
-                "selecting option by index: %d",
+                LogAction.OPTION_SELECTED_BY_INDEX,
                 index);
     }
 
@@ -107,11 +99,7 @@ public class DropdownElement extends AbstractElement implements IDropdownElement
     public void selectByText(String text) {
         executeAction(
                 () -> selectByOption(selectOption -> selectOption.setLabel(text)),
-                "selectByText");
-        LoggerProvider.getLogger().debugElementAction(
-                getElementType(),
-                getName(),
-                "selecting option by text: '%s'",
+                LogAction.OPTION_SELECTED_BY_TEXT,
                 text);
     }
 

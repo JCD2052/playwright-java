@@ -3,6 +3,7 @@ package io.github.jcd2052.browser.services;
 import io.github.jcd2052.browser.configuration.IBrowserProperties;
 import io.github.jcd2052.browser.services.interfaces.IElementFactory;
 import io.github.jcd2052.browser.services.interfaces.IElementFinderService;
+import io.github.jcd2052.browser.services.interfaces.ILocalizationService;
 import io.github.jcd2052.elements.AbstractElement;
 import io.github.jcd2052.elements.ButtonElement;
 import io.github.jcd2052.elements.selector.Selector;
@@ -78,8 +79,9 @@ public class ElementFactoryTest {
     private ElementFactory newFactory() {
         IElementFinderService finderService = mock(IElementFinderService.class);
         IBrowserProperties browserProperties = mock(IBrowserProperties.class);
+        ILocalizationService localizationService = mock(ILocalizationService.class);
         when(browserProperties.isHighlight()).thenReturn(false);
-        return new ElementFactory(finderService, browserProperties);
+        return new ElementFactory(finderService, browserProperties, localizationService);
     }
 
     /**

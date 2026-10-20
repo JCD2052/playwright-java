@@ -62,7 +62,7 @@ public class ElementCollection<T extends IElement> implements IElementCollection
     @Override
     public List<T> getElements() {
         waitForCondition();
-        int size = getSize();
+        int size = getLocator().count();
         List<T> elementList = new ArrayList<>();
 
         for (int i = 0; i < size; i++) {
@@ -87,7 +87,7 @@ public class ElementCollection<T extends IElement> implements IElementCollection
      * </ul>
      */
     private void waitForCondition() {
-        Locator locator = elementFactory.getElementFinderService().findElement(selector);
+        Locator locator = getLocator();
         switch (expectedCount) {
             case ZERO:
                 assertThat(locator).hasCount(0);
@@ -101,12 +101,7 @@ public class ElementCollection<T extends IElement> implements IElementCollection
         }
     }
 
-    /**
-     * Retrieves the current number of elements in the DOM matching the collection's selector strategy.
-     *
-     * @return The integer count of matching elements.
-     */
-    private int getSize() {
-        return elementFactory.getElementFinderService().findElement(selector).count();
+    private Locator getLocator() {
+        return elementFactory.getElementFinderService().findElement(selector);
     }
 }

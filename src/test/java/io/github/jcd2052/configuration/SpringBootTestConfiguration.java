@@ -10,9 +10,13 @@ import io.github.jcd2052.browser.launcher.IBrowserLauncherRegistry;
 import io.github.jcd2052.browser.services.BrowserService;
 import io.github.jcd2052.browser.services.ElementFactory;
 import io.github.jcd2052.browser.services.ElementFinderService;
+import io.github.jcd2052.browser.services.LocalizationService;
 import io.github.jcd2052.browser.services.interfaces.IBrowserService;
 import io.github.jcd2052.browser.services.interfaces.IElementFactory;
 import io.github.jcd2052.browser.services.interfaces.IElementFinderService;
+import io.github.jcd2052.browser.services.interfaces.ILocalizationService;
+import io.github.jcd2052.logger.i18n.ILocalizationReader;
+import io.github.jcd2052.logger.i18n.LocalizationReader;
 import io.github.jcd2052.waiting.ConditionalWait;
 import io.github.jcd2052.waiting.IConditionalWait;
 import org.springframework.beans.factory.annotation.Value;
@@ -71,8 +75,10 @@ public class SpringBootTestConfiguration {
     private boolean mobile;
     @Value("${playwright.browser.has.touch:false}")
     private boolean hasTouch;
-    @Value("${playwright.browser.storage.state.path:}")
+    @Value("${playwright.browser.storage.state.path}")
     private String storageStatePath;
+    @Value("${playwright.browser.has.logs.language}")
+    private String localizationLanguage;
 
     @Bean
     public IBrowserLauncherRegistry browserLauncherRegistry() {
@@ -88,8 +94,19 @@ public class SpringBootTestConfiguration {
     @Bean
     public IElementFactory elementFactory(
             IElementFinderService elementFinderService,
-            IBrowserProperties browserProperties) {
-        return new ElementFactory(elementFinderService, browserProperties);
+            IBrowserProperties browserProperties,
+            ILocalizationService localizationService) {
+        return new ElementFactory(elementFinderService, browserProperties, localizationService);
+    }
+
+    @Bean
+    public ILocalizationService localizationService(ILocalizationReader localizationReader) {
+        return new LocalizationService(localizationReader, localizationLanguage, null);
+    }
+
+    @Bean
+    public ILocalizationReader localizationReader() {
+        return new LocalizationReader();
     }
 
     @Bean

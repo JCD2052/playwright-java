@@ -4,6 +4,9 @@ import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.PlaywrightException;
 import com.microsoft.playwright.options.BoundingBox;
 import com.microsoft.playwright.options.MouseButton;
+import io.github.jcd2052.browser.services.interfaces.ILocalizationService;
+import io.github.jcd2052.exceptions.BasePlaywrightException;
+import io.github.jcd2052.logger.i18n.LogAction;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import io.github.jcd2052.browser.browser.MouseActions;
@@ -49,6 +52,7 @@ public abstract class AbstractElement implements IElement {
      */
     @Getter
     protected final IJsActions jsActions;
+    protected final ILocalizationService i18n;
 
     /**
      * Constructs a new {@code AbstractElement}.
@@ -57,48 +61,53 @@ public abstract class AbstractElement implements IElement {
      * @param name           A human-readable name for the element, used in logging.
      * @param elementFactory The factory responsible for creating and locating elements.
      */
-    protected AbstractElement(Selector selector, String name, IElementFactory elementFactory) {
+    protected AbstractElement(
+            Selector selector,
+            String name,
+            IElementFactory elementFactory) {
         this.elementFactory = elementFactory;
         this.name = name;
         this.selector = selector;
+        this.i18n = elementFactory.getLocalizationService();
         this.jsActions = new JsActions(this);
     }
 
     @Override
     public void click() {
-        LoggerProvider.getLogger().debugElementAction(getElementType(), getName(), "was clicked");
-        clickWithOptions(new Locator.ClickOptions());
+        executeAction(() -> getLocator().click(), LogAction.ELEMENT_CLICKED);
     }
 
     @Override
     public void doubleClick() {
-        LoggerProvider.getLogger().debugElementAction(getElementType(), getName(), "was double-clicked");
-        doubleClickWithOptions(new Locator.DblclickOptions());
+        executeAction(() -> getLocator().dblclick(), LogAction.ELEMENT_DOUBLE_CLICKED);
     }
 
     @Override
     public void forceClick() {
-        LoggerProvider.getLogger().debugElementAction(getElementType(), getName(), "was force clicked");
-        clickWithOptions(new Locator.ClickOptions().setForce(true));
+        executeAction(
+                () -> getLocator().click(new Locator.ClickOptions().setForce(true)),
+                LogAction.ELEMENT_FORCE_CLICKED);
     }
 
     @Override
     public void rightClick() {
-        LoggerProvider.getLogger().debugElementAction(getElementType(), getName(), "was right-clicked");
-        clickWithOptions(new Locator.ClickOptions().setButton(MouseButton.RIGHT));
+        executeAction(
+                () -> getLocator().click(new Locator.ClickOptions().setButton(MouseButton.RIGHT)),
+                LogAction.ELEMENT_RIGHT_CLICKED);
     }
 
     @Override
     public void middleClick() {
-        LoggerProvider.getLogger().debugElementAction(getElementType(), getName(), "was middle-clicked");
-        clickWithOptions(new Locator.ClickOptions().setButton(MouseButton.MIDDLE));
+        executeAction(
+                () -> getLocator().click(new Locator.ClickOptions().setButton(MouseButton.MIDDLE)),
+                LogAction.ELEMENT_MIDDLE_CLICKED);
     }
 
     @Override
     public void click(double x, double y) {
-        LoggerProvider.getLogger().debugElementAction(
-                getElementType(), getName(), "was clicked at coordinates (x: %s, y: %s)", x, y);
-        clickWithOptions(new Locator.ClickOptions().setPosition(x, y));
+        executeAction(
+                () -> getLocator().click(new Locator.ClickOptions().setPosition(x, y)),
+                LogAction.ELEMENT_CLICKED_AT, x, y);
     }
 
     /**
@@ -108,34 +117,32 @@ public abstract class AbstractElement implements IElement {
      */
     @Override
     public void press(String key) {
-        LoggerProvider.getLogger().debugElementAction(getElementType(), getName(), "pressed key '%s'", key);
-        executeAction(() -> getLocator().press(key), "press");
+        executeAction(() -> getLocator().press(key), LogAction.KEY_PRESSED, key);
     }
 
     @Override
     public void dragAndDropTo(IElement targetElement, int steps) {
-        LoggerProvider.getLogger().debugElementAction(
-                getElementType(), getName(), "performing stepped drag-and-drop to '%s'", targetElement.getName());
+        executeAction(
+                () -> {
+                    BoundingBox sourceBox = getLocator().boundingBox();
+                    BoundingBox targetBox = targetElement.getLocator().boundingBox();
 
-        executeAction(() -> {
-            BoundingBox sourceBox = getLocator().boundingBox();
-            BoundingBox targetBox = targetElement.getLocator().boundingBox();
+                    if (sourceBox == null || targetBox == null) {
+                        throw new IllegalStateException("Cannot perform dragAndDropTo: " +
+                                "Source or target element is not visible.");
+                    }
 
-            if (sourceBox == null || targetBox == null) {
-                throw new IllegalStateException(
-                        "Cannot perform dragAndDropTo: Source or target element is not visible.");
-            }
+                    double startX = sourceBox.x + (sourceBox.width / 2);
+                    double startY = sourceBox.y + (sourceBox.height / 2);
+                    double endX = targetBox.x + (targetBox.width / 2);
+                    double endY = targetBox.y + (targetBox.height / 2);
 
-            double startX = sourceBox.x + (sourceBox.width / 2);
-            double startY = sourceBox.y + (sourceBox.height / 2);
-            double endX = targetBox.x + (targetBox.width / 2);
-            double endY = targetBox.y + (targetBox.height / 2);
-
-            getMouseActions().move(startX, startY);
-            getMouseActions().down();
-            getMouseActions().move(endX, endY, steps);
-            getMouseActions().up();
-        }, "dragAndDropTo");
+                    getMouseActions().move(startX, startY);
+                    getMouseActions().down();
+                    getMouseActions().move(endX, endY, steps);
+                    getMouseActions().up();
+                },
+                LogAction.ELEMENT_DRAGGED_TO, targetElement.getName());
     }
 
     @Override
@@ -151,7 +158,7 @@ public abstract class AbstractElement implements IElement {
     @Override
     public List<String> getAllTexts() {
         highlightElementIfNeeded();
-        String innerText = executeActionReturning(() -> getLocator().innerText(), "getAllTexts");
+        String innerText = executeActionReturning(() -> getLocator().innerText(), LogAction.TEXTS_READ);
         return Arrays.stream(innerText.split(StringUtils.LF)).collect(Collectors.toList());
     }
 
@@ -163,13 +170,7 @@ public abstract class AbstractElement implements IElement {
     @Override
     public String getText() {
         highlightElementIfNeeded();
-        String text = executeActionReturning(() -> getLocator().textContent(), "getText");
-        LoggerProvider.getLogger().debugElementAction(
-                getElementType(),
-                getName(),
-                "text was retrieved. Result: '%s'",
-                text);
-        return text;
+        return executeActionReturning(() -> getLocator().textContent(), LogAction.TEXT_READ);
     }
 
     /**
@@ -180,14 +181,9 @@ public abstract class AbstractElement implements IElement {
      */
     @Override
     public String getAttribute(String name) {
-        String attribute = executeActionReturning(
+        return executeActionReturning(
                 () -> getLocator().getAttribute(name, new Locator.GetAttributeOptions()),
-                "getAttribute");
-        LoggerProvider.getLogger().debugElementAction(
-                getElementType(),
-                getName(),
-                "attribute '%s' was retrieved. Result: '%s'", name, attribute);
-        return attribute;
+                LogAction.ATTRIBUTE_READ, name);
     }
 
     /**
@@ -197,13 +193,7 @@ public abstract class AbstractElement implements IElement {
      */
     @Override
     public boolean isVisible() {
-        boolean visible = getLocator().isVisible();
-        LoggerProvider.getLogger().debugElementAction(
-                getElementType(),
-                getName(),
-                "checked visibility. Result: %b",
-                visible);
-        return visible;
+        return executeActionReturning(() -> getLocator().isVisible(), LogAction.ELEMENT_VISIBILITY_CHECKED);
     }
 
     /**
@@ -214,13 +204,7 @@ public abstract class AbstractElement implements IElement {
     @Override
     public boolean isEnabled() {
         highlightElementIfNeeded();
-        boolean enabled = getLocator().isEnabled();
-        LoggerProvider.getLogger().debugElementAction(
-                getElementType(),
-                getName(),
-                "checked if enabled. Result: %b",
-                enabled);
-        return enabled;
+        return executeActionReturning(() -> getLocator().isEnabled(), LogAction.ELEMENT_ENABLED_CHECKED);
     }
 
     /**
@@ -303,62 +287,70 @@ public abstract class AbstractElement implements IElement {
         if (elementFactory.isHighlightEnabled()) {
             executeAction(
                     () -> getLocator().highlight(new Locator.HighlightOptions().setStyle("outline: 3px solid red")),
-                    "highlight");
+                    LogAction.ELEMENT_HIGHLIGHTED);
         }
     }
 
     /**
-     * Retrieves the simple class name of the concrete element type (e.g., "ButtonElement", "TextBoxElement").
+     * Executes a runnable action, providing centralized localized logging and exception handling.
      *
-     * @return The simple name of the class.
+     * @param action    The Playwright action to execute.
+     * @param logAction The localized action enum.
+     * @param args      Any additional arguments for the log message.
      */
-    protected String getElementType() {
-        return this.getClass().getSimpleName();
-    }
-
-    /**
-     * Wraps void element actions in a safe execution block to parse verbose Playwright exceptions.
-     */
-    protected void executeAction(Runnable action, String actionName) {
-        try {
+    protected void executeAction(Runnable action, LogAction logAction, Object... args) {
+        executeActionReturning(() -> {
             action.run();
-        } catch (PlaywrightException e) {
-            throw PlaywrightExceptionParser.parse(e, getName(), getSelector(), actionName);
-        }
+            return null;
+        }, logAction, args);
     }
 
     /**
-     * Wraps returning element actions in a safe execution block to parse verbose Playwright exceptions.
+     * Executes a returning action, providing centralized localized logging and exception handling.
+     *
+     * @param <R>       The type of the result returned by the action.
+     * @param action    The Playwright action returning a result to execute.
+     * @param logAction The localized action enum.
+     * @param args      Any additional arguments for the log message.
+     * @return The result of the Playwright action.
      */
-    protected <R> R executeActionReturning(Supplier<R> action, String actionName) {
+    protected <R> R executeActionReturning(Supplier<R> action, LogAction logAction, Object... args) {
         try {
-            return action.get();
+            R result = action.get();
+            if (logAction != null) {
+                logSuccess(logAction, args);
+            }
+            return result;
         } catch (PlaywrightException e) {
-            throw PlaywrightExceptionParser.parse(e, getName(), getSelector(), actionName);
+            throw handleException(e, logAction);
         }
     }
 
     /**
-     * A centralized helper method to execute click interactions with specific Playwright options.
-     * <p>This applies the provided options, enforces stability configurations,
-     * and handles framework-level synchronization and highlighting.</p>
-     *
-     * @param options The Playwright ClickOptions to apply (button type, position, force, etc.).
+     * Formats the arguments and logs a successful action using the localization service.
      */
-    private void clickWithOptions(Locator.ClickOptions options) {
-        highlightElementIfNeeded();
-        executeAction(() -> getLocator().click(options), "click");
+    private void logSuccess(LogAction logAction, Object... args) {
+        Object[] formatArgs = new Object[args.length + 1];
+        formatArgs[0] = this.name;
+        System.arraycopy(args, 0, formatArgs, 1, args.length);
+
+        LoggerProvider.getLogger().info(i18n.getMessage(logAction, formatArgs));
     }
 
     /**
-     * A centralized helper method to execute double-click interactions with specific Playwright options.
-     * <p>This applies the provided options, enforces stability configurations,
-     * and handles framework-level synchronization and highlighting.</p>
-     *
-     * @param options The Playwright DblclickOptions  class to apply (button type, position, force, etc.).
+     * Parses a PlaywrightException, logs the localized error, and returns a custom framework exception.
      */
-    private void doubleClickWithOptions(Locator.DblclickOptions options) {
-        highlightElementIfNeeded();
-        executeAction(() -> getLocator().dblclick(options), "double click");
+    private BasePlaywrightException handleException(PlaywrightException e, LogAction logAction) {
+        BasePlaywrightException parsedException = PlaywrightExceptionParser.parse(
+                e,
+                this.name,
+                this.selector,
+                logAction.getKey()
+        );
+
+        String errorMessage = i18n.getMessage(LogAction.ACTION_FAILED, this.name, parsedException.getMessage());
+        LoggerProvider.getLogger().error(errorMessage);
+
+        return parsedException;
     }
 }
