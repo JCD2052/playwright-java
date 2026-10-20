@@ -114,4 +114,19 @@ public class PlaywrightExceptionParserTest {
         ElementActionException exception = new ElementActionException("plain message");
         assertNull(exception.getCause());
     }
+
+    @Test
+    public void connectionLossMessagesAreRecognised() {
+        assertTrue(PlaywrightExceptionParser.isConnectionLost(new PlaywrightException("Playwright connection closed")));
+        assertTrue(PlaywrightExceptionParser.isConnectionLost(
+                new PlaywrightException("Failed to read message from driver, pipe closed.")));
+        assertTrue(PlaywrightExceptionParser.isConnectionLost(
+                new PlaywrightException("Error {\n  message='Target page, context or browser has been closed'")));
+    }
+
+    @Test
+    public void ordinaryFailuresAreNotTreatedAsConnectionLoss() {
+        assertFalse(PlaywrightExceptionParser.isConnectionLost(new PlaywrightException("Failed to read storage state from file")));
+        assertFalse(PlaywrightExceptionParser.isConnectionLost(new PlaywrightException(null)));
+    }
 }

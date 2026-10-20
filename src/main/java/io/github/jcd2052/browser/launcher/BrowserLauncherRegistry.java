@@ -11,11 +11,12 @@ public class BrowserLauncherRegistry implements IBrowserLauncherRegistry {
     private final Map<String, IBrowserLauncher> registry = new HashMap<>();
 
     /**
-     * Creates the registry and registers the four core Playwright-supported browsers
-     * ({@code chrome}, {@code firefox}, {@code edge}, {@code webkit}) under their default names.
+     * Creates the registry and registers the core Playwright-supported browsers
+     * ({@code chrome}, {@code chromium}, {@code firefox}, {@code edge}, {@code webkit}) under their default names.
      */
     public BrowserLauncherRegistry() {
         register(new ChromeLauncher());
+        register(new ChromiumLauncher());
         register(new FirefoxLauncher());
         register(new EdgeLauncher());
         register(new WebkitLauncher());

@@ -8,7 +8,10 @@
 
   "key_pressed": "Pressed key '%2$s' on '%1$s'",
   "element_hovered": "Hovered over '%s'",
-  "element_focused": "Focused on '%s'",
+  "element_unfocused": "Removed focus from '%s'",
+  "element_scrolled_to": "Scrolled to '%s'",
+  "element_js_clicked": "Clicked on '%s' with JavaScript",
+  "element_screenshot_taken": "Took a screenshot of '%s'",
   "element_highlighted": "Highlighted element '%s'",
   "element_dragged_to": "Dragged '%1$s' to '%2$s'",
 
@@ -20,6 +23,8 @@
 
   "element_visibility_checked": "Checked visibility of '%s'",
   "element_enabled_checked": "Checked if '%s' is enabled",
+  "element_state_reached": "'%1$s' reached state '%2$s'",
+  "element_state_not_reached": "'%1$s' did not reach state '%2$s' in time",
 
   "text_entered": "Typed text '%2$s' into '%1$s'",
   "text_cleared": "Cleared text from '%s'",
@@ -27,6 +32,7 @@
 
   "element_checked": "Checked the '%s'",
   "element_unchecked": "Unchecked the '%s'",
+  "element_is_checked": "Checked if '%s' is checked",
   "file_uploaded": "Uploaded file '%2$s' to '%1$s'",
 
   "dropdown_option_read": "Read selected option from '%s'",
@@ -35,8 +41,5 @@
   "option_selected_by_index": "Selected option at index %2$d from '%1$s'",
   "option_selected_by_text": "Selected option with text '%2$s' from '%1$s'",
 
-  "wait_for_visible": "Waiting for element '%s' to become visible",
-  "wait_for_enabled": "Waiting for element '%s' to become enabled",
-  "element_not_found": "Could not locate element '%s'",
   "action_failed": "Failed to interact with '%1$s'. Reason: %2$s"
 }

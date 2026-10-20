@@ -1,9 +1,11 @@
 package io.github.jcd2052.browser.browser;
 
 import com.microsoft.playwright.Browser;
+import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.options.Geolocation;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import io.github.jcd2052.browser.browser.interfaces.IBrowser;
@@ -13,7 +15,9 @@ import io.github.jcd2052.browser.configuration.IBrowserProperties;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -41,16 +45,24 @@ public class PlaywrightBrowser implements IBrowser {
      */
     @Setter
     private IBrowserWindow currentBrowserWindow;
-
     /**
-     * Flag indicating whether this browser instance has been closed.
+     * Flag indicating whether {@link #close()} has been called on this browser instance.
+     * Volatile so {@link io.github.jcd2052.browser.services.interfaces.IBrowserService#closeAll()}
+     * running on another thread is seen by the thread that owns this browser.
      */
-    private boolean isClosed;
-
+    @Getter(AccessLevel.NONE)
+    private volatile boolean isClosed;
     /**
      * The configuration properties used to initialize browser contexts.
      */
     private final IBrowserProperties browserProperties;
+    /**
+     * Window wrappers keyed by their Playwright context, so every lookup of the same context returns
+     * the same {@link IBrowserWindow} instance (with its current tab intact). Entries are removed
+     * when their context closes.
+     */
+    @Getter(AccessLevel.NONE)
+    private final Map<BrowserContext, IBrowserWindow> browserWindows = new LinkedHashMap<>();
 
     /**
      * Constructs a new {@code PlaywrightBrowser} instance.
@@ -102,7 +114,7 @@ public class PlaywrightBrowser implements IBrowser {
     public Collection<IBrowserWindow> getBrowserWindows() {
         return browser.contexts()
                 .stream()
-                .map(BrowserWindow::new)
+                .map(this::getOrCreateWindow)
                 .collect(Collectors.toList());
     }
 
@@ -119,8 +131,7 @@ public class PlaywrightBrowser implements IBrowser {
      */
     @Override
     public byte[] takeScreenshot() {
-        return getCurrentBrowserWindow()
-                .getCurrentBrowserTab()
+        return requireCurrentBrowserTab()
                 .getPage()
                 .screenshot(new Page.ScreenshotOptions().setFullPage(true));
     }
@@ -139,20 +150,52 @@ public class PlaywrightBrowser implements IBrowser {
     /**
      * {@inheritDoc}
      * <p>
-     * Marks the internal {@code isClosed} flag as true after closing the Playwright browser.
+     * Closes the Playwright browser and then its driver process. The driver is always closed, even if
+     * the browser fails to close or has already crashed, so no driver process is left running.
+     * Calling this more than once has no effect.
+     *
+     * @throws RuntimeException the first failure raised while closing; a second failure is attached
+     *                          to it as a suppressed exception.
      */
     @Override
     public void close() {
         if (isClosed) {
             return;
         }
+        isClosed = true;
 
+        RuntimeException failure = null;
         try {
             browser.close();
-        } finally {
-            playwright.close();
-            isClosed = true;
+        } catch (RuntimeException e) {
+            failure = e;
         }
+        try {
+            playwright.close();
+        } catch (RuntimeException e) {
+            if (failure == null) {
+                failure = e;
+            } else {
+                failure.addSuppressed(e);
+            }
+        }
+        browserWindows.clear();
+        currentBrowserWindow = null;
+
+        if (failure != null) {
+            throw failure;
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Also reports {@code true} when the underlying browser has disconnected on its own (for example
+     * it crashed or was killed), so callers replace it instead of reusing a dead instance.
+     */
+    @Override
+    public boolean isClosed() {
+        return isClosed || !browser.isConnected();
     }
 
 
@@ -163,7 +206,7 @@ public class PlaywrightBrowser implements IBrowser {
      * @return the newly created, now-current {@link IBrowserWindow}.
      */
     private IBrowserWindow createWindow(Browser.NewContextOptions options) {
-        BrowserWindow browserWindow = new BrowserWindow(browser.newContext(options));
+        IBrowserWindow browserWindow = getOrCreateWindow(browser.newContext(options));
         browserWindow.getBrowserContext().setDefaultTimeout(browserProperties.getTimeout());
         browserWindow.getBrowserContext().setDefaultNavigationTimeout(browserProperties.getPageLoadTimeout());
         setCurrentBrowserWindow(browserWindow);
@@ -220,6 +263,35 @@ public class PlaywrightBrowser implements IBrowser {
         }
 
         return options;
+    }
+
+    /**
+     * Returns the cached wrapper for the given context, creating and registering it on first sight.
+     *
+     * @param context the Playwright browser context to wrap
+     * @return the {@link IBrowserWindow} wrapping {@code context}
+     */
+    private IBrowserWindow getOrCreateWindow(BrowserContext context) {
+        IBrowserWindow window = browserWindows.get(context);
+        if (window == null) {
+            window = new BrowserWindow(context);
+            browserWindows.put(context, window);
+            context.onClose(this::forgetWindow);
+        }
+        return window;
+    }
+
+    /**
+     * Drops a closed context's wrapper. If it was the current window, the most recently opened
+     * remaining window becomes current (or {@code null} if none are left).
+     *
+     * @param context the context that was closed
+     */
+    private void forgetWindow(BrowserContext context) {
+        IBrowserWindow closedWindow = browserWindows.remove(context);
+        if (closedWindow != null && closedWindow == currentBrowserWindow) {
+            currentBrowserWindow = browserWindows.values().stream().reduce((first, second) -> second).orElse(null);
+        }
     }
 
     private static boolean isNotBlank(String value) {

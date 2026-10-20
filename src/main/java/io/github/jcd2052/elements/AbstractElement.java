@@ -2,13 +2,14 @@ package io.github.jcd2052.elements;
 
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.PlaywrightException;
+import com.microsoft.playwright.TimeoutError;
 import com.microsoft.playwright.options.BoundingBox;
 import com.microsoft.playwright.options.MouseButton;
+import com.microsoft.playwright.options.WaitForSelectorState;
 import io.github.jcd2052.browser.services.interfaces.ILocalizationService;
 import io.github.jcd2052.exceptions.BasePlaywrightException;
 import io.github.jcd2052.logger.i18n.LogAction;
 import lombok.Getter;
-import org.apache.commons.lang3.StringUtils;
 import io.github.jcd2052.browser.browser.MouseActions;
 import io.github.jcd2052.browser.browser.interfaces.IMouseActions;
 import io.github.jcd2052.browser.services.interfaces.IElementFactory;
@@ -20,10 +21,8 @@ import io.github.jcd2052.elements.interfaces.IJsActions;
 import io.github.jcd2052.exceptions.PlaywrightExceptionParser;
 import io.github.jcd2052.logger.LoggerProvider;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * The core abstract base class for all web elements in the framework.
@@ -124,25 +123,94 @@ public abstract class AbstractElement implements IElement {
     public void dragAndDropTo(IElement targetElement, int steps) {
         executeAction(
                 () -> {
+                    // Bounding boxes are viewport coordinates, so each element must be scrolled into
+                    // view right before its box is read, or the mouse lands outside the page.
+                    getLocator().scrollIntoViewIfNeeded();
                     BoundingBox sourceBox = getLocator().boundingBox();
-                    BoundingBox targetBox = targetElement.getLocator().boundingBox();
-
-                    if (sourceBox == null || targetBox == null) {
-                        throw new IllegalStateException("Cannot perform dragAndDropTo: " +
-                                "Source or target element is not visible.");
+                    if (sourceBox == null) {
+                        throw new IllegalStateException("Cannot perform dragAndDropTo: source element is not visible.");
                     }
-
-                    double startX = sourceBox.x + (sourceBox.width / 2);
-                    double startY = sourceBox.y + (sourceBox.height / 2);
-                    double endX = targetBox.x + (targetBox.width / 2);
-                    double endY = targetBox.y + (targetBox.height / 2);
-
-                    getMouseActions().move(startX, startY);
+                    getMouseActions().move(sourceBox.x + (sourceBox.width / 2), sourceBox.y + (sourceBox.height / 2));
                     getMouseActions().down();
-                    getMouseActions().move(endX, endY, steps);
+
+                    targetElement.getLocator().scrollIntoViewIfNeeded();
+                    BoundingBox targetBox = targetElement.getLocator().boundingBox();
+                    if (targetBox == null) {
+                        throw new IllegalStateException("Cannot perform dragAndDropTo: target element is not visible.");
+                    }
+                    getMouseActions().move(targetBox.x + (targetBox.width / 2), targetBox.y + (targetBox.height / 2), steps);
                     getMouseActions().up();
                 },
                 LogAction.ELEMENT_DRAGGED_TO, targetElement.getName());
+    }
+
+    @Override
+    public void dragTo(IElement targetElement) {
+        executeAction(() -> getLocator().dragTo(targetElement.getLocator()),
+                LogAction.ELEMENT_DRAGGED_TO, targetElement.getName());
+    }
+
+    @Override
+    public void hover() {
+        executeAction(() -> getLocator().hover(), LogAction.ELEMENT_HOVERED);
+    }
+
+    @Override
+    public void unfocus() {
+        executeAction(() -> getLocator().blur(), LogAction.ELEMENT_UNFOCUSED);
+    }
+
+    @Override
+    public void scrollToElement() {
+        executeAction(() -> getLocator().scrollIntoViewIfNeeded(), LogAction.ELEMENT_SCROLLED_TO);
+    }
+
+    @Override
+    public void clickWithJs() {
+        executeAction(() -> getJsActions().click(), LogAction.ELEMENT_JS_CLICKED);
+    }
+
+    @Override
+    public byte[] getScreenshot() {
+        return executeActionReturning(() -> getLocator().screenshot(), LogAction.ELEMENT_SCREENSHOT_TAKEN);
+    }
+
+    /**
+     * Waits for the element to reach the given state, failing with a framework exception if it doesn't.
+     *
+     * @param state   the state to wait for, or {@code null} for Playwright's default ({@code VISIBLE})
+     * @param timeout the timeout in milliseconds, or {@code null} for the context's default timeout
+     */
+    @Override
+    public void waitForState(WaitForSelectorState state, Double timeout) {
+        executeAction(() -> getLocator().waitFor(buildWaitOptions(state, timeout)),
+                LogAction.ELEMENT_STATE_REACHED, describeState(state));
+    }
+
+    /**
+     * Waits for the element to reach the given state and reports whether it did.
+     * <p>
+     * Not reaching the state in time is an expected outcome here, so it is logged at INFO level and
+     * returned as {@code false} instead of being logged as a failure; any other Playwright error is
+     * thrown as a framework exception.
+     * </p>
+     *
+     * @param state   the state to wait for, or {@code null} for Playwright's default ({@code VISIBLE})
+     * @param timeout the timeout in milliseconds, or {@code null} for the context's default timeout
+     * @return {@code true} if the state was reached in time, {@code false} otherwise
+     */
+    @Override
+    public boolean waitForLoading(WaitForSelectorState state, Double timeout) {
+        try {
+            getLocator().waitFor(buildWaitOptions(state, timeout));
+        } catch (TimeoutError e) {
+            logInfo(LogAction.ELEMENT_STATE_NOT_REACHED, describeState(state));
+            return false;
+        } catch (PlaywrightException e) {
+            throw handleException(e, LogAction.ELEMENT_STATE_REACHED);
+        }
+        logInfo(LogAction.ELEMENT_STATE_REACHED, describeState(state));
+        return true;
     }
 
     @Override
@@ -158,8 +226,7 @@ public abstract class AbstractElement implements IElement {
     @Override
     public List<String> getAllTexts() {
         highlightElementIfNeeded();
-        String innerText = executeActionReturning(() -> getLocator().innerText(), LogAction.TEXTS_READ);
-        return Arrays.stream(innerText.split(StringUtils.LF)).collect(Collectors.toList());
+        return executeActionReturning(() -> getLocator().allInnerTexts(), LogAction.TEXTS_READ);
     }
 
     /**
@@ -318,7 +385,7 @@ public abstract class AbstractElement implements IElement {
         try {
             R result = action.get();
             if (logAction != null) {
-                logSuccess(logAction, args);
+                logInfo(logAction, args);
             }
             return result;
         } catch (PlaywrightException e) {
@@ -327,9 +394,9 @@ public abstract class AbstractElement implements IElement {
     }
 
     /**
-     * Formats the arguments and logs a successful action using the localization service.
+     * Formats the arguments (prefixed with this element's name) and logs the localized message at INFO level.
      */
-    private void logSuccess(LogAction logAction, Object... args) {
+    private void logInfo(LogAction logAction, Object... args) {
         Object[] formatArgs = new Object[args.length + 1];
         formatArgs[0] = this.name;
         System.arraycopy(args, 0, formatArgs, 1, args.length);
@@ -345,12 +412,27 @@ public abstract class AbstractElement implements IElement {
                 e,
                 this.name,
                 this.selector,
-                logAction.getKey()
+                logAction != null ? logAction.getKey() : "unknown action"
         );
 
         String errorMessage = i18n.getMessage(LogAction.ACTION_FAILED, this.name, parsedException.getMessage());
         LoggerProvider.getLogger().error(errorMessage);
 
         return parsedException;
+    }
+
+    private static Locator.WaitForOptions buildWaitOptions(WaitForSelectorState state, Double timeout) {
+        Locator.WaitForOptions options = new Locator.WaitForOptions();
+        if (state != null) {
+            options.setState(state);
+        }
+        if (timeout != null) {
+            options.setTimeout(timeout);
+        }
+        return options;
+    }
+
+    private static String describeState(WaitForSelectorState state) {
+        return (state != null ? state : WaitForSelectorState.VISIBLE).name().toLowerCase();
     }
 }

@@ -67,8 +67,13 @@ public abstract class AbstractRow<T> extends AbstractForm implements IRow<T> {
      * @param rowLocator The base Selector locator strategy (e.g., matching all rows).
      * @param position   The 1-based numerical index to target.
      * @return The combined, absolute Selector strategy representing the exact node.
+     * @throws IllegalArgumentException if {@code position} is below 1 (e.g. a 0-based index was passed).
      */
     protected static Selector createPositionLocator(Selector rowLocator, int position) {
+        if (position < 1) {
+            throw new IllegalArgumentException(
+                    "Row positions are 1-based (the first row is 1), but got " + position);
+        }
         return rowLocator.nth(position - 1);
     }
 }

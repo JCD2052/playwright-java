@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Demo Elements</title>
+<style>
+  body { font-family: Arial, sans-serif; max-width: 640px; margin: 40px auto; }
+  nav a { margin-right: 12px; }
+  section { margin-top: 16px; padding: 8px; border: 1px solid #ddd; }
+  #hidden-later { display: none; }
+  #unstable-button { animation: jiggle 0.1s linear infinite alternate; }
+  @keyframes jiggle { from { transform: translateX(0); } to { transform: translateX(3px); } }
+  #no-pointer-button { pointer-events: none; }
+  .drag-box { display: inline-block; width: 120px; height: 60px; margin: 8px;
+              border: 2px dashed #888; user-select: none; }
+  #far-away { margin-top: 3000px; }
+</style>
+</head>
+<body>
+<nav>
+  <a href="index.html">Login</a>
+  <a href="table.html">Products</a>
+  <a href="frame.html">Widget</a>
+  <a href="elements.html">Elements</a>
+</nav>
+
+<main id="elements">
+  <h1>Element Showcase</h1>
+
+  <section>
+    <h2>Buttons</h2>
+    <button id="action-button" data-testid="action-button">Action</button>
+    <button id="disabled-button" disabled>Disabled</button>
+    <button id="unstable-button">Unstable</button>
+    <button id="no-pointer-button">No pointer</button>
+    <p id="button-log" data-testid="button-log"></p>
+  </section>
+
+  <section>
+    <h2>Labels</h2>
+    <p id="greeting" data-testid="greeting" title="Greeting title">Hello, elements!</p>
+    <button id="show-later-button">Show later</button>
+    <p id="hidden-later">Now you see me</p>
+    <button id="remove-later-button">Remove later</button>
+    <p id="removable">Going away</p>
+    <div id="hover-target">Hover me</div>
+    <p id="hover-log"></p>
+  </section>
+
+  <section>
+    <h2>Text box</h2>
+    <form id="echo-form">
+      <input id="echo-input" data-testid="echo-input" type="text" placeholder="Type here">
+    </form>
+    <p id="echo-log"></p>
+  </section>
+
+  <section>
+    <h2>Dropdown</h2>
+    <label for="fruit">Fruit</label>
+    <select id="fruit">
+      <option value="apple">Apple</option>
+      <option value="banana">Banana</option>
+      <option value="cherry">Cherry</option>
+    </select>
+  </section>
+
+  <section>
+    <h2>Link</h2>
+    <a id="products-link" href="table.html">Go to products</a>
+  </section>
+
+  <section>
+    <h2>Checkbox and radio buttons</h2>
+    <input id="newsletter" type="checkbox">
+    <label for="newsletter">Subscribe to newsletter</label>
+    <fieldset>
+      <legend>Plan</legend>
+      <label><input type="radio" name="plan" value="free" checked> Free plan</label>
+      <label><input type="radio" name="plan" value="pro"> Pro plan</label>
+    </fieldset>
+  </section>
+
+  <section>
+    <h2>Upload</h2>
+    <input id="avatar" data-testid="avatar-upload" type="file">
+    <p id="upload-log"></p>
+  </section>
+
+  <section>
+    <h2>Collections and child elements</h2>
+    <ul id="tags">
+      <li class="tag">java</li>
+      <li class="tag">playwright</li>
+      <li class="tag">testng</li>
+    </ul>
+    <div class="card" data-testid="card-alpha"><span class="title">Alpha</span> <button class="pick">Pick</button></div>
+    <div class="card" data-testid="card-beta"><span class="title">Beta</span> <button class="pick">Pick</button></div>
+    <p id="card-log"></p>
+  </section>
+
+  <section>
+    <h2>Drag and drop</h2>
+    <div id="drag-source" class="drag-box">Drag me</div>
+    <div id="drop-target" class="drag-box">Drop here</div>
+  </section>
+
+  <p id="far-away">Far away</p>
+</main>
+
+<script>
+  function byId(id) { return document.getElementById(id); }
+
+  var actionButton = byId('action-button');
+  var buttonLog = byId('button-log');
+  actionButton.addEventListener('click', function (e) { buttonLog.textContent = 'click@' + e.offsetX + ',' + e.offsetY; });
+  actionButton.addEventListener('dblclick', function () { buttonLog.textContent = 'double-click'; });
+  actionButton.addEventListener('contextmenu', function (e) { e.preventDefault(); buttonLog.textContent = 'right-click'; });
+  actionButton.addEventListener('auxclick', function (e) { if (e.button === 1) { buttonLog.textContent = 'middle-click'; } });
+  byId('unstable-button').addEventListener('click', function () { buttonLog.textContent = 'unstable-click'; });
+  byId('no-pointer-button').addEventListener('click', function () { buttonLog.textContent = 'js-click'; });
+
+  byId('show-later-button').addEventListener('click', function () {
+    setTimeout(function () { byId('hidden-later').style.display = 'block'; }, 300);
+  });
+  byId('remove-later-button').addEventListener('click', function () {
+    setTimeout(function () { byId('removable').remove(); }, 300);
+  });
+  byId('hover-target').addEventListener('mouseenter', function () { byId('hover-log').textContent = 'hovered'; });
+
+  var echoInput = byId('echo-input');
+  byId('echo-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    byId('echo-log').textContent = 'submitted: ' + echoInput.value;
+  });
+  echoInput.addEventListener('blur', function () { byId('echo-log').textContent = 'blurred'; });
+
+  byId('avatar').addEventListener('change', function (e) {
+    byId('upload-log').textContent = e.target.files.length ? e.target.files[0].name : '';
+  });
+
+  document.querySelectorAll('.card .pick').forEach(function (button) {
+    button.addEventListener('click', function () {
+      byId('card-log').textContent = 'picked: ' + button.closest('.card').querySelector('.title').textContent;
+    });
+  });
+
+  // Mouse-event based drag and drop, so it works for both Locator.dragTo and raw mouse moves.
+  var dragging = false;
+  byId('drag-source').addEventListener('mousedown', function () { dragging = true; });
+  document.addEventListener('mouseup', function (e) {
+    if (dragging && e.target.closest && e.target.closest('#drop-target')) {
+      byId('drop-target').textContent = 'Dropped';
+    }
+    dragging = false;
+  });
+</script>
+</body>
+</html>

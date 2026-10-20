@@ -15,10 +15,11 @@ import static org.testng.Assert.assertTrue;
  */
 public class BrowserLauncherRegistryTest {
     @Test
-    public void defaultConstructorRegistersTheFourCorePlaywrightBrowsers() {
+    public void defaultConstructorRegistersTheCorePlaywrightBrowsers() {
         BrowserLauncherRegistry registry = new BrowserLauncherRegistry();
 
         assertTrue(registry.getLauncher("chrome") instanceof ChromeLauncher);
+        assertTrue(registry.getLauncher("chromium") instanceof ChromiumLauncher);
         assertTrue(registry.getLauncher("firefox") instanceof FirefoxLauncher);
         assertTrue(registry.getLauncher("edge") instanceof EdgeLauncher);
         assertTrue(registry.getLauncher("webkit") instanceof WebkitLauncher);

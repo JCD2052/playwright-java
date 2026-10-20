@@ -4,7 +4,7 @@
 
     <groupId>io.github.jcd2052</groupId>
     <artifactId>playwright-java</artifactId>
-    <version>1.1.0</version>
+    <version>1.2.0</version>
     <packaging>jar</packaging>
 
     <name>Playwright Java Framework</name>
@@ -35,6 +35,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <spring.boot.version>3.4.2</spring.boot.version>
+        <surefire.version>3.2.5</surefire.version>
     </properties>
 
     <dependencyManagement>
@@ -56,9 +57,18 @@
             <version>1.61.0</version>
         </dependency>
 
+        <!-- The only logging API the core uses; consumers bring their own SLF4J backend (e.g. Logback). -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>2.0.16</version>
+        </dependency>
+
+        <!-- Spring is only used to wire the demo/test suite, not by the core framework. -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -80,15 +90,11 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Compile-time only (annotation processing); not needed by consumers at runtime. -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
-            <version>3.18.0</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
@@ -107,6 +113,23 @@
                     <source>17</source>
                     <target>17</target>
                 </configuration>
+            </plugin>
+
+            <!--
+                spring-boot-starter-test puts JUnit 5 on the test classpath, which makes Surefire pick its
+                JUnit Platform provider and silently run zero TestNG tests. Pin the TestNG provider.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${surefire.version}</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.maven.surefire</groupId>
+                        <artifactId>surefire-testng</artifactId>
+                        <version>${surefire.version}</version>
+                    </dependency>
+                </dependencies>
             </plugin>
 
             <plugin>

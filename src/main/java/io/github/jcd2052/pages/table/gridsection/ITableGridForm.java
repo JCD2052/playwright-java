@@ -22,8 +22,10 @@ public interface ITableGridForm<M, R extends IRow<M>> extends IForm {
     /**
      * Retrieves a specific row component from the table based on its physical DOM index.
      * <p>
-     * <b>Note:</b> Implementations of this method strictly use <b>1-based indexing</b> to align
-     * with standard CSS/XPath {@code nth-child()} selectors utilized by Playwright's engine.
+     * <b>Note:</b> rows use <b>1-based positions</b> (the first row is {@code 1}), matching how rows are
+     * numbered on screen and in element names such as "Product row 1". This differs from
+     * {@link io.github.jcd2052.elements.interfaces.IElementCollection} and {@code Selector.nth(...)},
+     * which are 0-based. {@link io.github.jcd2052.pages.table.row.AbstractRow} rejects positions below 1.
      * </p>
      *
      * @param index The 1-based index of the row to retrieve.

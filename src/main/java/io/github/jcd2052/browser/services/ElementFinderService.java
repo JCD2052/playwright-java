@@ -29,7 +29,7 @@ public class ElementFinderService implements IElementFinderService {
      */
     @Override
     public Locator findElement(Selector selector) {
-        Page currentPage = browserService.getBrowser().getCurrentBrowserWindow().getCurrentBrowserTab().getPage();
+        Page currentPage = browserService.getBrowser().requireCurrentBrowserTab().getPage();
         return selector.evaluate(currentPage);
     }
 }

@@ -74,6 +74,10 @@ public class ConditionalWait implements IConditionalWait {
                 Thread.sleep(actualPollingIntervalMillis);
             } catch (InterruptedException interruptedException) {
                 Thread.currentThread().interrupt();
+                TimeoutException timeoutException = new TimeoutException(String.format(
+                        "Interrupted during wait for condition '%s'", contextMessage));
+                timeoutException.initCause(interruptedException);
+                throw timeoutException;
             }
         }
     }
@@ -84,7 +88,8 @@ public class ConditionalWait implements IConditionalWait {
         try {
             return safeCondition.getAsBoolean();
         } catch (Exception evaluationException) {
-            if (exceptionsToIgnore != null && exceptionsToIgnore.contains(evaluationException.getClass())) {
+            if (exceptionsToIgnore != null && exceptionsToIgnore.stream()
+                    .anyMatch(ignoredType -> ignoredType.isInstance(evaluationException))) {
                 return false;
             } else {
                 throw evaluationException;

@@ -1,17 +1,17 @@
 package io.github.jcd2052.elements;
 
 import com.microsoft.playwright.Locator;
+import com.microsoft.playwright.PlaywrightException;
 import com.microsoft.playwright.options.WaitForSelectorState;
 import io.github.jcd2052.browser.services.interfaces.IElementFactory;
 import io.github.jcd2052.browser.services.interfaces.IElementSupplier;
 import io.github.jcd2052.elements.selector.Selector;
 import io.github.jcd2052.elements.interfaces.IElement;
 import io.github.jcd2052.elements.interfaces.IElementCollection;
+import io.github.jcd2052.exceptions.PlaywrightExceptionParser;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 
 /**
  * A dynamic collection of web elements of a specific type.
@@ -79,25 +79,34 @@ public class ElementCollection<T extends IElement> implements IElementCollection
 
     /**
      * Evaluates the DOM to ensure the collection matches the {@link ExpectedCount} condition.
-     * <p>Utilizes Playwright's native assertions and wait options to handle synchronization:</p>
+     * <p>Utilizes Playwright's native wait options (bound by the context's default timeout) to handle
+     * synchronization:</p>
      * <ul>
-     * <li>{@code ZERO}: Asserts that the locator count is exactly 0.</li>
+     * <li>{@code ZERO}: Waits until no matching element remains attached to the DOM.</li>
      * <li>{@code MORE_THAN_ZERO}: Waits for the first element to reach the {@code ATTACHED} state in the DOM.</li>
      * <li>{@code ANY}: Bypasses explicit waiting.</li>
      * </ul>
+     *
+     * @throws io.github.jcd2052.exceptions.BasePlaywrightException if the condition is not met in time.
      */
     private void waitForCondition() {
-        Locator locator = getLocator();
+        WaitForSelectorState state;
         switch (expectedCount) {
             case ZERO:
-                assertThat(locator).hasCount(0);
+                state = WaitForSelectorState.DETACHED;
                 break;
             case MORE_THAN_ZERO:
-                locator.first().waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.ATTACHED));
+                state = WaitForSelectorState.ATTACHED;
                 break;
             case ANY:
             default:
-                break;
+                return;
+        }
+
+        try {
+            getLocator().first().waitFor(new Locator.WaitForOptions().setState(state));
+        } catch (PlaywrightException e) {
+            throw PlaywrightExceptionParser.parse(e, name, selector, "wait for " + expectedCount + " elements");
         }
     }
 
