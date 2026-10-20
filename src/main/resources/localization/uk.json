@@ -8,7 +8,10 @@
 
   "key_pressed": "Натиснуто клавішу '%2$s' на '%1$s'",
   "element_hovered": "Курсор наведено на '%s'",
-  "element_focused": "Сфокусовано на '%s'",
+  "element_unfocused": "Знято фокус з '%s'",
+  "element_scrolled_to": "Прокручено до '%s'",
+  "element_js_clicked": "Клікнуто на '%s' за допомогою JavaScript",
+  "element_screenshot_taken": "Зроблено знімок '%s'",
   "element_highlighted": "Підсвічено елемент '%s'",
   "element_dragged_to": "Перетягнуто '%1$s' до '%2$s'",
 
@@ -20,6 +23,8 @@
 
   "element_visibility_checked": "Перевірено видимість '%s'",
   "element_enabled_checked": "Перевірено доступність '%s'",
+  "element_state_reached": "'%1$s' досяг стану '%2$s'",
+  "element_state_not_reached": "'%1$s' не досяг стану '%2$s' вчасно",
 
   "text_entered": "Введено текст '%2$s' у '%1$s'",
   "text_cleared": "Очищено текст з '%s'",
@@ -27,6 +32,7 @@
 
   "element_checked": "Відмічено '%s'",
   "element_unchecked": "Знято відмітку з '%s'",
+  "element_is_checked": "Перевірено, чи відмічено '%s'",
   "file_uploaded": "Завантажено файл '%2$s' до '%1$s'",
 
   "dropdown_option_read": "Прочитано обрану опцію з '%s'",
@@ -35,8 +41,5 @@
   "option_selected_by_index": "Обрано опцію за індексом %2$d у '%1$s'",
   "option_selected_by_text": "Обрано опцію з текстом '%2$s' у '%1$s'",
 
-  "wait_for_visible": "Очікування появи видимості елемента '%s'",
-  "wait_for_enabled": "Очікування доступності елемента '%s'",
-  "element_not_found": "Не вдалося знайти елемент '%s'",
   "action_failed": "Не вдалося взаємодіяти з '%1$s'. Причина: %2$s"
 }

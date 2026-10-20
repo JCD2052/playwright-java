@@ -10,8 +10,9 @@ The framework is organized around Page Objects, typed element wrappers, Spring d
 * Spring Boot for dependency injection and property-based configuration (for test purposes, is not used in core framework)
 * TestNG for test execution and data-driven parallel runs
 * Maven for dependency and build management
-* Lombok for simple model classes
-* Logback for framework logging
+* Lombok for simple model classes (compile-time only)
+* SLF4J for framework logging. The library ships no logging backend or configuration, so add your
+  own (e.g. Logback); the bundled tests use Logback through Spring Boot.
 
 ## How It Works
 
@@ -24,18 +25,25 @@ Browser state is managed via the `BrowserService`. Each execution thread gets it
 ## Project Structure
 
 ```text
-src/main/java/org/jcd2052/core
-  browser/       Browser lifecycle, tabs, windows, launchers, configuration
-  elements/      Typed element wrappers, interfaces, and dynamic selectors
-  pages/         Base form/page abstractions, grids, and index-bound rows
-  waiting/       Generic conditional wait utility
-  logger/        Logging abstraction
+src/main/java/io/github/jcd2052
+  browser/
+    browser/       Browser, window (context) and tab (page) wrappers, cookies, storage, alerts, mouse
+    configuration/ IBrowserProperties and its BrowserProperties implementation
+    factory/       BrowserFactory: turns properties into a launched Playwright browser
+    launcher/      Per-browser launchers (chrome, chromium, edge, firefox, webkit) and their registry
+    services/      BrowserService (per-thread browser lifecycle), element factory/finder, localization
+  elements/        Typed element wrappers, collections, JS actions, and the Selector strategies
+  pages/           Base form/page abstractions, table grids, and position-bound rows
+  waiting/         Generic conditional wait utility
+  exceptions/      Framework exceptions and the Playwright exception parser
+  logger/          Logging abstraction and localized log messages (resources: localization/*.json)
 
-src/test/java/org/jcd2052
-  configuration/ Spring test configuration wiring all framework beans from properties
-  demo/pages/    Example Page Objects (login form, products table, iframe widget)
-  demo/support/  DemoServer — bundled static file server for the demo pages
-  demo/tests/    SpringBootBaseTests (browser lifecycle) + DemoFrameworkShowcaseTests
+src/test/java/io/github/jcd2052
+  configuration/   Spring test configuration wiring all framework beans from properties
+  demo/pages/      Example Page Objects (login form, products table, iframe widget, element showcase)
+  demo/support/    DemoServer — bundled static file server for the demo pages
+  demo/tests/      SpringBootBaseTests (browser lifecycle), DemoSiteBaseTests (demo server) and suites
+  ...              Unit tests for the framework packages above
 ```
 
 ## Browser Settings
@@ -43,11 +51,11 @@ src/test/java/org/jcd2052
 Browser configuration is read from Spring properties. The example values live in `src/test/resources/application.properties`.
 
 ```properties
-playwright.browser.headless=false
+playwright.browser.headless=true
 playwright.browser.name=chrome
 playwright.browser.tracing=false
-playwright.browser.timeout=50000
-playwright.browser.page.load.timeout=1200000
+playwright.browser.timeout=5000
+playwright.browser.page.load.timeout=30000
 playwright.browser.highlight=false
 playwright.browser.screenshots=true
 playwright.browser.snapshots=true
@@ -60,16 +68,18 @@ playwright.browser.tracing.args=--no-sandbox,--disable-dev-shm-usage,--disable-g
 
 Supported browser names:
 
-* `chrome`
+* `chrome` — installed Google Chrome
+* `chromium` — Playwright's bundled Chromium (no Chrome install needed; a good fit for CI)
 * `firefox`
-* `edge`
+* `edge` — installed Microsoft Edge
 * `webkit`
 
 Important settings:
 
 * `playwright.browser.headless` controls visible vs headless browser execution.
 * `playwright.browser.name` selects the browser launcher.
-* `playwright.browser.timeout` sets the default Playwright action timeout on created contexts.
+* `playwright.browser.timeout` sets the default Playwright action timeout on created contexts. It is
+  also used as the browser launch timeout, so keep it above a cold browser start (a few seconds).
 * `playwright.browser.page.load.timeout` sets the default navigation timeout.
 * `playwright.browser.viewport.width` and `playwright.browser.viewport.height` set context viewport size.
 * `playwright.browser.tracing` enables Playwright tracing.
@@ -78,6 +88,9 @@ Important settings:
 * `playwright.browser.highlight` highlights elements before supported actions.
 * `playwright.browser.testid.attribute` overrides the default `data-testid` attribute globally for `Selector.byTestId()`.
 * `playwright.browser.tracing.args` passes comma-separated launch arguments to the browser.
+* `playwright.browser.storage.state.path` preloads a saved storage state (cookies, local storage) into
+  every new context. The file must already exist; leave the property unset otherwise.
+* `playwright.logs.language` selects the language of element action logs (bundled: `en`, `uk`).
 
 ## Spring Configuration
 
@@ -120,6 +133,8 @@ public class TestConfiguration {
     private String testIdAttribute;
     @Value("${playwright.browser.tracing.args:}")
     private String args;
+    @Value("${playwright.logs.language:en}")
+    private String logsLanguage;
 
     @Bean
     public IBrowserLauncherRegistry browserLauncherRegistry() {
@@ -134,8 +149,15 @@ public class TestConfiguration {
     @Bean
     public IElementFactory elementFactory(
             IElementFinderService elementFinderService,
-            IBrowserProperties browserProperties) {
-        return new ElementFactory(elementFinderService, browserProperties);
+            IBrowserProperties browserProperties,
+            ILocalizationService localizationService) {
+        return new ElementFactory(elementFinderService, browserProperties, localizationService);
+    }
+
+    @Bean
+    public ILocalizationService localizationService() {
+        // The last argument is an optional directory with your own <language>.json overrides.
+        return new LocalizationService(new LocalizationReader(), logsLanguage, null);
     }
 
     @Bean
@@ -143,7 +165,8 @@ public class TestConfiguration {
         return new ElementFinderService(browserService);
     }
 
-    @Bean
+    // closeAll() releases every browser (and its Playwright driver process) when the Spring context shuts down
+    @Bean(destroyMethod = "closeAll")
     public IBrowserService<IBrowserProperties> browserService(IBrowserProperties browserProperties, IBrowserFactory<IBrowserProperties> browserFactory) {
         return new BrowserService<>(browserProperties, browserFactory);
     }
@@ -187,14 +210,24 @@ public class BaseTests extends AbstractTestNGSpringContextTests {
 
     @AfterMethod(alwaysRun = true)
     public void tearDown(ITestResult result) {
-        if (!result.isSuccess()) {
-            browserService.getBrowser().takeScreenshot();
-            browserService.stopAndSaveTrace("trace_" + result.getMethod().getMethodName() + ".zip");
+        try {
+            if (!result.isSuccess()) {
+                browserService.getBrowser().takeScreenshot();
+                browserService.stopAndSaveTrace("trace_" + result.getMethod().getMethodName() + ".zip");
+            }
+        } finally {
+            // Always close, even if collecting failure artifacts throws, so the browser and its
+            // driver process are not left running.
+            browserService.close();
         }
-        browserService.close();
     }
 }
 ```
+
+`close()` releases the calling thread's browser. `closeAll()` releases every browser the service has
+opened on any thread, including ones whose threads finished without calling `close()`; call it once at
+suite/application shutdown (the `destroyMethod` above does this for Spring). A browser that crashes or
+disconnects is detected on the next call to `getBrowser()`, closed, and replaced with a fresh one.
 
 ### Using a custom `IBrowserProperties`
 
@@ -250,7 +283,7 @@ public class ExampleStorePage extends AbstractForm {
 }
 ```
 
-See `src/test/java/org/jcd2052/demo/pages/DemoLoginPage.java` for the real, running version of this pattern.
+See `src/test/java/io/github/jcd2052/demo/pages/DemoLoginPage.java` for the real, running version of this pattern.
 
 Useful page methods from `AbstractForm`:
 
@@ -406,6 +439,10 @@ The framework supports structured grid layout configurations completely out of t
 
 Row generation completely avoids fragile string concatenation (`//tr[5]`). Instead, rows natively wrap generic structural definitions using Playwright's `.nth()` filtering methods. This makes rows compatible with any locator strategy (CSS, roles, text, test-IDs).
 
+Row positions are **1-based** (the first row is `1`), matching how rows are numbered on screen and in
+element names. Element collections and `Selector.nth(...)` are 0-based. Passing a position below 1 to
+`AbstractRow` throws an `IllegalArgumentException`.
+
 ```java
 public class UserRow extends AbstractRow<UserModel> {
     public UserRow(int position, IElementFactory factory) {
@@ -560,15 +597,15 @@ public class CustomBrowserConfiguration {
 To add a new browser launcher, implement `IBrowserLauncher` and register it in a custom `IBrowserLauncherRegistry` bean:
 
 ```java
-public class ChromiumLauncher implements IBrowserLauncher {
+public class ChromeBetaLauncher implements IBrowserLauncher {
     @Override
     public String getName() {
-        return "chromium";
+        return "chrome-beta";
     }
 
     @Override
     public Browser launch(Playwright playwright, BrowserType.LaunchOptions options) {
-        return playwright.chromium().launch(options);
+        return playwright.chromium().launch(options.setChannel("chrome-beta"));
     }
 }
 ```
@@ -580,7 +617,7 @@ public class CustomLauncherConfiguration {
     @Primary
     public IBrowserLauncherRegistry customBrowserLauncherRegistry() {
         BrowserLauncherRegistry registry = new BrowserLauncherRegistry();
-        registry.register(new ChromiumLauncher());
+        registry.register(new ChromeBetaLauncher());
         return registry;
     }
 }
@@ -596,16 +633,18 @@ site — `DemoServer` serves a handful of bundled static pages (`src/test/resour
 * `index.html` — a sign-in form (text inputs, checkbox, dropdown, button)
 * `table.html` — a products table, exercising `AbstractRow`/`AbstractTableGridForm`
 * `frame.html` + `widget.html` — a widget embedded in an `<iframe>`, exercising `Selector.byFrame`
+* `elements.html` — one fixture per element type, used to test every built-in element
 
-`DemoFrameworkShowcaseTests` drives all three pages through their respective Page Objects
-(`DemoLoginPage`, `DemoProductsPage`/`DemoProductRow`, `DemoFramePage`). `SpringBootBaseTests` in
-the same package handles browser start-up, tracing, and teardown (taking a screenshot and saving a
-trace on failure) and is the base class for any new test suite:
+`DemoFrameworkShowcaseTests` drives the first three pages through their respective Page Objects
+(`DemoLoginPage`, `DemoProductsPage`/`DemoProductRow`, `DemoFramePage`), and `DemoElementsTests`
+exercises every element type through `DemoElementsPage`. `SpringBootBaseTests` in the same package
+handles browser start-up, tracing, and teardown (taking a screenshot and saving a trace on failure);
+`DemoSiteBaseTests` extends it to start the demo server and adds `openDemoPage(...)`:
 
 ```java
 @Test
 public void loginFormFillsAndSubmits() {
-    browserService.navigateTo(demoServer.getBaseUrl() + "/index.html");
+    openDemoPage("/index.html");
 
     String status = loginPage.signIn("qa-engineer", "hunter2", true, "ua");
 
@@ -613,6 +652,12 @@ public void loginFormFillsAndSubmits() {
     softAssert.assertEquals(status, "Welcome, qa-engineer! (remembered) [ua]");
     softAssert.assertAll();
 }
+```
+
+Run the whole suite (unit and demo tests) with:
+
+```bash
+mvn test
 ```
 
 ## Notes For Scaling

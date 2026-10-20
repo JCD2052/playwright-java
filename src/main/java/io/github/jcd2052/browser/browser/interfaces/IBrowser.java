@@ -98,18 +98,51 @@ public interface IBrowser {
      */
     void switchToWindow(IBrowserWindow window);
 
+    /**
+     * Retrieves the currently active browser window, failing fast with a descriptive error if none is open.
+     *
+     * @return The current {@link IBrowserWindow}, never {@code null}.
+     * @throws IllegalStateException if no window is open (e.g. the session was never started, or every
+     *                               window has been closed).
+     */
+    default IBrowserWindow requireCurrentBrowserWindow() {
+        IBrowserWindow window = getCurrentBrowserWindow();
+        if (window == null) {
+            throw new IllegalStateException(
+                    "No browser window is open. Call IBrowserService.start() or IBrowser.openNewWindow() first.");
+        }
+        return window;
+    }
+
+    /**
+     * Retrieves the currently active tab of the current window, failing fast with a descriptive error
+     * if there is no window or tab open.
+     *
+     * @return The current {@link IBrowserTab}, never {@code null}.
+     * @throws IllegalStateException if no window or no tab is open.
+     */
+    default IBrowserTab requireCurrentBrowserTab() {
+        IBrowserTab tab = requireCurrentBrowserWindow().getCurrentBrowserTab();
+        if (tab == null) {
+            throw new IllegalStateException(
+                    "No browser tab is open in the current window. "
+                            + "Call IBrowserService.start() or IBrowserWindow.openNewTab() first.");
+        }
+        return tab;
+    }
+
     default void setViewportSize(int width, int height) {
-     getCurrentBrowserWindow().getCurrentBrowserTab().setViewportSize(width, height);
+        requireCurrentBrowserTab().setViewportSize(width, height);
     }
 
     /**
      * Reloads the currently active tab in the current browser window.
      */
     default void reload() {
-        getCurrentBrowserWindow().getCurrentBrowserTab().reloadTab();
+        requireCurrentBrowserTab().reloadTab();
     }
 
     default void closeWindow() {
-        getCurrentBrowserWindow().closeWindow();
+        requireCurrentBrowserWindow().closeWindow();
     }
 }

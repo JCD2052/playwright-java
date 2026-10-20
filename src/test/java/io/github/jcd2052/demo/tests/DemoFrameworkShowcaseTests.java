@@ -3,16 +3,11 @@ package io.github.jcd2052.demo.tests;
 import io.github.jcd2052.demo.pages.DemoFramePage;
 import io.github.jcd2052.demo.pages.DemoLoginPage;
 import io.github.jcd2052.demo.pages.DemoProductsPage;
-import io.github.jcd2052.demo.support.DemoServer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.testng.Assert;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.testng.asserts.SoftAssert;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.concurrent.TimeoutException;
 import java.math.BigDecimal;
 
@@ -23,35 +18,17 @@ import java.math.BigDecimal;
  * This suite is fully offline (no network access beyond {@code localhost}).
  * </p>
  */
-public class DemoFrameworkShowcaseTests extends SpringBootBaseTests {
+public class DemoFrameworkShowcaseTests extends DemoSiteBaseTests {
     @Autowired
     private DemoLoginPage loginPage;
     @Autowired
     private DemoProductsPage productsPage;
     @Autowired
     private DemoFramePage framePage;
-    private DemoServer demoServer;
-
-    @BeforeClass(alwaysRun = true)
-    public void startDemoServer() {
-        try {
-            demoServer = new DemoServer();
-            demoServer.start();
-        } catch (IOException e) {
-            throw new UncheckedIOException("Failed to start the bundled demo server", e);
-        }
-    }
-
-    @AfterClass(alwaysRun = true)
-    public void stopDemoServer() {
-        if (demoServer != null) {
-            demoServer.stop();
-        }
-    }
 
     @Test
     public void loginFormFillsAndSubmits() {
-        browserService.navigateTo(demoServer.getBaseUrl() + "/index.html");
+        openDemoPage("/index.html");
 
         String status = loginPage.signIn("qa-engineer", "hunter2", true, "ua");
         Assert.assertEquals(status, "Welcome, qa-engineer! (remembered) [ua]");
@@ -59,7 +36,7 @@ public class DemoFrameworkShowcaseTests extends SpringBootBaseTests {
 
     @Test
     public void productsTableExposesRowsAsData() {
-        browserService.navigateTo(demoServer.getBaseUrl() + "/table.html");
+        openDemoPage("/table.html");
 
         SoftAssert softAssert = new SoftAssert();
         softAssert.assertEquals(productsPage.getModelsFromRows().size(), 3);
@@ -72,7 +49,7 @@ public class DemoFrameworkShowcaseTests extends SpringBootBaseTests {
 
     @Test
     public void productRowRemoveButtonRemovesTheRow() throws TimeoutException {
-        browserService.navigateTo(demoServer.getBaseUrl() + "/table.html");
+        openDemoPage("/table.html");
 
         productsPage.getRowOrThrow(product -> product.name().equals("Keyboard")).remove();
         productsPage.waitForRowCount(2);
@@ -85,7 +62,7 @@ public class DemoFrameworkShowcaseTests extends SpringBootBaseTests {
 
     @Test
     public void widgetInsideIframeCanBeFilledAndSubmitted() {
-        browserService.navigateTo(demoServer.getBaseUrl() + "/frame.html");
+        openDemoPage("/frame.html");
         String status = framePage.confirmPayment("4242 4242 4242 4242");
         Assert.assertEquals(status, "Payment confirmed");
     }

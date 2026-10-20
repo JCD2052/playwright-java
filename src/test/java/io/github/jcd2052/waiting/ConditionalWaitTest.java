@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.expectThrows;
@@ -88,6 +89,45 @@ public class ConditionalWaitTest {
                 null,
                 "unignored exception",
                 List.of(NullPointerException.class)));
+    }
+
+    @Test
+    public void waitForTrueIgnoresSubclassesOfAnIgnoredException() throws TimeoutException {
+        AtomicInteger callCount = new AtomicInteger(0);
+
+        shortWait().waitForTrue(
+                () -> {
+                    if (callCount.incrementAndGet() < 3) {
+                        throw new IllegalStateException("element not ready yet");
+                    }
+                    return true;
+                },
+                null,
+                null,
+                "condition with a flaky evaluation",
+                List.of(RuntimeException.class));
+
+        assertTrue(callCount.get() >= 3);
+    }
+
+    @Test
+    public void waitForTrueStopsPollingWhenTheThreadIsInterrupted() {
+        AtomicInteger callCount = new AtomicInteger(0);
+        Thread.currentThread().interrupt();
+        try {
+            TimeoutException exception = expectThrows(TimeoutException.class, () -> shortWait().waitForTrue(
+                    () -> {
+                        callCount.incrementAndGet();
+                        return false;
+                    },
+                    "interrupted wait"));
+
+            assertTrue(exception.getCause() instanceof InterruptedException);
+            assertEquals(callCount.get(), 1);
+            assertTrue(Thread.currentThread().isInterrupted());
+        } finally {
+            Thread.interrupted();
+        }
     }
 
     @Test

@@ -75,9 +75,9 @@ public class SpringBootTestConfiguration {
     private boolean mobile;
     @Value("${playwright.browser.has.touch:false}")
     private boolean hasTouch;
-    @Value("${playwright.browser.storage.state.path}")
+    @Value("${playwright.browser.storage.state.path:}")
     private String storageStatePath;
-    @Value("${playwright.browser.has.logs.language}")
+    @Value("${playwright.logs.language:${playwright.browser.has.logs.language:en}}")
     private String localizationLanguage;
 
     @Bean
@@ -114,7 +114,7 @@ public class SpringBootTestConfiguration {
         return new ElementFinderService(browserService);
     }
 
-    @Bean
+    @Bean(destroyMethod = "closeAll")
     public IBrowserService<IBrowserProperties> browserService(
             IBrowserProperties browserProperties, IBrowserFactory<IBrowserProperties> browserFactory) {
         return new BrowserService<>(browserProperties, browserFactory);

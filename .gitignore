@@ -26,3 +26,6 @@ target
 hs_err_pid*
 replay_pid*
 
+
+# macOS Finder metadata
+.DS_Store

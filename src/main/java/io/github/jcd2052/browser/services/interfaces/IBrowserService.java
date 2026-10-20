@@ -70,6 +70,17 @@ public interface IBrowserService<T extends IBrowserProperties> {
     T getBrowserProperties();
 
     /**
+     * Closes every browser this service has opened, on any thread, including browsers left open by
+     * threads that finished without calling {@link #close()}.
+     * <p>
+     * Intended for suite or application shutdown, when no tests are using their browsers anymore.
+     * The default implementation only closes the calling thread's browser.
+     */
+    default void closeAll() {
+        close();
+    }
+
+    /**
      * Convenience default method to initialize the browser session for the current executing test.
      * <p>This method automatically retrieves the active browser and opens a fresh window
      * and tab, preparing a clean state for test navigation and execution.</p>
@@ -79,6 +90,6 @@ public interface IBrowserService<T extends IBrowserProperties> {
     }
 
     default void navigateTo(String url) {
-        getBrowser().getCurrentBrowserWindow().getCurrentBrowserTab().navigateTo(url);
+        getBrowser().requireCurrentBrowserTab().navigateTo(url);
     }
 }

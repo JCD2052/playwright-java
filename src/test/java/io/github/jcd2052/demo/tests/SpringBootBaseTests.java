@@ -24,12 +24,15 @@ public class SpringBootBaseTests extends AbstractTestNGSpringContextTests {
 
     @AfterMethod(alwaysRun = true)
     public void tearDown(ITestResult result) {
-        if (!result.isSuccess()) {
-            browserService.getBrowser().takeScreenshot();
-            browserService.stopAndSaveTrace(String.format(
-                    TRACING_FOLDER_TEMPLATE, result.getMethod().getMethodName(),
-                    System.currentTimeMillis()));
+        try {
+            if (!result.isSuccess()) {
+                browserService.getBrowser().takeScreenshot();
+                browserService.stopAndSaveTrace(String.format(
+                        TRACING_FOLDER_TEMPLATE, result.getMethod().getMethodName(),
+                        System.currentTimeMillis()));
+            }
+        } finally {
+            browserService.close();
         }
-        browserService.close();
     }
 }
