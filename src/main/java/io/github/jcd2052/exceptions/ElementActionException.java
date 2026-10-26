@@ -1,7 +1,8 @@
 package io.github.jcd2052.exceptions;
 
 /**
- * Thrown when an interaction with an element fails (e.g., element is detached, intercepted by another element).
+ * Thrown when an element action fails for a reason other than a timeout, e.g. the element was detached or its
+ * page was closed during the action, or the selector matched several elements where one was expected.
  */
 public class ElementActionException extends BasePlaywrightException {
     /**

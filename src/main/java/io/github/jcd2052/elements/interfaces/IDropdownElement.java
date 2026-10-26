@@ -5,44 +5,44 @@ import java.util.List;
 /**
  * Represents a dropdown or select element on a web page.
  * <p>
- * This interface provides a comprehensive set of methods to interact with
- * standard HTML {@code <select>} elements or custom dropdown components,
- * allowing for selection via multiple strategies and data retrieval.
+ * It works with native HTML {@code <select>} elements: options are read from their {@code <option>} children and
+ * selected through Playwright's {@code selectOption}. Custom dropdowns built from other elements need a custom
+ * element.
  */
 public interface IDropdownElement extends IElement {
 
     /**
-     * Retrieves the text of the currently selected option in the dropdown.
+     * Gets the text of the selected option.
      *
-     * @return The visible text of the active selection.
+     * @return The selected option's visible text.
      */
     String getSelectedOption();
 
     /**
-     * Retrieves a list of all available options (visible texts) within the dropdown.
+     * Gets the text of every option, in order.
      *
-     * @return A {@link List} of strings representing all selectable options.
+     * @return The options' texts.
      */
     List<String> getTexts();
 
     /**
-     * Selects an option based on its "value" attribute.
+     * Selects the option whose {@code value} attribute matches exactly.
      *
-     * @param option The value attribute string of the option to select.
+     * @param option The option's {@code value}.
      */
     void selectByValue(String option);
 
     /**
-     * Selects an option based on its zero-based index in the list.
+     * Selects the option at the given position.
      *
-     * @param index The integer index of the option to select.
+     * @param index The zero-based option index.
      */
     void selectByIndex(int index);
 
     /**
-     * Selects an option based on its visible inner text.
+     * Selects the option whose visible text (label) matches exactly.
      *
-     * @param text The visible text string of the option to select.
+     * @param text The option's text.
      */
     void selectByText(String text);
 }

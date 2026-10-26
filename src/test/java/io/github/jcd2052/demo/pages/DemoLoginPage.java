@@ -39,7 +39,13 @@ public class DemoLoginPage extends AbstractForm {
             Selector.bySelector("#status"),
             "Status");
 
-    protected DemoLoginPage(IElementFactory elementFactory) {
+    /**
+     * Creates the page. Spring creates it through component scanning; the demo tests without Spring call
+     * this constructor directly.
+     *
+     * @param elementFactory the factory the page's elements are created with
+     */
+    public DemoLoginPage(IElementFactory elementFactory) {
         super(Selector.bySelector("#login-form"), "Demo Login Page", elementFactory);
     }
 

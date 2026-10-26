@@ -11,27 +11,27 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
- * An abstract base class representing a structured data table or grid within the web application.
- * <p>This class extends {@link AbstractForm} to inherit standard form synchronization (like waiting
- * for the table to load) and implements {@link ITableGridForm}. It bridges the gap between the
- * raw UI DOM elements (rows and cells) and strongly-typed Java data models.</p>
+ * The base class of a table's page object, exposing its rows both as row page objects and as data models.
+ * <p>
+ * Subclasses implement {@link #getRow(int)} to create the row page object for a position; this class counts the
+ * rows matched by the row selector and builds the rest on top. The table's name gets " Grid Section" appended.
+ * </p>
  *
  * @param <M> The Data Model type (DTO) representing the pure data extracted from a single row.
  * @param <R> The Row Page Object type (extending {@link IRow}) that represents the actionable web elements of a single row.
  */
 public abstract class AbstractTableGridForm<M, R extends IRow<M>> extends AbstractForm implements ITableGridForm<M, R> {
     /**
-     * The specific Just-In-Time Selector locator strategy used to locate the individual row containers
-     * (e.g., table rows) within the broader table grid.
+     * The selector matching every row of the table.
      */
     private final Selector rowLocator;
     /**
-     * Constructs a new {@code AbstractTableGridForm}.
+     * Creates a table.
      *
-     * @param locatorStrategy The Selector locator strategy used to locate the main table container (the root form label).
-     * @param rowLocator      The Selector locator strategy used to locate individual rows within the table.
-     * @param name            A human-readable name for the table (e.g., "Users Data Grid"), used for logging.
-     * @param elementFactory  The {@link IElementFactory} responsible for creating the underlying elements and collections.
+     * @param locatorStrategy The selector of the table's root element.
+     * @param rowLocator      The selector matching every row of the table.
+     * @param name            The table's name, e.g. "Users"; " Grid Section" is appended to it.
+     * @param elementFactory  The factory the table's elements are created with.
      */
     protected AbstractTableGridForm(
             Selector locatorStrategy,
@@ -43,9 +43,8 @@ public abstract class AbstractTableGridForm<M, R extends IRow<M>> extends Abstra
     }
 
     /**
-     * Parses the entire visible table and extracts the underlying data into strongly-typed models.
-     * <p>This method iterates through all row Page Objects and invokes their specific mapping
-     * logic ({@code getModelFromRow()}) to strip away the UI wrappers and return pure data.</p>
+     * {@inheritDoc}
+     * <p>Each row is mapped with its {@code getModelFromRow()}.</p>
      *
      * @return A {@link List} containing the data models ({@code M}) for every row in the table.
      */
@@ -57,9 +56,8 @@ public abstract class AbstractTableGridForm<M, R extends IRow<M>> extends Abstra
     }
 
     /**
-     * Retrieves all rows currently present in the table as interactive Page Objects.
-     * <p>This method determines the total number of rows and generates a 1-based index stream
-     * to dynamically instantiate and return the specific row elements ({@code R}).</p>
+     * {@inheritDoc}
+     * <p>The rows are counted, then created with {@link #getRow(int)} for positions 1 to the count.</p>
      *
      * @return A {@link List} of instantiated row objects of type {@code R}.
      */
@@ -72,9 +70,7 @@ public abstract class AbstractTableGridForm<M, R extends IRow<M>> extends Abstra
     }
 
     /**
-     * A private helper method that resolves the {@code rowLocator} into a collection of generic label elements.
-     * <p>This is utilized primarily to accurately count the number of rows currently attached to the DOM
-     * before attempting to map them to complex row objects or data models.</p>
+     * Gets a plain element for every row currently in the table, used to count the rows.
      *
      * @return A {@link List} of {@link ILabelElement} representing the raw row containers.
      */

@@ -1,21 +1,23 @@
 package io.github.jcd2052.browser.launcher;
 
 /**
- * Defines the contract for registering and retrieving browser launchers.
+ * Keeps the available {@link IBrowserLauncher}s by browser name, so the factory can find the launcher for the
+ * configured browser. Names are matched case-insensitively.
  */
 public interface IBrowserLauncherRegistry {
     /**
-     * Registers a new browser launcher into the framework.
+     * Registers a launcher under its own name ({@link IBrowserLauncher#getName()}), replacing any launcher
+     * already registered under that name.
      *
-     * @param launcher The specific launcher implementation to register.
+     * @param launcher The launcher to register.
      */
     void register(IBrowserLauncher launcher);
 
     /**
-     * Retrieves a registered browser launcher by its string identifier.
+     * Finds the launcher registered under the given browser name, ignoring case.
      *
-     * @param name The name of the browser (e.g., "chrome", "firefox").
-     * @return The corresponding {@link IBrowserLauncher}, or null if not found.
+     * @param name The browser name, e.g. "chrome" or "Firefox".
+     * @return The launcher, or {@code null} if none is registered under that name (or the name is {@code null}).
      */
     IBrowserLauncher getLauncher(String name);
 }

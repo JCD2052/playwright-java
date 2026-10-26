@@ -18,8 +18,7 @@ public class JsActions implements IJsActions {
     /**
      * Constructs a new {@code JsActions} instance bound to a specific element.
      *
-     * @param element The framework element to perform JavaScript actions upon.
-     *                Must be an instance of {@link AbstractElement}.
+     * @param element The element to run JavaScript on.
      */
     public JsActions(IElement element) {
         this.element = element;
@@ -35,9 +34,7 @@ public class JsActions implements IJsActions {
     }
 
     /**
-     * Smoothly scrolls the element into the center of the browser's viewport.
-     * <p>Utilizes the JavaScript {@code scrollIntoView} API with smooth behavior
-     * and center alignment.</p>
+     * Scrolls the element to the center of the viewport, using JavaScript's {@code scrollIntoView}.
      */
     public void scrollIntoView() {
         element.getLocator().evaluate("el => el.scrollIntoView({ block: 'center', inline: 'center' })");
@@ -63,5 +60,17 @@ public class JsActions implements IJsActions {
     public boolean isPointerEventsDisabled() {
         return (boolean) element.getLocator()
                 .evaluate("node => window.getComputedStyle(node).pointerEvents === 'none'");
+    }
+
+    /**
+     * Checks whether the element's bounding box lies entirely inside the viewport.
+     *
+     * @return {@code true} if the whole element is in view, {@code false} otherwise.
+     */
+    public boolean isInViewport() {
+        return (boolean) element.getLocator().evaluate("node => {"
+                + " const box = node.getBoundingClientRect();"
+                + " return box.top >= 0 && box.left >= 0"
+                + " && box.bottom <= window.innerHeight && box.right <= window.innerWidth; }");
     }
 }

@@ -5,91 +5,67 @@ import io.github.jcd2052.browser.configuration.IBrowserProperties;
 import io.github.jcd2052.browser.factory.IBrowserFactory;
 
 /**
- * A core framework service defining the contract for Playwright browser lifecycle management.
- * <p>Implementations of this interface are responsible for safely starting, stopping,
- * and providing access to {@link IBrowser} instances. It ensures that browser sessions
- * are properly allocated to executing threads (crucial for parallel test execution)
- * and manages recording capabilities like Playwright Tracing.</p>
+ * Manages the browser of each test thread: one thread, one browser.
  * <p>
- * Parameterized over {@code T} so that projects with configuration needs beyond the framework's
- * built-in properties can supply their own interface extending {@link IBrowserProperties} and get
- * it back, fully typed, via {@link #getBrowserProperties()} — no casting required.
+ * {@link #getBrowser()} returns the calling thread's browser, launching it (with a first window) when the
+ * thread has none, and {@link #close()} closes it, normally in test teardown. Threads never share a browser,
+ * so tests can run in parallel without sharing cookies, storage or pages. The service also records Playwright
+ * traces of the current window.
+ * </p>
  *
- * @param <T> the concrete {@link IBrowserProperties} type this service was configured with
+ * @param <T> the {@link IBrowserProperties} type the service is configured with; a project can use its own
+ *            interface extending {@link IBrowserProperties}
  */
 public interface IBrowserService<T extends IBrowserProperties> {
     /**
-     * Begins recording Playwright traces (screenshots, DOM snapshots) for the current
-     * browser context, if tracing is enabled in the configuration.
-     * <p>This should typically be called immediately after a new window/context is opened
-     * at the start of a test session.</p>
+     * Checks whether tracing is enabled in the configuration ({@link IBrowserProperties#isTracing()}).
+     * <p>{@link #startTracing()} and {@link #stopAndSaveTrace(String)} always act; use this to decide
+     * whether to call them.</p>
+     *
+     * @return {@code true} if tracing is enabled, {@code false} otherwise.
      */
-    void startTracing();
+    boolean isTracingEnabled();
 
     /**
-     * Stops the Playwright tracer, exports the recorded data to a ZIP archive,
-     * and returns the binary data for reporting integration.
+     * Stops the Playwright trace started by {@link #startTracing()}, exports the recorded data to a ZIP
+     * archive, and returns the binary data for reporting integration.
      * <p>This method is intended to be called during test teardown (typically when a test fails),
      * ensuring that valuable debugging artifacts are preserved for analysis and easily
      * attachable to test execution reports.</p>
      *
      * @param filename The specific name to assign to the exported trace ZIP file.
      * @return A {@code byte[]} array containing the compiled trace ZIP file data,
-     * or {@code null} if tracing was disabled or failed to save.
+     * or an empty array if it could not be saved.
      */
     byte[] stopAndSaveTrace(String filename);
 
     /**
-     * Retrieves the active, thread-safe browser instance for the current execution context.
-     * <p>If a browser does not currently exist for the active thread, the implementation
-     * should automatically instantiate a new one using the registered factory.</p>
+     * Gets the current thread's browser instance.
+     * <p>If the thread has a running browser, it is returned as is. If it has none (never created, closed,
+     * or crashed), a new one is created with the registered factory and opened with a first window.</p>
      *
      * @return The current {@link IBrowser} instance.
      */
     IBrowser getBrowser();
 
     /**
-     * Forces the creation or replacement of the current thread's browser instance
-     * using the provided factory.
+     * Replaces the current thread's browser with a new one launched by the given factory, closing the old one.
+     * The new browser opens with a first window.
      *
-     * @param browserFactory The {@link IBrowserFactory} used to instantiate the new browser.
+     * @param browserFactory The factory to launch the new browser with.
      */
-    void setBrowser(IBrowserFactory<T> browserFactory);
+    void setBrowser(IBrowserFactory browserFactory);
 
     /**
-     * Gracefully terminates the active browser instance and cleans up any
-     * underlying thread-local references to prevent memory leaks between test suites.
+     * Closes the current thread's browser, with all its windows and its Playwright driver, and forgets it, so
+     * the next {@link #getBrowser()} launches a new one. Call it in the teardown of every test.
      */
     void close();
 
     /**
-     * The browser properties this service was constructed with, in their original, fully-typed form.
-     *
-     * @return the configured properties instance.
+     * Begins recording a Playwright trace (screenshots and DOM snapshots, as configured) for the current
+     * browser window.
+     * <p>This should typically be called right after the window is opened at the start of a test.</p>
      */
-    T getBrowserProperties();
-
-    /**
-     * Closes every browser this service has opened, on any thread, including browsers left open by
-     * threads that finished without calling {@link #close()}.
-     * <p>
-     * Intended for suite or application shutdown, when no tests are using their browsers anymore.
-     * The default implementation only closes the calling thread's browser.
-     */
-    default void closeAll() {
-        close();
-    }
-
-    /**
-     * Convenience default method to initialize the browser session for the current executing test.
-     * <p>This method automatically retrieves the active browser and opens a fresh window
-     * and tab, preparing a clean state for test navigation and execution.</p>
-     */
-    default void start() {
-        getBrowser().openNewWindow().openNewTab();
-    }
-
-    default void navigateTo(String url) {
-        getBrowser().requireCurrentBrowserTab().navigateTo(url);
-    }
+    void startTracing();
 }

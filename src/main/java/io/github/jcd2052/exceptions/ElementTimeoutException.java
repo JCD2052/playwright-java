@@ -1,7 +1,8 @@
 package io.github.jcd2052.exceptions;
 
 /**
- * Thrown when an element fails to reach an actionable state (visible, enabled) within the timeout.
+ * Thrown when Playwright times out on an element: an action whose element never became actionable (visible,
+ * stable, enabled), or a wait or collection count that wasn't reached in time.
  */
 public class ElementTimeoutException extends BasePlaywrightException {
     /**

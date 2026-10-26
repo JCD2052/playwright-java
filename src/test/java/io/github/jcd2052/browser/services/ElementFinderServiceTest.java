@@ -7,14 +7,9 @@ import io.github.jcd2052.browser.browser.interfaces.IBrowserTab;
 import io.github.jcd2052.browser.browser.interfaces.IBrowserWindow;
 import io.github.jcd2052.browser.services.interfaces.IBrowserService;
 import io.github.jcd2052.elements.selector.Selector;
+import org.mockito.Mockito;
+import org.testng.Assert;
 import org.testng.annotations.Test;
-
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.testng.Assert.assertSame;
-import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.expectThrows;
 
 /**
  * Unit tests for {@link ElementFinderService}, verifying it correctly walks
@@ -22,85 +17,101 @@ import static org.testng.Assert.expectThrows;
  * resolved {@link Page} to the {@link Selector}, entirely without a real browser.
  */
 public class ElementFinderServiceTest {
-    @Test
+    /**
+     * Verifies that the selector is resolved against the page of the current thread's current tab, and that the
+     * resulting locator is returned.
+     */
+    @Test(description = "findElement resolves the selector against the current thread's page")
     public void findElementResolvesTheSelectorAgainstTheCurrentThreadsPage() {
-        IBrowserService<?> browserService = mock(IBrowserService.class);
-        IBrowser browser = mock(IBrowser.class);
-        IBrowserWindow window = mock(IBrowserWindow.class);
-        IBrowserTab tab = mock(IBrowserTab.class);
-        Page page = mock(Page.class);
-        Locator expected = mock(Locator.class);
-        Selector selector = mock(Selector.class);
+        IBrowserService<?> browserService = Mockito.mock(IBrowserService.class);
+        IBrowser browser = Mockito.mock(IBrowser.class);
+        IBrowserWindow window = Mockito.mock(IBrowserWindow.class);
+        IBrowserTab tab = Mockito.mock(IBrowserTab.class);
+        Page page = Mockito.mock(Page.class);
+        Locator expected = Mockito.mock(Locator.class);
+        Selector selector = Mockito.mock(Selector.class);
 
-        when(browserService.getBrowser()).thenReturn(browser);
-        when(browser.requireCurrentBrowserTab()).thenCallRealMethod();
-        when(browser.requireCurrentBrowserWindow()).thenCallRealMethod();
-        when(browser.getCurrentBrowserWindow()).thenReturn(window);
-        when(window.getCurrentBrowserTab()).thenReturn(tab);
-        when(tab.getPage()).thenReturn(page);
-        when(selector.evaluate(page)).thenReturn(expected);
+        Mockito.when(browserService.getBrowser()).thenReturn(browser);
+        Mockito.when(browser.requireCurrentBrowserTab()).thenCallRealMethod();
+        Mockito.when(browser.requireCurrentBrowserWindow()).thenCallRealMethod();
+        Mockito.when(browser.getCurrentBrowserWindow()).thenReturn(window);
+        Mockito.when(window.getCurrentBrowserTab()).thenReturn(tab);
+        Mockito.when(tab.getPage()).thenReturn(page);
+        Mockito.when(selector.evaluate(page)).thenReturn(expected);
 
         ElementFinderService finderService = new ElementFinderService(browserService);
         Locator result = finderService.findElement(selector);
 
-        assertSame(result, expected);
-        verify(selector).evaluate(page);
+        Assert.assertSame(result, expected);
+        Mockito.verify(selector).evaluate(page);
     }
 
-    @Test
+    /**
+     * Verifies that every lookup reads the current page again instead of caching it, so elements follow the user
+     * to whichever tab is current at the moment of the action.
+     */
+    @Test(description = "findElement always re-reads the current page")
     public void findElementAlwaysReReadsTheCurrentPage() {
-        IBrowserService<?> browserService = mock(IBrowserService.class);
-        IBrowser browser = mock(IBrowser.class);
-        IBrowserWindow window = mock(IBrowserWindow.class);
-        IBrowserTab tab = mock(IBrowserTab.class);
-        Page firstPage = mock(Page.class);
-        Page secondPage = mock(Page.class);
-        Selector selector = mock(Selector.class);
+        IBrowserService<?> browserService = Mockito.mock(IBrowserService.class);
+        IBrowser browser = Mockito.mock(IBrowser.class);
+        IBrowserWindow window = Mockito.mock(IBrowserWindow.class);
+        IBrowserTab tab = Mockito.mock(IBrowserTab.class);
+        Page firstPage = Mockito.mock(Page.class);
+        Page secondPage = Mockito.mock(Page.class);
+        Selector selector = Mockito.mock(Selector.class);
 
-        when(browserService.getBrowser()).thenReturn(browser);
-        when(browser.requireCurrentBrowserTab()).thenCallRealMethod();
-        when(browser.requireCurrentBrowserWindow()).thenCallRealMethod();
-        when(browser.getCurrentBrowserWindow()).thenReturn(window);
-        when(window.getCurrentBrowserTab()).thenReturn(tab);
-        when(tab.getPage()).thenReturn(firstPage, secondPage);
+        Mockito.when(browserService.getBrowser()).thenReturn(browser);
+        Mockito.when(browser.requireCurrentBrowserTab()).thenCallRealMethod();
+        Mockito.when(browser.requireCurrentBrowserWindow()).thenCallRealMethod();
+        Mockito.when(browser.getCurrentBrowserWindow()).thenReturn(window);
+        Mockito.when(window.getCurrentBrowserTab()).thenReturn(tab);
+        Mockito.when(tab.getPage()).thenReturn(firstPage, secondPage);
 
         ElementFinderService finderService = new ElementFinderService(browserService);
         finderService.findElement(selector);
         finderService.findElement(selector);
 
-        verify(selector).evaluate(firstPage);
-        verify(selector).evaluate(secondPage);
+        Mockito.verify(selector).evaluate(firstPage);
+        Mockito.verify(selector).evaluate(secondPage);
     }
 
-    @Test
+    /**
+     * Verifies that a lookup with no open window fails with an {@link IllegalStateException} explaining that no
+     * browser window is open, instead of a {@link NullPointerException}.
+     */
+    @Test(description = "findElement fails with a clear message when no window is open")
     public void findElementFailsWithAClearMessageWhenNoWindowIsOpen() {
-        IBrowserService<?> browserService = mock(IBrowserService.class);
-        IBrowser browser = mock(IBrowser.class);
+        IBrowserService<?> browserService = Mockito.mock(IBrowserService.class);
+        IBrowser browser = Mockito.mock(IBrowser.class);
 
-        when(browserService.getBrowser()).thenReturn(browser);
-        when(browser.requireCurrentBrowserTab()).thenCallRealMethod();
-        when(browser.requireCurrentBrowserWindow()).thenCallRealMethod();
+        Mockito.when(browserService.getBrowser()).thenReturn(browser);
+        Mockito.when(browser.requireCurrentBrowserTab()).thenCallRealMethod();
+        Mockito.when(browser.requireCurrentBrowserWindow()).thenCallRealMethod();
 
-        IllegalStateException exception = expectThrows(IllegalStateException.class,
-                () -> new ElementFinderService(browserService).findElement(mock(Selector.class)));
+        IllegalStateException exception = Assert.expectThrows(IllegalStateException.class,
+                () -> new ElementFinderService(browserService).findElement(Mockito.mock(Selector.class)));
 
-        assertTrue(exception.getMessage().contains("No browser window is open"));
+        Assert.assertTrue(exception.getMessage().contains("No browser window is open"));
     }
 
-    @Test
+    /**
+     * Verifies that a lookup in a window with no open tab fails with an {@link IllegalStateException} explaining
+     * that no browser tab is open.
+     */
+    @Test(description = "findElement fails with a clear message when no tab is open")
     public void findElementFailsWithAClearMessageWhenNoTabIsOpen() {
-        IBrowserService<?> browserService = mock(IBrowserService.class);
-        IBrowser browser = mock(IBrowser.class);
-        IBrowserWindow window = mock(IBrowserWindow.class);
+        IBrowserService<?> browserService = Mockito.mock(IBrowserService.class);
+        IBrowser browser = Mockito.mock(IBrowser.class);
+        IBrowserWindow window = Mockito.mock(IBrowserWindow.class);
 
-        when(browserService.getBrowser()).thenReturn(browser);
-        when(browser.requireCurrentBrowserTab()).thenCallRealMethod();
-        when(browser.requireCurrentBrowserWindow()).thenCallRealMethod();
-        when(browser.getCurrentBrowserWindow()).thenReturn(window);
+        Mockito.when(browserService.getBrowser()).thenReturn(browser);
+        Mockito.when(browser.requireCurrentBrowserTab()).thenCallRealMethod();
+        Mockito.when(browser.requireCurrentBrowserWindow()).thenCallRealMethod();
+        Mockito.when(browser.getCurrentBrowserWindow()).thenReturn(window);
 
-        IllegalStateException exception = expectThrows(IllegalStateException.class,
-                () -> new ElementFinderService(browserService).findElement(mock(Selector.class)));
+        IllegalStateException exception = Assert.expectThrows(IllegalStateException.class,
+                () -> new ElementFinderService(browserService).findElement(Mockito.mock(Selector.class)));
 
-        assertTrue(exception.getMessage().contains("No browser tab is open"));
+        Assert.assertTrue(exception.getMessage().contains("No browser tab is open"));
     }
 }

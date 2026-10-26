@@ -6,21 +6,25 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.BooleanSupplier;
 
 /**
- * Defines a robust, polling-based synchronization contract for the framework.
+ * Polls a condition until it becomes {@code true}, for conditions an element wait can't express (e.g. "the
+ * table has exactly three rows").
  * <p>
- * This interface provides flexible mechanisms to halt execution until a specific
- * logical condition evaluates to {@code true}. It provides two distinct strategies:
+ * There are two kinds of wait:
+ * </p>
  * <ul>
- * <li><b>Soft Waits ({@code waitFor}):</b> Returns a boolean indicating success or failure. Ideal for conditional logic.</li>
- * <li><b>Hard Waits ({@code waitForTrue}):</b> Throws a {@link TimeoutException} upon failure. Ideal for strict assertions and test prerequisites.</li>
+ * <li><b>{@code waitFor}</b> returns {@code false} if the condition isn't met in time, for conditional logic.</li>
+ * <li><b>{@code waitForTrue}</b> throws a {@link TimeoutException} if it isn't, for test prerequisites.</li>
  * </ul>
+ * <p>
+ * Timeout and polling interval default to the values the wait was created with. The condition may throw: an
+ * exception of an ignored type (or a subclass) counts as "not yet", any other is thrown out of the wait.
  * </p>
  */
 public interface IConditionalWait {
     /**
      * Waits for the given condition to become true using default timeout and polling configurations.
      *
-     * @param condition The logical condition to evaluate repeatedly.
+     * @param condition The condition to poll.
      * @return {@code true} if the condition becomes true before the timeout; {@code false} otherwise.
      */
     default boolean waitFor(BooleanSupplier condition) {
@@ -28,10 +32,10 @@ public interface IConditionalWait {
     }
 
     /**
-     * Waits for the given condition to become true, providing a custom message for logging on failure.
+     * Waits for the given condition to become true, with a description of the condition.
      *
-     * @param condition The logical condition to evaluate.
-     * @param message   A custom message appended to the logs if the wait times out.
+     * @param condition The condition to poll.
+     * @param message   A description of the condition; not reported by this soft wait, which just returns {@code false}.
      * @return {@code true} if the condition becomes true before the timeout; {@code false} otherwise.
      */
     default boolean waitFor(BooleanSupplier condition, String message) {
@@ -41,8 +45,8 @@ public interface IConditionalWait {
     /**
      * Waits for the given condition, silently ignoring specific exceptions that might occur during evaluation.
      *
-     * @param condition          The logical condition to evaluate.
-     * @param exceptionsToIgnore A collection of exception classes to catch and ignore (e.g., StaleElement exceptions).
+     * @param condition          The condition to poll.
+     * @param exceptionsToIgnore Exception types (and their subclasses) that count as "not yet" when the condition throws them.
      * @return {@code true} if the condition becomes true before the timeout; {@code false} otherwise.
      */
     default boolean waitFor(BooleanSupplier condition, Collection<Class<? extends Throwable>> exceptionsToIgnore) {
@@ -50,11 +54,11 @@ public interface IConditionalWait {
     }
 
     /**
-     * Waits for the given condition, utilizing a custom log message and ignoring specific exceptions.
+     * Waits for the given condition, with a description of it, treating the given exceptions as "not yet".
      *
-     * @param condition          The logical condition to evaluate.
-     * @param message            A custom message appended to the logs if the wait times out.
-     * @param exceptionsToIgnore A collection of exception classes to catch and ignore.
+     * @param condition          The condition to poll.
+     * @param message            A description of the condition; not reported by this soft wait, which just returns {@code false}.
+     * @param exceptionsToIgnore Exception types (and their subclasses) that count as "not yet" when the condition throws them.
      * @return {@code true} if the condition becomes true before the timeout; {@code false} otherwise.
      */
     default boolean waitFor(BooleanSupplier condition, String message, Collection<Class<? extends Throwable>> exceptionsToIgnore) {
@@ -64,9 +68,9 @@ public interface IConditionalWait {
     /**
      * Waits for the given condition using a specific timeout and polling interval.
      *
-     * @param condition       The logical condition to evaluate.
+     * @param condition       The condition to poll.
      * @param timeout         The maximum duration to wait.
-     * @param pollingInterval The frequency at which to evaluate the condition.
+     * @param pollingInterval How long to pause between evaluations.
      * @return {@code true} if the condition becomes true before the timeout; {@code false} otherwise.
      */
     default boolean waitFor(BooleanSupplier condition, Duration timeout, Duration pollingInterval) {
@@ -76,7 +80,7 @@ public interface IConditionalWait {
     /**
      * Waits for the given condition using a specific timeout and the default polling interval.
      *
-     * @param condition The logical condition to evaluate.
+     * @param condition The condition to poll.
      * @param timeout   The maximum duration to wait.
      * @return {@code true} if the condition becomes true before the timeout; {@code false} otherwise.
      */
@@ -85,12 +89,12 @@ public interface IConditionalWait {
     }
 
     /**
-     * Waits for the given condition with custom timing configurations and a custom log message.
+     * Waits for the given condition with custom timing and a description of the condition.
      *
-     * @param condition       The logical condition to evaluate.
+     * @param condition       The condition to poll.
      * @param timeout         The maximum duration to wait.
-     * @param pollingInterval The frequency at which to evaluate the condition.
-     * @param message         A custom message appended to the logs if the wait times out.
+     * @param pollingInterval How long to pause between evaluations.
+     * @param message         A description of the condition; not reported by this soft wait, which just returns {@code false}.
      * @return {@code true} if the condition becomes true before the timeout; {@code false} otherwise.
      */
     default boolean waitFor(BooleanSupplier condition, Duration timeout, Duration pollingInterval, String message) {
@@ -100,10 +104,10 @@ public interface IConditionalWait {
     /**
      * Waits for the given condition with custom timing configurations while ignoring specific exceptions.
      *
-     * @param condition          The logical condition to evaluate.
+     * @param condition          The condition to poll.
      * @param timeout            The maximum duration to wait.
-     * @param pollingInterval    The frequency at which to evaluate the condition.
-     * @param exceptionsToIgnore A collection of exception classes to catch and ignore.
+     * @param pollingInterval    How long to pause between evaluations.
+     * @param exceptionsToIgnore Exception types (and their subclasses) that count as "not yet" when the condition throws them.
      * @return {@code true} if the condition becomes true before the timeout; {@code false} otherwise.
      */
     default boolean waitFor(BooleanSupplier condition, Duration timeout, Duration pollingInterval, Collection<Class<? extends Throwable>> exceptionsToIgnore) {
@@ -111,18 +115,15 @@ public interface IConditionalWait {
     }
 
     /**
-     * The core implementation signature for a soft wait.
-     * <p>
-     * Repeatedly evaluates the condition until it returns {@code true} or the timeout is reached.
-     * Does not interrupt the test execution flow if the timeout is reached.
-     * </p>
+     * Polls the condition until it returns {@code true} or the timeout is reached, returning {@code false} instead
+     * of throwing when it isn't met (including when the waiting thread is interrupted).
      *
-     * @param condition          The logical condition to evaluate.
-     * @param timeout            The maximum duration to wait (null uses framework default).
-     * @param pollingInterval    The frequency at which to evaluate the condition (null uses framework default).
-     * @param message            A custom message for logging purposes upon failure.
-     * @param exceptionsToIgnore A collection of exception classes to silently swallow during evaluation.
-     * @return {@code true} if the condition resolves to true; {@code false} if the timeout is reached.
+     * @param condition          The condition to poll.
+     * @param timeout            The maximum duration to wait ({@code null} for the default).
+     * @param pollingInterval    The frequency at which to evaluate the condition ({@code null} for the default).
+     * @param message            A description of the condition; not reported by this soft wait.
+     * @param exceptionsToIgnore Exception types (and their subclasses) that count as "not yet"; {@code null} for none.
+     * @return {@code true} if the condition became true in time; {@code false} otherwise.
      */
     boolean waitFor(
             BooleanSupplier condition,
@@ -134,7 +135,7 @@ public interface IConditionalWait {
     /**
      * Strictly waits for the given condition using default configurations. Throws an exception on failure.
      *
-     * @param condition The logical condition to evaluate.
+     * @param condition The condition to poll.
      * @throws TimeoutException if the condition does not become true within the default timeout.
      */
     default void waitForTrue(BooleanSupplier condition) throws TimeoutException {
@@ -144,8 +145,8 @@ public interface IConditionalWait {
     /**
      * Strictly waits for the given condition and appends a custom message to the exception if it fails.
      *
-     * @param condition The logical condition to evaluate.
-     * @param message   The context message added to the TimeoutException.
+     * @param condition The condition to poll.
+     * @param message   A description of the condition, included in the {@link TimeoutException} message.
      * @throws TimeoutException if the condition does not become true within the default timeout.
      */
     default void waitForTrue(BooleanSupplier condition, String message) throws TimeoutException {
@@ -155,8 +156,8 @@ public interface IConditionalWait {
     /**
      * Strictly waits for the given condition while silently ignoring specific exceptions during evaluation.
      *
-     * @param condition          The logical condition to evaluate.
-     * @param exceptionsToIgnore Exceptions to silently swallow during evaluation.
+     * @param condition          The condition to poll.
+     * @param exceptionsToIgnore Exception types (and their subclasses) that count as "not yet" when the condition throws them.
      * @throws TimeoutException if the condition does not become true within the default timeout.
      */
     default void waitForTrue(BooleanSupplier condition, Collection<Class<? extends Throwable>> exceptionsToIgnore) throws TimeoutException {
@@ -166,9 +167,9 @@ public interface IConditionalWait {
     /**
      * Strictly waits for the condition, utilizing a custom message and ignoring specific exceptions.
      *
-     * @param condition          The logical condition to evaluate.
-     * @param message            The context message added to the TimeoutException.
-     * @param exceptionsToIgnore Exceptions to silently swallow during evaluation.
+     * @param condition          The condition to poll.
+     * @param message            A description of the condition, included in the {@link TimeoutException} message.
+     * @param exceptionsToIgnore Exception types (and their subclasses) that count as "not yet" when the condition throws them.
      * @throws TimeoutException if the condition does not become true within the default timeout.
      */
     default void waitForTrue(BooleanSupplier condition, String message, Collection<Class<? extends Throwable>> exceptionsToIgnore) throws TimeoutException {
@@ -178,9 +179,9 @@ public interface IConditionalWait {
     /**
      * Strictly waits for the condition using custom timing configurations.
      *
-     * @param condition       The logical condition to evaluate.
+     * @param condition       The condition to poll.
      * @param timeout         The maximum duration to wait.
-     * @param pollingInterval The frequency at which to evaluate the condition.
+     * @param pollingInterval How long to pause between evaluations.
      * @throws TimeoutException if the condition does not become true within the specified timeout.
      */
     default void waitForTrue(BooleanSupplier condition, Duration timeout, Duration pollingInterval) throws TimeoutException {
@@ -190,7 +191,7 @@ public interface IConditionalWait {
     /**
      * Strictly waits for the condition using a specific timeout and default polling interval.
      *
-     * @param condition The logical condition to evaluate.
+     * @param condition The condition to poll.
      * @param timeout   The maximum duration to wait.
      * @throws TimeoutException if the condition does not become true within the specified timeout.
      */
@@ -201,10 +202,10 @@ public interface IConditionalWait {
     /**
      * Strictly waits for the condition with custom timing configurations and a custom exception message.
      *
-     * @param condition       The logical condition to evaluate.
+     * @param condition       The condition to poll.
      * @param timeout         The maximum duration to wait.
-     * @param pollingInterval The frequency at which to evaluate the condition.
-     * @param message         The context message added to the TimeoutException.
+     * @param pollingInterval How long to pause between evaluations.
+     * @param message         A description of the condition, included in the {@link TimeoutException} message.
      * @throws TimeoutException if the condition does not become true within the specified timeout.
      */
     default void waitForTrue(BooleanSupplier condition, Duration timeout, Duration pollingInterval, String message) throws TimeoutException {
@@ -214,10 +215,10 @@ public interface IConditionalWait {
     /**
      * Strictly waits for the condition with custom timing configurations while ignoring specific exceptions.
      *
-     * @param condition          The logical condition to evaluate.
+     * @param condition          The condition to poll.
      * @param timeout            The maximum duration to wait.
-     * @param pollingInterval    The frequency at which to evaluate the condition.
-     * @param exceptionsToIgnore Exceptions to silently swallow during evaluation.
+     * @param pollingInterval    How long to pause between evaluations.
+     * @param exceptionsToIgnore Exception types (and their subclasses) that count as "not yet" when the condition throws them.
      * @throws TimeoutException if the condition does not become true within the specified timeout.
      */
     default void waitForTrue(BooleanSupplier condition, Duration timeout, Duration pollingInterval, Collection<Class<? extends Throwable>> exceptionsToIgnore) throws TimeoutException {
@@ -225,18 +226,16 @@ public interface IConditionalWait {
     }
 
     /**
-     * The core implementation signature for a hard wait.
-     * <p>
-     * Repeatedly evaluates the condition until it returns {@code true}. If the specified timeout
-     * is exceeded, this method immediately interrupts execution by throwing an exception.
-     * </p>
+     * Polls the condition until it returns {@code true}, throwing if the timeout is reached first.
      *
-     * @param condition          The logical condition to evaluate.
-     * @param timeout            The maximum duration to wait (null uses framework default).
-     * @param pollingInterval    The frequency at which to evaluate the condition (null uses framework default).
-     * @param message            The context message to include in the thrown exception.
-     * @param exceptionsToIgnore A collection of exception classes to silently swallow during evaluation.
-     * @throws TimeoutException if the timeout duration is reached before the condition evaluates to true.
+     * @param condition          The condition to poll.
+     * @param timeout            The maximum duration to wait ({@code null} for the default).
+     * @param pollingInterval    The frequency at which to evaluate the condition ({@code null} for the default).
+     * @param message            A description of the condition, included in the {@link TimeoutException} message.
+     * @param exceptionsToIgnore Exception types (and their subclasses) that count as "not yet"; {@code null} for none.
+     * @throws TimeoutException if the timeout is reached before the condition becomes true, or the waiting thread
+     *                          is interrupted (then the cause is the {@link InterruptedException} and the thread's
+     *                          interrupted flag stays set).
      */
     void waitForTrue(
             BooleanSupplier condition,

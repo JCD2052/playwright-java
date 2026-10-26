@@ -7,25 +7,23 @@ import io.github.jcd2052.browser.services.interfaces.IElementFinderService;
 import io.github.jcd2052.elements.selector.Selector;
 
 /**
- * Implementation of the element finder service that interacts with the ThreadLocal browser instance.
+ * Default {@link IElementFinderService}: resolves selectors against the current tab of the calling thread's
+ * browser, taken from the browser service on every call.
  */
 public class ElementFinderService implements IElementFinderService {
     private final IBrowserService<?> browserService;
 
     /**
-     * Instantiates the element finder service.
+     * Creates a finder that reads the current tab from the given browser service.
      *
-     * @param browserService the browser service supplying the active page
+     * @param browserService the browser service whose current tab elements act on
      */
     public ElementFinderService(IBrowserService<?> browserService) {
         this.browserService = browserService;
     }
 
     /**
-     * Evaluates the Selector strategy dynamically against the currently active thread's page.
-     *
-     * @param selector the locator strategy to evaluate
-     * @return the resolved Playwright Locator
+     * {@inheritDoc}
      */
     @Override
     public Locator findElement(Selector selector) {

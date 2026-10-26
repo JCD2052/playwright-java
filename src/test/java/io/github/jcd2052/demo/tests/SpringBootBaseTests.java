@@ -18,8 +18,10 @@ public class SpringBootBaseTests extends AbstractTestNGSpringContextTests {
 
     @BeforeMethod(alwaysRun = true)
     public void setupBrowser() {
-        browserService.start();
-        browserService.startTracing();
+        browserService.getBrowser();
+        if (browserService.isTracingEnabled()) {
+            browserService.startTracing();
+        }
     }
 
     @AfterMethod(alwaysRun = true)
@@ -27,9 +29,11 @@ public class SpringBootBaseTests extends AbstractTestNGSpringContextTests {
         try {
             if (!result.isSuccess()) {
                 browserService.getBrowser().takeScreenshot();
-                browserService.stopAndSaveTrace(String.format(
-                        TRACING_FOLDER_TEMPLATE, result.getMethod().getMethodName(),
-                        System.currentTimeMillis()));
+                if (browserService.isTracingEnabled()) {
+                    browserService.stopAndSaveTrace(String.format(
+                            TRACING_FOLDER_TEMPLATE, result.getMethod().getMethodName(),
+                            System.currentTimeMillis()));
+                }
             }
         } finally {
             browserService.close();

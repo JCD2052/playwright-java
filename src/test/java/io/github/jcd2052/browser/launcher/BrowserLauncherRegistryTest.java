@@ -1,74 +1,88 @@
 package io.github.jcd2052.browser.launcher;
 
+import org.mockito.Mockito;
+import org.testng.Assert;
 import org.testng.annotations.Test;
-
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertSame;
-import static org.testng.Assert.assertTrue;
 
 /**
  * Unit tests for {@link BrowserLauncherRegistry}: the default browser registrations, name
  * lookup (including the unknown/invalid-name case), and custom launcher registration.
  */
 public class BrowserLauncherRegistryTest {
-    @Test
+    /**
+     * Verifies that a new registry has launchers for every built-in browser name: chrome, chromium, firefox, edge
+     * and webkit.
+     */
+    @Test(description = "The default constructor registers the core Playwright browsers")
     public void defaultConstructorRegistersTheCorePlaywrightBrowsers() {
         BrowserLauncherRegistry registry = new BrowserLauncherRegistry();
 
-        assertTrue(registry.getLauncher("chrome") instanceof ChromeLauncher);
-        assertTrue(registry.getLauncher("chromium") instanceof ChromiumLauncher);
-        assertTrue(registry.getLauncher("firefox") instanceof FirefoxLauncher);
-        assertTrue(registry.getLauncher("edge") instanceof EdgeLauncher);
-        assertTrue(registry.getLauncher("webkit") instanceof WebkitLauncher);
+        Assert.assertTrue(registry.getLauncher("chrome") instanceof ChromeLauncher);
+        Assert.assertTrue(registry.getLauncher("chromium") instanceof ChromiumLauncher);
+        Assert.assertTrue(registry.getLauncher("firefox") instanceof FirefoxLauncher);
+        Assert.assertTrue(registry.getLauncher("edge") instanceof EdgeLauncher);
+        Assert.assertTrue(registry.getLauncher("webkit") instanceof WebkitLauncher);
     }
 
-    @Test
+    /**
+     * Verifies that browser names are looked up regardless of case.
+     */
+    @Test(description = "getLauncher is case-insensitive")
     public void getLauncherIsCaseInsensitive() {
         BrowserLauncherRegistry registry = new BrowserLauncherRegistry();
 
         IBrowserLauncher lowercase = registry.getLauncher("chrome");
-        assertNotNull(lowercase);
-        assertSame(registry.getLauncher("Chrome"), lowercase);
-        assertSame(registry.getLauncher("CHROME"), lowercase);
+        Assert.assertNotNull(lowercase);
+        Assert.assertSame(registry.getLauncher("Chrome"), lowercase);
+        Assert.assertSame(registry.getLauncher("CHROME"), lowercase);
     }
 
-    @Test
+    /**
+     * Verifies that an unknown browser name finds no launcher.
+     */
+    @Test(description = "getLauncher returns null for an unknown browser name")
     public void getLauncherReturnsNullForAnUnknownBrowserName() {
         BrowserLauncherRegistry registry = new BrowserLauncherRegistry();
 
-        assertNull(registry.getLauncher("netscape-navigator"));
+        Assert.assertNull(registry.getLauncher("netscape-navigator"));
     }
 
-    @Test
+    /**
+     * Verifies that a {@code null} browser name finds no launcher instead of failing.
+     */
+    @Test(description = "getLauncher returns null for a null name")
     public void getLauncherReturnsNullForANullName() {
         BrowserLauncherRegistry registry = new BrowserLauncherRegistry();
 
-        assertNull(registry.getLauncher(null));
+        Assert.assertNull(registry.getLauncher(null));
     }
 
-    @Test
+    /**
+     * Verifies that a custom launcher is registered under the name it reports, and can be found regardless of case.
+     */
+    @Test(description = "register adds a custom launcher retrievable by its own name, case-insensitively")
     public void registerAddsACustomLauncherRetrievableByItsOwnNameCaseInsensitively() {
         BrowserLauncherRegistry registry = new BrowserLauncherRegistry();
-        IBrowserLauncher customLauncher = mock(IBrowserLauncher.class);
-        when(customLauncher.getName()).thenReturn("opera");
+        IBrowserLauncher customLauncher = Mockito.mock(IBrowserLauncher.class);
+        Mockito.when(customLauncher.getName()).thenReturn("opera");
 
         registry.register(customLauncher);
 
-        assertSame(registry.getLauncher("opera"), customLauncher);
-        assertSame(registry.getLauncher("OPERA"), customLauncher);
+        Assert.assertSame(registry.getLauncher("opera"), customLauncher);
+        Assert.assertSame(registry.getLauncher("OPERA"), customLauncher);
     }
 
-    @Test
+    /**
+     * Verifies that registering a launcher under an existing name replaces the built-in launcher.
+     */
+    @Test(description = "register overwrites an existing launcher with the same name")
     public void registerOverwritesAnExistingLauncherWithTheSameName() {
         BrowserLauncherRegistry registry = new BrowserLauncherRegistry();
-        IBrowserLauncher replacement = mock(IBrowserLauncher.class);
-        when(replacement.getName()).thenReturn("chrome");
+        IBrowserLauncher replacement = Mockito.mock(IBrowserLauncher.class);
+        Mockito.when(replacement.getName()).thenReturn("chrome");
 
         registry.register(replacement);
 
-        assertSame(registry.getLauncher("chrome"), replacement);
+        Assert.assertSame(registry.getLauncher("chrome"), replacement);
     }
 }

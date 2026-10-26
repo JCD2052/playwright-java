@@ -10,6 +10,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
+/**
+ * Default {@link ILocalizationReader}, reading {@code <languageCode>.json} files with Jackson.
+ * <p>
+ * The file is looked up in order: in the custom directory (if one is given), then at
+ * {@code localization/<languageCode>.json} on the classpath. A project can therefore override the bundled
+ * {@code en}/{@code uk} messages, or add a language, by putting its own file under {@code localization/} in
+ * its resources.
+ * </p>
+ */
 public class LocalizationReader implements ILocalizationReader {
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final String DEFAULT_LOCALIZATION_DIR = "localization/";

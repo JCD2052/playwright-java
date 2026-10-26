@@ -16,10 +16,10 @@ public class ConditionalWait implements IConditionalWait {
     private final Duration defaultPollingInterval;
 
     /**
-     * Manual constructor for instantiating the wait utility with specific time configurations.
+     * Creates a wait with the defaults used when a wait call doesn't pass its own timing.
      *
-     * @param defaultTimeout         The maximum time to wait before timing out.
-     * @param defaultPollingInterval The frequency of condition evaluation.
+     * @param defaultTimeout         The default maximum time to wait.
+     * @param defaultPollingInterval The default pause between evaluations.
      */
     public ConditionalWait(Duration defaultTimeout, Duration defaultPollingInterval) {
         this.defaultTimeout = defaultTimeout;

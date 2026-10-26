@@ -27,16 +27,16 @@ public class DropdownElement extends AbstractElement implements IDropdownElement
     /**
      * Constructs a new {@code DropdownElement}.
      *
-     * @param selector       The Playwright Selector locator strategy used to find the element.
-     * @param name           A human-readable name for the dropdown (e.g., "Country Selector"), used for logging.
-     * @param elementFactory The {@link IElementFactory} responsible for creating and locating the element.
+     * @param selector       The selector the element is found with.
+     * @param name           A human-readable name for the dropdown (e.g., "Country Selector"), used in log messages and errors.
+     * @param elementFactory The factory creating the element.
      */
     protected DropdownElement(Selector selector, String name, IElementFactory elementFactory) {
         super(selector, name, elementFactory);
     }
 
     /**
-     * Retrieves the visible inner text of the currently selected option in the dropdown.
+     * Gets the rendered text of the selected option.
      *
      * @return The text of the selected option.
      */
@@ -48,7 +48,7 @@ public class DropdownElement extends AbstractElement implements IDropdownElement
     }
 
     /**
-     * Retrieves the visible text content of all available options within the dropdown.
+     * Gets the text of every option, in order.
      *
      * @return A list of strings representing the text of every {@code <option>} element.
      */
@@ -65,9 +65,9 @@ public class DropdownElement extends AbstractElement implements IDropdownElement
     }
 
     /**
-     * Selects an option in the dropdown based on its HTML {@code value} attribute.
+     * Selects the option whose {@code value} attribute matches exactly.
      *
-     * @param option The exact string value of the {@code value} attribute to select.
+     * @param option The option's {@code value}.
      */
     @Override
     public void selectByValue(String option) {
@@ -78,7 +78,7 @@ public class DropdownElement extends AbstractElement implements IDropdownElement
     }
 
     /**
-     * Selects an option in the dropdown based on its zero-based index.
+     * Selects the option at the given position.
      *
      * @param index The zero-based index of the option to select.
      */
@@ -91,9 +91,9 @@ public class DropdownElement extends AbstractElement implements IDropdownElement
     }
 
     /**
-     * Selects an option in the dropdown based on its visible text (label).
+     * Selects the option whose visible text (label) matches exactly.
      *
-     * @param text The exact visible text of the option to select.
+     * @param text The option's text.
      */
     @Override
     public void selectByText(String text) {
@@ -104,10 +104,9 @@ public class DropdownElement extends AbstractElement implements IDropdownElement
     }
 
     /**
-     * A private helper method that applies the configured {@link SelectOption}
-     * to the underlying Playwright locator.
+     * Selects the option described by the given {@link SelectOption}.
      *
-     * @param selectOption A function that configures and returns a {@code SelectOption} instance.
+     * @param selectOption Configures which option to select.
      */
     private void selectByOption(Function<SelectOption, SelectOption> selectOption) {
         getLocator().selectOption(selectOption.apply(new SelectOption()));

@@ -1,5 +1,6 @@
 package io.github.jcd2052.waiting;
 
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.time.Duration;
@@ -7,60 +8,79 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.expectThrows;
-
 /**
  * Unit tests for {@link ConditionalWait}. Uses short timeouts/polling intervals throughout so the
  * suite stays fast even though this is genuinely exercising real {@code Thread.sleep} polling.
  */
 public class ConditionalWaitTest {
-
+    /**
+     * A wait with a 300 ms timeout and a 20 ms polling interval, short enough to keep the suite fast.
+     */
     private static ConditionalWait shortWait() {
         return new ConditionalWait(Duration.ofMillis(300), Duration.ofMillis(20));
     }
 
-    @Test
+    /**
+     * Verifies that waiting for a condition that is already true returns without throwing.
+     */
+    @Test(description = "waitForTrue returns immediately when the condition is already true")
     public void waitForTrueReturnsImmediatelyWhenConditionIsAlreadyTrue() throws TimeoutException {
         shortWait().waitForTrue(() -> true);
-        // no exception = success
     }
 
-    @Test
+    /**
+     * Verifies that a condition that never becomes true fails with a {@link TimeoutException} whose message includes
+     * the given context.
+     */
+    @Test(description = "waitForTrue throws with a context message when the condition never becomes true")
     public void waitForTrueThrowsWithAContextMessageWhenTheConditionNeverBecomesTrue() {
-        TimeoutException exception = expectThrows(TimeoutException.class, () ->
+        TimeoutException exception = Assert.expectThrows(TimeoutException.class, () ->
                 shortWait().waitForTrue(() -> false, "row count reached zero"));
 
-        assertTrue(exception.getMessage().contains("row count reached zero"));
+        Assert.assertTrue(exception.getMessage().contains("row count reached zero"));
     }
 
-    @Test
+    /**
+     * Verifies that the condition is polled until it becomes true.
+     */
+    @Test(description = "waitForTrue succeeds once the condition flips to true during polling")
     public void waitForTrueSucceedsOnceTheConditionFlipsToTrueDuringPolling() throws TimeoutException {
         AtomicInteger callCount = new AtomicInteger(0);
 
         shortWait().waitForTrue(() -> callCount.incrementAndGet() >= 3);
 
-        assertTrue(callCount.get() >= 3);
+        Assert.assertTrue(callCount.get() >= 3);
     }
 
-    @Test
+    /**
+     * Verifies that the boolean variant returns {@code true} when the condition is met.
+     */
+    @Test(description = "waitFor returns true when the condition is met")
     public void waitForReturnsTrueWhenTheConditionIsMet() {
-        assertTrue(shortWait().waitFor(() -> true));
+        Assert.assertTrue(shortWait().waitFor(() -> true));
     }
 
-    @Test
+    /**
+     * Verifies that the boolean variant returns {@code false}, instead of throwing, when the condition times out.
+     */
+    @Test(description = "waitFor returns false instead of throwing when the condition times out")
     public void waitForReturnsFalseInsteadOfThrowingWhenTheConditionTimesOut() {
-        assertFalse(shortWait().waitFor(() -> false));
+        Assert.assertFalse(shortWait().waitFor(() -> false));
     }
 
-    @Test
+    /**
+     * Verifies that a {@code null} condition is rejected with an {@link IllegalArgumentException}.
+     */
+    @Test(description = "waitForTrue rejects a null condition")
     public void waitForTrueRejectsANullCondition() {
-        expectThrows(IllegalArgumentException.class, () -> shortWait().waitForTrue(null));
+        Assert.expectThrows(IllegalArgumentException.class, () -> shortWait().waitForTrue(null));
     }
 
-    @Test
+    /**
+     * Verifies that an exception of an ignored type thrown by the condition counts as "not yet" and the condition is
+     * evaluated again.
+     */
+    @Test(description = "waitForTrue retries when an ignored exception is thrown during evaluation")
     public void waitForTrueRetriesWhenAnIgnoredExceptionIsThrownDuringEvaluation() throws TimeoutException {
         AtomicInteger callCount = new AtomicInteger(0);
 
@@ -76,12 +96,15 @@ public class ConditionalWaitTest {
                 "condition with a flaky evaluation",
                 List.of(IllegalStateException.class));
 
-        assertTrue(callCount.get() >= 3);
+        Assert.assertTrue(callCount.get() >= 3);
     }
 
-    @Test
+    /**
+     * Verifies that an exception of a type that is not ignored is thrown straight out of the wait.
+     */
+    @Test(description = "waitForTrue propagates an exception that is not in the ignore list")
     public void waitForTruePropagatesAnExceptionThatIsNotInTheIgnoreList() {
-        expectThrows(IllegalStateException.class, () -> shortWait().waitForTrue(
+        Assert.expectThrows(IllegalStateException.class, () -> shortWait().waitForTrue(
                 () -> {
                     throw new IllegalStateException("boom");
                 },
@@ -91,7 +114,10 @@ public class ConditionalWaitTest {
                 List.of(NullPointerException.class)));
     }
 
-    @Test
+    /**
+     * Verifies that subclasses of an ignored exception type are ignored too.
+     */
+    @Test(description = "waitForTrue ignores subclasses of an ignored exception")
     public void waitForTrueIgnoresSubclassesOfAnIgnoredException() throws TimeoutException {
         AtomicInteger callCount = new AtomicInteger(0);
 
@@ -107,45 +133,55 @@ public class ConditionalWaitTest {
                 "condition with a flaky evaluation",
                 List.of(RuntimeException.class));
 
-        assertTrue(callCount.get() >= 3);
+        Assert.assertTrue(callCount.get() >= 3);
     }
 
-    @Test
+    /**
+     * Verifies that interrupting the waiting thread stops the wait with a {@link TimeoutException} caused by the
+     * interruption, after a single evaluation, and keeps the thread's interrupted flag set.
+     */
+    @Test(description = "waitForTrue stops polling when the thread is interrupted")
     public void waitForTrueStopsPollingWhenTheThreadIsInterrupted() {
         AtomicInteger callCount = new AtomicInteger(0);
         Thread.currentThread().interrupt();
         try {
-            TimeoutException exception = expectThrows(TimeoutException.class, () -> shortWait().waitForTrue(
+            TimeoutException exception = Assert.expectThrows(TimeoutException.class, () -> shortWait().waitForTrue(
                     () -> {
                         callCount.incrementAndGet();
                         return false;
                     },
                     "interrupted wait"));
 
-            assertTrue(exception.getCause() instanceof InterruptedException);
-            assertEquals(callCount.get(), 1);
-            assertTrue(Thread.currentThread().isInterrupted());
+            Assert.assertTrue(exception.getCause() instanceof InterruptedException);
+            Assert.assertEquals(callCount.get(), 1);
+            Assert.assertTrue(Thread.currentThread().isInterrupted());
         } finally {
             Thread.interrupted();
         }
     }
 
-    @Test
+    /**
+     * Verifies that a timeout below one second is waited out in full instead of being truncated to zero.
+     */
+    @Test(description = "Sub-second timeouts are honored rather than truncated to zero")
     public void subSecondTimeoutsAreHonoredRatherThanTruncatedToZero() {
         long start = System.currentTimeMillis();
 
-        expectThrows(TimeoutException.class, () -> shortWait().waitForTrue(
+        Assert.expectThrows(TimeoutException.class, () -> shortWait().waitForTrue(
                 () -> false, Duration.ofMillis(150), Duration.ofMillis(10), "sub-second timeout", null));
 
         long elapsed = System.currentTimeMillis() - start;
-        assertTrue(elapsed >= 150, "Expected to wait at least 150ms, but timed out after " + elapsed + "ms");
+        Assert.assertTrue(elapsed >= 150, "Expected to wait at least 150ms, but timed out after " + elapsed + "ms");
     }
 
-    @Test
+    /**
+     * Verifies that a timeout and polling interval given to a single wait override the wait's defaults.
+     */
+    @Test(description = "An explicit timeout and polling interval override the defaults")
     public void explicitTimeoutAndPollingIntervalOverrideTheDefaults() {
         AtomicInteger callCount = new AtomicInteger(0);
 
-        TimeoutException exception = expectThrows(TimeoutException.class, () -> shortWait().waitForTrue(
+        TimeoutException exception = Assert.expectThrows(TimeoutException.class, () -> shortWait().waitForTrue(
                 () -> {
                     callCount.incrementAndGet();
                     return false;
@@ -155,7 +191,7 @@ public class ConditionalWaitTest {
                 "overridden timing",
                 null));
 
-        assertTrue(exception.getMessage().contains("60 ms"));
-        assertTrue(callCount.get() > 1);
+        Assert.assertTrue(exception.getMessage().contains("60 ms"));
+        Assert.assertTrue(callCount.get() > 1);
     }
 }

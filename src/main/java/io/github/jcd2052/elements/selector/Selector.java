@@ -8,9 +8,14 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 
 /**
- * A Just-In-Time (JIT) locator strategy wrapper for Playwright.
- * Evaluates the selector against a Page or a parent Locator at the exact moment of action,
- * making it thread-safe and compatible with Singleton Page Objects.
+ * Describes how to find an element, as one of Playwright's locator strategies (CSS/XPath, role, text, label,
+ * placeholder, alt text, title, test id, or inside an iframe), without finding it yet.
+ * <p>
+ * A selector is only turned into a Playwright {@link Locator} when an element acts, against the current tab's
+ * page (or a parent locator, for child elements). It holds no page, so one selector, and the page objects that
+ * hold it, can be shared by tests running in parallel. Selectors compose with {@link #chain(Selector)} and
+ * {@link #nth(int)}, and describe themselves through {@link #toString()} in logs and error messages.
+ * </p>
  */
 public abstract class Selector {
     /**
@@ -43,7 +48,7 @@ public abstract class Selector {
     }
 
     /**
-     * Locates an element by its text content.
+     * Locates an element by its text content: a case-insensitive substring match, Playwright's default.
      *
      * @param text the text to search for
      * @return a new Selector instance for the text strategy
@@ -284,7 +289,8 @@ public abstract class Selector {
     }
 
     /**
-     * Locates an element by its test-id attribute.
+     * Locates an element by its test-id attribute: {@code data-testid}, or the attribute configured with
+     * {@code IBrowserProperties.getTestIdAttribute()}.
      *
      * @param testId the test-id string to search for
      * @return a new Selector instance for the test-id strategy

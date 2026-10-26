@@ -5,19 +5,16 @@ import io.github.jcd2052.elements.selector.Selector;
 import io.github.jcd2052.elements.interfaces.IButtonElement;
 
 /**
- * A concrete representation of a clickable button element within the web application.
- * * <p>This class extends {@link AbstractElement} to inherit standard Playwright
- * interactions (such as {@code click()}, {@code isVisible()}, etc.) and implements
- * {@link IButtonElement} to fulfill any button-specific behavioral contracts defined
- * by the framework.</p>
+ * The built-in {@link IButtonElement}: a clickable element, with the common element API from
+ * {@link AbstractElement}.
  */
 public class ButtonElement extends AbstractElement implements IButtonElement {
     /**
      * Constructs a new {@code ButtonElement}.
      *
-     * @param selector       The Playwright Selector locator strategy used to find the element.
-     * @param name           A human-readable name for the button (e.g., "Submit Button", "Login"), utilized for logging.
-     * @param elementFactory The {@link IElementFactory} responsible for managing and resolving locators.
+     * @param selector       The selector the element is found with.
+     * @param name           A human-readable name for the button (e.g., "Submit Button", "Login"), used in log messages and errors.
+     * @param elementFactory The factory creating the element.
      */
     protected ButtonElement(Selector selector, String name, IElementFactory elementFactory) {
         super(selector, name, elementFactory);

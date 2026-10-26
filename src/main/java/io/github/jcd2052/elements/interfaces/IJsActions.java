@@ -10,14 +10,13 @@ package io.github.jcd2052.elements.interfaces;
  */
 public interface IJsActions {
     /**
-     * Performs a click interaction by dispatching a MouseEvent or calling the
-     * HTMLElement.click() method directly via JavaScript.
+     * Clicks the element by calling {@code element.click()} in the page, skipping Playwright's actionability
+     * checks and the real mouse.
      */
     void click();
 
     /**
-     * Scrolls the element into the visible area of the browser window using
-     * the JavaScript {@code element.scrollIntoView()} method.
+     * Scrolls the element to the center of the viewport with {@code element.scrollIntoView()}.
      */
     void scrollIntoView();
 
@@ -36,4 +35,11 @@ public interface IJsActions {
      * @return {@code true} if pointer events are disabled, {@code false} otherwise.
      */
     boolean isPointerEventsDisabled();
+
+    /**
+     * Checks whether the element is entirely inside the viewport right now, judging by its bounding box.
+     *
+     * @return {@code true} if the whole element is in view, {@code false} if any part of it is outside.
+     */
+    boolean isInViewport();
 }

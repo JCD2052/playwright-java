@@ -5,31 +5,19 @@ import com.microsoft.playwright.Playwright;
 import io.github.jcd2052.browser.configuration.IBrowserProperties;
 
 /**
- * Factory interface responsible for creating and configuring Playwright {@link Browser} instances.
+ * Launches Playwright {@link Browser} instances from the configuration.
  * <p>
- * Implementations of this interface handle the specific launch arguments, browser types
- * (e.g., Chromium, Firefox, WebKit), and configurations required to start a browser session.
- * <p>
- * Parameterized over {@code T} so that projects with configuration needs beyond the framework's
- * built-in properties (e.g. a proxy profile, an environment name) can supply their own interface
- * extending {@link IBrowserProperties} and get it back, fully typed, via {@link #getBrowserProperties()}
- * — no casting required.
- *
- * @param <T> the concrete {@link IBrowserProperties} type this factory was configured with
+ * Implementations decide which browser to launch and with which launch options (headless mode, launch
+ * arguments, ...), usually from {@link IBrowserProperties}. The browser service calls this once per browser
+ * it creates, with a new {@link Playwright} driver each time.
+ * </p>
  */
-public interface IBrowserFactory<T extends IBrowserProperties> {
+public interface IBrowserFactory {
     /**
-     * Creates and launches a new Playwright {@link Browser} instance.
+     * Launches a new browser in the given Playwright driver.
      *
-     * @param playwright The active {@link Playwright} connection instance used to launch the browser.
-     * @return A newly launched and configured Playwright {@link Browser} ready for context creation.
+     * @param playwright The Playwright driver to launch the browser in.
+     * @return The launched browser, with no windows open yet.
      */
     Browser createBrowser(Playwright playwright);
-
-    /**
-     * The browser properties this factory was constructed with, in their original, fully-typed form.
-     *
-     * @return the configured properties instance.
-     */
-    T getBrowserProperties();
 }

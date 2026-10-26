@@ -8,8 +8,8 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 import org.testng.asserts.SoftAssert;
 
-import java.util.concurrent.TimeoutException;
 import java.math.BigDecimal;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Showcases the framework against a small set of static demo pages bundled with the repository
@@ -26,7 +26,11 @@ public class DemoFrameworkShowcaseTests extends DemoSiteBaseTests {
     @Autowired
     private DemoFramePage framePage;
 
-    @Test
+    /**
+     * Verifies the sign-in page object end to end: text boxes, checkbox and dropdown are filled, the form is
+     * submitted, and the status message reflects every entered value.
+     */
+    @Test(description = "The login form fills and submits")
     public void loginFormFillsAndSubmits() {
         openDemoPage("/index.html");
 
@@ -34,7 +38,11 @@ public class DemoFrameworkShowcaseTests extends DemoSiteBaseTests {
         Assert.assertEquals(status, "Welcome, qa-engineer! (remembered) [ua]");
     }
 
-    @Test
+    /**
+     * Verifies that the products table is read into plain data models, one per row, that can be searched by
+     * their values.
+     */
+    @Test(description = "The products table exposes its rows as data")
     public void productsTableExposesRowsAsData() {
         openDemoPage("/table.html");
 
@@ -47,7 +55,11 @@ public class DemoFrameworkShowcaseTests extends DemoSiteBaseTests {
         softAssert.assertAll();
     }
 
-    @Test
+    /**
+     * Verifies that a row found by its data can be acted on: clicking its remove button removes exactly that row
+     * from the table.
+     */
+    @Test(description = "A product row's remove button removes the row")
     public void productRowRemoveButtonRemovesTheRow() throws TimeoutException {
         openDemoPage("/table.html");
 
@@ -60,7 +72,11 @@ public class DemoFrameworkShowcaseTests extends DemoSiteBaseTests {
         softAssert.assertAll();
     }
 
-    @Test
+    /**
+     * Verifies that elements inside an {@code <iframe>} can be filled and clicked through
+     * {@code Selector.byFrame(...)}, like elements on the main page.
+     */
+    @Test(description = "A widget inside an iframe can be filled and submitted")
     public void widgetInsideIframeCanBeFilledAndSubmitted() {
         openDemoPage("/frame.html");
         String status = framePage.confirmPayment("4242 4242 4242 4242");

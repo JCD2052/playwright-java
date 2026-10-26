@@ -20,7 +20,7 @@ import java.util.function.Predicate;
  */
 public interface ITableGridForm<M, R extends IRow<M>> extends IForm {
     /**
-     * Retrieves a specific row component from the table based on its physical DOM index.
+     * Gets the row at the given position.
      * <p>
      * <b>Note:</b> rows use <b>1-based positions</b> (the first row is {@code 1}), matching how rows are
      * numbered on screen and in element names such as "Product row 1". This differs from
@@ -28,34 +28,27 @@ public interface ITableGridForm<M, R extends IRow<M>> extends IForm {
      * which are 0-based. {@link io.github.jcd2052.pages.table.row.AbstractRow} rejects positions below 1.
      * </p>
      *
-     * @param index The 1-based index of the row to retrieve.
-     * @return An instantiated row Page Object of type {@code R} scoped to that specific index.
+     * @param index The row's 1-based position.
+     * @return The row's page object.
      */
     R getRow(int index);
 
     /**
-     * Scrapes and extracts the underlying data from all currently rendered rows in the table.
-     * <p>
-     * This method acts as a bulk data-reader, ideal for making assertions against the entire
-     * state of the grid without interacting with the UI elements.
-     * </p>
+     * Reads every row currently in the table into its data model, e.g. to assert on the whole table at once.
      *
      * @return A {@link List} of strongly-typed data models ({@code M}) representing the table's current content.
      */
     List<M> getModelsFromRows();
 
     /**
-     * Retrieves all currently rendered rows in the table as fully interactive Page Objects.
+     * Gets a page object for every row currently in the table.
      *
-     * @return A {@link List} of instantiated row objects of type {@code R}, allowing for bulk UI operations.
+     * @return The rows, in order.
      */
     List<R> getRowsFromPage();
 
     /**
-     * Searches the table's extracted data models to find the first model matching a specific condition.
-     * <p>
-     * Leverages the Java Stream API to efficiently filter the extracted DTOs.
-     * </p>
+     * Finds the data model of the first row matching a condition.
      *
      * @param condition A {@link Predicate} defining the search criteria against the data model {@code M}.
      * @return An {@link Optional} containing the matched data model, or an empty Optional if no match is found.
@@ -67,10 +60,7 @@ public interface ITableGridForm<M, R extends IRow<M>> extends IForm {
     }
 
     /**
-     * Retrieves the very first row in the table.
-     * <p>
-     * A convenience method that resolves to calling {@link #getRow(int)} with an index of 1.
-     * </p>
+     * Gets the first row, i.e. {@link #getRow(int) getRow(1)}.
      *
      * @return The instantiated row Page Object of type {@code R} targeting the first row.
      */
@@ -79,23 +69,18 @@ public interface ITableGridForm<M, R extends IRow<M>> extends IForm {
     }
 
     /**
-     * Safely retrieves the first interactive row Page Object whose underlying data matches the specified condition.
-     * <p>
-     * If no matching row is found in the grid, this method instantly fails the test execution by
-     * throwing an exception with a default message, saving you from writing repetitive {@code .orElseThrow()} boilerplate.
-     * </p>
+     * Gets the first row whose data matches a condition, failing if there is none.
      *
      * @param condition A {@link Predicate} defining the search criteria against the data model {@code M}.
      * @return The actionable row Page Object of type {@code R}.
-     * @throws IllegalArgumentException if no row matching the condition is currently present in the grid.
+     * @throws IllegalArgumentException with the message "Could not find row." if no row matches.
      */
     default R getRowOrThrow(Predicate<M> condition) {
         return findRow(condition).orElseThrow(() -> new IllegalArgumentException("Could not find row."));
     }
 
     /**
-     * Safely retrieves the first interactive row Page Object whose underlying data matches the specified condition,
-     * utilizing a custom error message if the row is missing.
+     * Gets the first row whose data matches a condition, failing with the given message if there is none.
      *
      * @param condition A {@link Predicate} defining the search criteria against the data model {@code M}.
      * @param message   The custom context message to include in the exception if the row is not found.
@@ -107,13 +92,8 @@ public interface ITableGridForm<M, R extends IRow<M>> extends IForm {
     }
 
     /**
-     * Searches the table to find the first interactive row Page Object whose underlying data
-     * matches the specified condition.
-     * <p>
-     * This is a highly powerful convenience method for locating a specific UI element based on its data
-     * (e.g., finding the exact Row object where the internal Username model equals "Admin",
-     * so that the test can click that specific row's "Edit" button).
-     * </p>
+     * Finds the first row whose data matches a condition, e.g. the row whose user name is "Admin", so the test
+     * can then click that row's "Edit" button. Every row's data is read until one matches.
      *
      * @param condition A {@link Predicate} defining the search criteria against the data model {@code M}.
      * @return An {@link Optional} containing the actionable row Page Object of type {@code R},

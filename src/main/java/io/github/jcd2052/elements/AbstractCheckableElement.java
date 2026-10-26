@@ -6,27 +6,24 @@ import io.github.jcd2052.elements.interfaces.ICheckableElement;
 import io.github.jcd2052.logger.i18n.LogAction;
 
 /**
- * Base abstract implementation for UI elements that can hold a checked state
- * (e.g., checkboxes, radio buttons, toggle switches).
- * <p>
- * Provides standard interactions for checking, unchecking, and state evaluation,
- * integrated with framework-level logging, highlighting, and JIT element resolution.
- * </p>
+ * Base class for elements with a checked state, such as checkboxes, radio buttons and toggle switches.
+ * It provides reading the checked state; elements that can also be checked and unchecked directly (like
+ * {@link CheckBoxElement}) add that themselves.
  */
 public abstract class AbstractCheckableElement extends AbstractElement implements ICheckableElement {
     /**
-     * Initializes the checkable element.
+     * Creates a checkable element.
      *
-     * @param selector       The Just-In-Time Selector locator strategy used to find the element.
-     * @param name           The human-readable name of the element used in logging.
-     * @param elementFactory The factory responsible for resolving element dependencies and locators.
+     * @param selector       The selector the element is found with.
+     * @param name           The element's name, used in log messages and errors.
+     * @param elementFactory The factory creating the element.
      */
     protected AbstractCheckableElement(Selector selector, String name, IElementFactory elementFactory) {
         super(selector, name, elementFactory);
     }
 
     /**
-     * Evaluates the current checked state of the element in the DOM.
+     * Checks whether the element is checked right now, without waiting.
      *
      * @return {@code true} if the element is currently checked, {@code false} otherwise.
      */

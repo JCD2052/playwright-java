@@ -20,18 +20,16 @@ public class LinkElement extends AbstractElement implements ILinkElement {
     /**
      * Constructs a new {@code LinkElement}.
      *
-     * @param selector       The Playwright Selector locator strategy used to find the element.
-     * @param name           A human-readable name for the link (e.g., "Forgot Password Link", "Home"), utilized for logging.
-     * @param elementFactory The {@link IElementFactory} responsible for creating and locating the element.
+     * @param selector       The selector the element is found with.
+     * @param name           A human-readable name for the link (e.g., "Forgot Password Link", "Home"), used in log messages and errors.
+     * @param elementFactory The factory creating the element.
      */
     protected LinkElement(Selector selector, String name, IElementFactory elementFactory) {
         super(selector, name, elementFactory);
     }
 
     /**
-     * Retrieves the value of the {@code href} attribute from the link element.
-     * <p>This method is typically used to verify the destination URL of a link without
-     * explicitly clicking it and navigating the browser. The action is logged prior to execution.</p>
+     * Gets the link's {@code href} attribute, e.g. to check where a link leads without following it.
      *
      * @return The URL string contained within the {@code href} attribute, or {@code null} if the attribute is not present.
      */
