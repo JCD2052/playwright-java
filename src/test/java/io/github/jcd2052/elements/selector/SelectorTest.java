@@ -4,15 +4,10 @@ import com.microsoft.playwright.FrameLocator;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Mockito;
+import org.testng.Assert;
 import org.testng.annotations.Test;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertSame;
 
 /**
  * Unit tests for {@link Selector}.
@@ -24,176 +19,225 @@ import static org.testng.Assert.assertSame;
  * {@code toString()} produces the expected description.
  */
 public class SelectorTest {
-    @Test
+    /**
+     * Verifies that a CSS/XPath selector resolves with {@code locator(...)} both from a page and from a parent locator.
+     */
+    @Test(description = "bySelector evaluates against a page and a parent locator")
     public void bySelectorEvaluatesAgainstPageAndLocator() {
-        Page page = mock(Page.class);
-        Locator parent = mock(Locator.class);
-        Locator expectedFromPage = mock(Locator.class);
-        Locator expectedFromParent = mock(Locator.class);
-        when(page.locator("#id")).thenReturn(expectedFromPage);
-        when(parent.locator("#id")).thenReturn(expectedFromParent);
+        Page page = Mockito.mock(Page.class);
+        Locator parent = Mockito.mock(Locator.class);
+        Locator expectedFromPage = Mockito.mock(Locator.class);
+        Locator expectedFromParent = Mockito.mock(Locator.class);
+        Mockito.when(page.locator("#id")).thenReturn(expectedFromPage);
+        Mockito.when(parent.locator("#id")).thenReturn(expectedFromParent);
 
         Selector selector = Selector.bySelector("#id");
 
-        assertSame(selector.evaluate(page), expectedFromPage);
-        assertSame(selector.evaluate(parent), expectedFromParent);
+        Assert.assertSame(selector.evaluate(page), expectedFromPage);
+        Assert.assertSame(selector.evaluate(parent), expectedFromParent);
     }
 
-    @Test
+    /**
+     * Verifies that a text selector resolves with Playwright's {@code getByText(...)} from a page and from a parent
+     * locator.
+     */
+    @Test(description = "byText delegates to getByText")
     public void byTextDelegatesToGetByText() {
-        Page page = mock(Page.class);
-        Locator parent = mock(Locator.class);
+        Page page = Mockito.mock(Page.class);
+        Locator parent = Mockito.mock(Locator.class);
 
         Selector.byText("OK").evaluate(page);
         Selector.byText("OK").evaluate(parent);
 
-        verify(page).getByText("OK");
-        verify(parent).getByText("OK");
+        Mockito.verify(page).getByText("OK");
+        Mockito.verify(parent).getByText("OK");
     }
 
-    @Test
+    /**
+     * Verifies that an exact text selector passes text-matching options to {@code getByText(...)}.
+     */
+    @Test(description = "byText with exact passes the exact option")
     public void byTextWithExactPassesExactOption() {
-        Page page = mock(Page.class);
+        Page page = Mockito.mock(Page.class);
 
         Selector.byText("OK", true).evaluate(page);
 
-        verify(page).getByText(eq("OK"), any(Page.GetByTextOptions.class));
+        Mockito.verify(page).getByText(ArgumentMatchers.eq("OK"), ArgumentMatchers.any(Page.GetByTextOptions.class));
     }
 
-    @Test
+    /**
+     * Verifies that a role selector with an accessible name resolves with {@code getByRole(...)} and role options,
+     * from a page and from a parent locator.
+     */
+    @Test(description = "byRole with a name delegates correctly")
     public void byRoleWithNameDelegatesCorrectly() {
-        Page page = mock(Page.class);
-        Locator parent = mock(Locator.class);
+        Page page = Mockito.mock(Page.class);
+        Locator parent = Mockito.mock(Locator.class);
 
         Selector.byRole(AriaRole.BUTTON, "Save").evaluate(page);
         Selector.byRole(AriaRole.BUTTON, "Save").evaluate(parent);
 
-        verify(page).getByRole(eq(AriaRole.BUTTON), any(Page.GetByRoleOptions.class));
-        verify(parent).getByRole(eq(AriaRole.BUTTON), any(Locator.GetByRoleOptions.class));
+        Mockito.verify(page).getByRole(ArgumentMatchers.eq(AriaRole.BUTTON), ArgumentMatchers.any(Page.GetByRoleOptions.class));
+        Mockito.verify(parent).getByRole(ArgumentMatchers.eq(AriaRole.BUTTON), ArgumentMatchers.any(Locator.GetByRoleOptions.class));
     }
 
-    @Test
+    /**
+     * Verifies that a role selector without a name resolves with the plain {@code getByRole(role)} call.
+     */
+    @Test(description = "byRole without a name delegates correctly")
     public void byRoleWithoutNameDelegatesCorrectly() {
-        Page page = mock(Page.class);
+        Page page = Mockito.mock(Page.class);
 
         Selector.byRole(AriaRole.BUTTON).evaluate(page);
 
-        verify(page).getByRole(AriaRole.BUTTON);
+        Mockito.verify(page).getByRole(AriaRole.BUTTON);
     }
 
-    @Test
+    /**
+     * Verifies that a role selector built from {@link RoleOptions} translates them into Playwright's role options.
+     */
+    @Test(description = "byRole with options translates RoleOptions")
     public void byRoleWithOptionsTranslatesRoleOptions() {
-        Page page = mock(Page.class);
+        Page page = Mockito.mock(Page.class);
         RoleOptions options = new RoleOptions().setNameString("Save").setExact(true);
 
         Selector.byRole(AriaRole.BUTTON, options).evaluate(page);
 
-        verify(page).getByRole(eq(AriaRole.BUTTON), any(Page.GetByRoleOptions.class));
+        Mockito.verify(page).getByRole(ArgumentMatchers.eq(AriaRole.BUTTON), ArgumentMatchers.any(Page.GetByRoleOptions.class));
     }
 
-    @Test
+    /**
+     * Verifies that a test-id selector resolves with Playwright's {@code getByTestId(...)}.
+     */
+    @Test(description = "byTestId delegates to getByTestId")
     public void byTestIdDelegatesToGetByTestId() {
-        Page page = mock(Page.class);
+        Page page = Mockito.mock(Page.class);
 
         Selector.byTestId("submit-button").evaluate(page);
 
-        verify(page).getByTestId("submit-button");
+        Mockito.verify(page).getByTestId("submit-button");
     }
 
-    @Test
+    /**
+     * Verifies that a chained selector resolves the parent from the page first, then the child inside the
+     * resolved parent.
+     */
+    @Test(description = "chain evaluates the parent, then the child against it")
     public void chainEvaluatesParentThenChildAgainstPage() {
-        Page page = mock(Page.class);
-        Locator parentResolved = mock(Locator.class);
-        Locator childResolved = mock(Locator.class);
-        when(page.locator("#parent")).thenReturn(parentResolved);
-        when(parentResolved.getByText("Child")).thenReturn(childResolved);
+        Page page = Mockito.mock(Page.class);
+        Locator parentResolved = Mockito.mock(Locator.class);
+        Locator childResolved = Mockito.mock(Locator.class);
+        Mockito.when(page.locator("#parent")).thenReturn(parentResolved);
+        Mockito.when(parentResolved.getByText("Child")).thenReturn(childResolved);
 
         Selector combined = Selector.bySelector("#parent").chain(Selector.byText("Child"));
         Locator result = combined.evaluate(page);
 
-        assertSame(result, childResolved);
-        verify(page).locator("#parent");
-        verify(parentResolved).getByText("Child");
+        Assert.assertSame(result, childResolved);
+        Mockito.verify(page).locator("#parent");
+        Mockito.verify(parentResolved).getByText("Child");
     }
 
-    @Test
+    /**
+     * Verifies that chaining a {@code null} child returns the original selector unchanged.
+     */
+    @Test(description = "chain with a null child returns the same selector")
     public void chainWithNullChildReturnsSameSelector() {
         Selector base = Selector.bySelector("#parent");
 
-        assertSame(base.chain(null), base);
+        Assert.assertSame(base.chain(null), base);
     }
 
-    @Test
+    /**
+     * Verifies that {@code nth(index)} narrows the resolved locator to the element at that zero-based index.
+     */
+    @Test(description = "nth appends the index to the resolved locator")
     public void nthAppendsIndexToResolvedLocator() {
-        Page page = mock(Page.class);
-        Locator resolved = mock(Locator.class);
-        Locator nthResolved = mock(Locator.class);
-        when(page.getByTestId("row")).thenReturn(resolved);
-        when(resolved.nth(2)).thenReturn(nthResolved);
+        Page page = Mockito.mock(Page.class);
+        Locator resolved = Mockito.mock(Locator.class);
+        Locator nthResolved = Mockito.mock(Locator.class);
+        Mockito.when(page.getByTestId("row")).thenReturn(resolved);
+        Mockito.when(resolved.nth(2)).thenReturn(nthResolved);
 
         Locator result = Selector.byTestId("row").nth(2).evaluate(page);
 
-        assertSame(result, nthResolved);
-        verify(resolved).nth(2);
+        Assert.assertSame(result, nthResolved);
+        Mockito.verify(resolved).nth(2);
     }
 
-    @Test
+    /**
+     * Verifies that a frame selector enters the matched {@code <iframe>} and resolves the inner selector against the
+     * frame's document root.
+     */
+    @Test(description = "byFrame resolves the inner selector inside the frame")
     public void byFrameResolvesInnerSelectorInsideTheFrame() {
-        Page page = mock(Page.class);
-        FrameLocator frameLocator = mock(FrameLocator.class);
-        Locator frameRoot = mock(Locator.class);
-        Locator innerResolved = mock(Locator.class);
-        when(page.frameLocator("#widget")).thenReturn(frameLocator);
-        when(frameLocator.locator(":root")).thenReturn(frameRoot);
-        when(frameRoot.getByTestId("confirm")).thenReturn(innerResolved);
+        Page page = Mockito.mock(Page.class);
+        FrameLocator frameLocator = Mockito.mock(FrameLocator.class);
+        Locator frameRoot = Mockito.mock(Locator.class);
+        Locator innerResolved = Mockito.mock(Locator.class);
+        Mockito.when(page.frameLocator("#widget")).thenReturn(frameLocator);
+        Mockito.when(frameLocator.locator(":root")).thenReturn(frameRoot);
+        Mockito.when(frameRoot.getByTestId("confirm")).thenReturn(innerResolved);
 
         Locator result = Selector.byFrame("#widget", Selector.byTestId("confirm")).evaluate(page);
 
-        assertSame(result, innerResolved);
-        verify(page).frameLocator("#widget");
-        verify(frameRoot).getByTestId("confirm");
+        Assert.assertSame(result, innerResolved);
+        Mockito.verify(page).frameLocator("#widget");
+        Mockito.verify(frameRoot).getByTestId("confirm");
     }
 
-    @Test
+    /**
+     * Verifies that frame selectors can be nested to reach an element inside an iframe within another iframe.
+     */
+    @Test(description = "byFrame supports nesting")
     public void byFrameSupportsNesting() {
-        Page page = mock(Page.class);
-        FrameLocator outerFrame = mock(FrameLocator.class);
-        Locator outerRoot = mock(Locator.class);
-        FrameLocator innerFrame = mock(FrameLocator.class);
-        Locator innerRoot = mock(Locator.class);
-        Locator finalResolved = mock(Locator.class);
-        when(page.frameLocator("#outer")).thenReturn(outerFrame);
-        when(outerFrame.locator(":root")).thenReturn(outerRoot);
-        when(outerRoot.frameLocator("#inner")).thenReturn(innerFrame);
-        when(innerFrame.locator(":root")).thenReturn(innerRoot);
-        when(innerRoot.getByRole(AriaRole.BUTTON)).thenReturn(finalResolved);
+        Page page = Mockito.mock(Page.class);
+        FrameLocator outerFrame = Mockito.mock(FrameLocator.class);
+        Locator outerRoot = Mockito.mock(Locator.class);
+        FrameLocator innerFrame = Mockito.mock(FrameLocator.class);
+        Locator innerRoot = Mockito.mock(Locator.class);
+        Locator finalResolved = Mockito.mock(Locator.class);
+        Mockito.when(page.frameLocator("#outer")).thenReturn(outerFrame);
+        Mockito.when(outerFrame.locator(":root")).thenReturn(outerRoot);
+        Mockito.when(outerRoot.frameLocator("#inner")).thenReturn(innerFrame);
+        Mockito.when(innerFrame.locator(":root")).thenReturn(innerRoot);
+        Mockito.when(innerRoot.getByRole(AriaRole.BUTTON)).thenReturn(finalResolved);
 
         Selector nested = Selector.byFrame("#outer", Selector.byFrame("#inner", Selector.byRole(AriaRole.BUTTON)));
         Locator result = nested.evaluate(page);
 
-        assertSame(result, finalResolved);
+        Assert.assertSame(result, finalResolved);
     }
 
-    @Test
+    /**
+     * Verifies the readable descriptions of simple strategies, as used in logs and error messages.
+     */
+    @Test(description = "toString describes simple strategies")
     public void toStringDescribesSimpleStrategies() {
-        assertEquals(Selector.byText("OK").toString(), "byText(\"OK\")");
-        assertEquals(Selector.bySelector("#id").toString(), "bySelector(\"#id\")");
-        assertEquals(Selector.byTestId("submit").toString(), "byTestId(\"submit\")");
-        assertEquals(Selector.byRole(AriaRole.BUTTON, "Save").toString(), "byRole(BUTTON, name=\"Save\")");
+        Assert.assertEquals(Selector.byText("OK").toString(), "byText(\"OK\")");
+        Assert.assertEquals(Selector.bySelector("#id").toString(), "bySelector(\"#id\")");
+        Assert.assertEquals(Selector.byTestId("submit").toString(), "byTestId(\"submit\")");
+        Assert.assertEquals(Selector.byRole(AriaRole.BUTTON, "Save").toString(), "byRole(BUTTON, name=\"Save\")");
     }
 
-    @Test
+    /**
+     * Verifies the readable descriptions of chained and indexed selectors.
+     */
+    @Test(description = "toString describes chain and nth")
     public void toStringDescribesChainAndNth() {
         Selector chained = Selector.bySelector("#parent").chain(Selector.byText("Child"));
-        assertEquals(chained.toString(), "bySelector(\"#parent\") -> byText(\"Child\")");
+        Assert.assertEquals(chained.toString(), "bySelector(\"#parent\") -> byText(\"Child\")");
 
         Selector nthed = Selector.byTestId("row").nth(2);
-        assertEquals(nthed.toString(), "byTestId(\"row\").nth(2)");
+        Assert.assertEquals(nthed.toString(), "byTestId(\"row\").nth(2)");
     }
 
-    @Test
+    /**
+     * Verifies the readable description of a frame selector, including its inner selector.
+     */
+    @Test(description = "toString describes a frame")
     public void toStringDescribesFrame() {
         Selector framed = Selector.byFrame("#widget", Selector.byRole(AriaRole.BUTTON, "Confirm"));
-        assertEquals(framed.toString(), "byFrame(\"#widget\") -> byRole(BUTTON, name=\"Confirm\")");
+        Assert.assertEquals(framed.toString(), "byFrame(\"#widget\") -> byRole(BUTTON, name=\"Confirm\")");
     }
 }

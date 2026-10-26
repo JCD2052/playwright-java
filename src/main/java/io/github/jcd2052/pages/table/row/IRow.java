@@ -11,10 +11,7 @@ package io.github.jcd2052.pages.table.row;
 public interface IRow<T> {
 
     /**
-     * Extracts the data from the UI elements of this row and maps it into a strongly-typed model.
-     * <p>Implementations of this method typically read the text or values from the row's
-     * specific field elements and use them to instantiate and populate the data model {@code T}.
-     * This allows test scripts to assert against pure data rather than complex web elements.</p>
+     * Reads the row's cells and maps them into the data model, so tests can assert on plain data.
      *
      * @return A populated data model of type {@code T} containing the information extracted from the UI row.
      */

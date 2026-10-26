@@ -8,30 +8,31 @@ import io.github.jcd2052.pages.AbstractForm;
 import java.util.List;
 
 /**
- * A foundational abstract base class representing a single, index-bound row within a web table or grid.
+ * The base class of a table row's page object, bound to one row by its position.
  * <p>
- * This class extends {@link AbstractForm} to treat an individual row as a fully scoped Component Object.
- * Selector dynamically injecting a 1-based index into the row's root locator, it guarantees that any
- * subsequent element searches (such as finding cells or action buttons) are strictly contained within
- * the exact DOM boundaries of this specific row instance.
+ * The row is a form whose root element is the row at the given 1-based position among the rows matched by the
+ * row selector. Its cells and other elements are created as children of that root (via {@code getFormLabel()}),
+ * so they never match elements of other rows. Subclasses map the row's cells to a data model in
+ * {@link #getModelFromRow()}.
  * </p>
  *
  * @param <T> The data model, enum, or DTO type representing the structured data contained in this row.
  */
 public abstract class AbstractRow<T> extends AbstractForm implements IRow<T> {
     /**
-     * The relative locator strategy used to identify individual child cells inside this specific row.
+     * The selector of the row's cells, relative to the row.
      */
     protected final Selector cellLocator;
 
     /**
-     * Constructs a scoped row component bound to a specific physical index on the page.
+     * Creates a row bound to the given position.
      *
-     * @param position        The 1-based numerical index of the row within the DOM (e.g., 1 for the first row).
-     * @param cellLocator     The relative Selector locator used to find cells strictly inside this row.
-     * @param locatorStrategy The base Selector locator expression for the row element itself, before indexing.
-     * @param name            A human-readable descriptive name used for automated action logging.
-     * @param elementFactory  The central factory used for dependency injection and lazy element resolution.
+     * @param position        The row's 1-based position among the rows matched by {@code locatorStrategy}.
+     * @param cellLocator     The selector of the row's cells, relative to the row.
+     * @param locatorStrategy The selector matching all rows of the table.
+     * @param name            The row's name, used in log messages and errors.
+     * @param elementFactory  The factory the row's elements are created with.
+     * @throws IllegalArgumentException if {@code position} is below 1.
      */
     protected AbstractRow(
             int position,
@@ -44,11 +45,7 @@ public abstract class AbstractRow<T> extends AbstractForm implements IRow<T> {
     }
 
     /**
-     * Retrieves a dynamically scoped collection of all cell elements inside this specific row.
-     * <p>
-     * The element search is executed strictly relative to the row's root locator, preventing elements
-     * from bleeding in from other rows or tables present on the same page.
-     * </p>
+     * Gets the row's cells, found inside this row only.
      *
      * @return A {@link List} of {@link ILabelElement} wrappers representing the individual cells.
      */
@@ -57,16 +54,12 @@ public abstract class AbstractRow<T> extends AbstractForm implements IRow<T> {
     }
 
     /**
-     * Helper method to format a locator strategy by appending a specific index.
-     * <p>
-     * This replaces the old XPath string manipulation ({@code [%d]}) by natively wrapping
-     * the strategy using Playwright's {@code nth()} function. It converts the 1-based physical
-     * position into a 0-based index to ensure the Playwright engine interacts with the exact node intended.
-     * </p>
+     * Narrows the row selector to the row at a 1-based position, using {@link Selector#nth(int)} with the
+     * matching 0-based index.
      *
-     * @param rowLocator The base Selector locator strategy (e.g., matching all rows).
-     * @param position   The 1-based numerical index to target.
-     * @return The combined, absolute Selector strategy representing the exact node.
+     * @param rowLocator The selector matching all rows.
+     * @param position   The row's 1-based position.
+     * @return The selector of that one row.
      * @throws IllegalArgumentException if {@code position} is below 1 (e.g. a 0-based index was passed).
      */
     protected static Selector createPositionLocator(Selector rowLocator, int position) {

@@ -1,8 +1,9 @@
 package io.github.jcd2052.logger;
 
 /**
- * Framework-level logging abstraction over SLF4J, used throughout the element and browser layers
- * for consistent, printf-style ({@code %s}) log formatting.
+ * The framework's logging abstraction over SLF4J, with printf-style ({@code %s}) messages. Obtain it from
+ * {@link LoggerProvider#getLogger()}. Messages without arguments are logged as they are, so they may contain a
+ * literal {@code %}.
  */
 public interface ILogger {
     /**
@@ -57,7 +58,8 @@ public interface ILogger {
     void error(String message, Object... args);
 
     /**
-     * Logs a fatal-level message together with an associated exception/stack trace.
+     * Logs a fatal message together with an exception. SLF4J has no fatal level, so it is logged at ERROR level with
+     * a {@code "FATAL: "} prefix.
      *
      * @param message   a printf-style message
      * @param throwable the exception to log alongside the message

@@ -9,14 +9,9 @@ import io.github.jcd2052.elements.ButtonElement;
 import io.github.jcd2052.elements.selector.Selector;
 import io.github.jcd2052.elements.interfaces.IButtonElement;
 import io.github.jcd2052.elements.interfaces.IElement;
+import org.mockito.Mockito;
+import org.testng.Assert;
 import org.testng.annotations.Test;
-
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertSame;
-import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.expectThrows;
 
 /**
  * Unit tests for {@link ElementFactory}, in particular the reflection-based instantiation path
@@ -24,29 +19,42 @@ import static org.testng.Assert.expectThrows;
  * needing a real Page or browser.
  */
 public class ElementFactoryTest {
-    @Test
+    /**
+     * Verifies that asking for a built-in element interface creates its registered implementation, with the
+     * given selector and name.
+     */
+    @Test(description = "createCustomElement instantiates the registered built-in implementation")
     public void createCustomElementInstantiatesTheRegisteredBuiltInImplementation() {
         ElementFactory factory = newFactory();
         Selector selector = Selector.byTestId("save-button");
 
         IButtonElement element = factory.createCustomElement(IButtonElement.class, selector, "Save button");
 
-        assertTrue(element instanceof ButtonElement);
-        assertSame(element.getSelector(), selector);
-        assertEquals(element.getName(), "Save button");
+        Assert.assertTrue(element instanceof ButtonElement);
+        Assert.assertSame(element.getSelector(), selector);
+        Assert.assertEquals(element.getName(), "Save button");
     }
 
-    @Test
+    /**
+     * Verifies that asking for an element interface with no registered implementation fails with an
+     * {@link IllegalArgumentException} that names the interface and points to {@code registerElement}.
+     */
+    @Test(description = "createCustomElement throws for an unregistered interface")
     public void createCustomElementThrowsForAnUnregisteredInterface() {
         ElementFactory factory = newFactory();
 
-        IllegalArgumentException exception = expectThrows(IllegalArgumentException.class, () ->
+        IllegalArgumentException exception = Assert.expectThrows(IllegalArgumentException.class, () ->
                 factory.createCustomElement(IUnregisteredElement.class, Selector.bySelector("#x"), "x"));
 
-        assertTrue(exception.getMessage().contains("IUnregisteredElement"));
+        Assert.assertTrue(exception.getMessage().contains("IUnregisteredElement"));
+        Assert.assertTrue(exception.getMessage().contains("registerElement"));
     }
 
-    @Test
+    /**
+     * Verifies that {@link ElementFactory#registerElement} maps a custom interface to its implementation, so the
+     * factory can create it afterwards.
+     */
+    @Test(description = "registerElement adds a custom interface mapping")
     public void registerElementAddsACustomInterfaceMapping() {
         ElementFactory factory = newFactory();
         factory.registerElement(ICustomTestElement.class, CustomTestElement.class);
@@ -54,10 +62,13 @@ public class ElementFactoryTest {
         ICustomTestElement element = factory.createCustomElement(
                 ICustomTestElement.class, Selector.bySelector("#custom"), "Custom element");
 
-        assertTrue(element instanceof CustomTestElement);
+        Assert.assertTrue(element instanceof CustomTestElement);
     }
 
-    @Test
+    /**
+     * Verifies that combining selectors chains the child under the parent.
+     */
+    @Test(description = "combineSelectors chains parent and child")
     public void combineSelectorsChainsParentAndChild() {
         ElementFactory factory = newFactory();
         Selector parentSelector = Selector.bySelector("#parent");
@@ -65,22 +76,29 @@ public class ElementFactoryTest {
 
         Selector combined = factory.combineSelectors(parentSelector, childSelector);
 
-        assertEquals(combined.toString(), "bySelector(\"#parent\") -> byText(\"Child\")");
+        Assert.assertEquals(combined.toString(), "bySelector(\"#parent\") -> byText(\"Child\")");
     }
 
-    @Test
+    /**
+     * Verifies that combining a child selector with no parent returns the child selector itself.
+     */
+    @Test(description = "combineSelectors with a null parent returns the child unchanged")
     public void combineSelectorsWithNullParentReturnsChildUnchanged() {
         ElementFactory factory = newFactory();
         Selector childSelector = Selector.byText("Child");
 
-        assertSame(factory.combineSelectors((Selector) null, childSelector), childSelector);
+        Assert.assertSame(factory.combineSelectors((Selector) null, childSelector), childSelector);
     }
 
+    /**
+     * Creates a factory with mocked collaborators: elements are only instantiated in these tests, never
+     * looked up on a page.
+     */
     private ElementFactory newFactory() {
-        IElementFinderService finderService = mock(IElementFinderService.class);
-        IBrowserProperties browserProperties = mock(IBrowserProperties.class);
-        ILocalizationService localizationService = mock(ILocalizationService.class);
-        when(browserProperties.isHighlight()).thenReturn(false);
+        IElementFinderService finderService = Mockito.mock(IElementFinderService.class);
+        IBrowserProperties browserProperties = Mockito.mock(IBrowserProperties.class);
+        ILocalizationService localizationService = Mockito.mock(ILocalizationService.class);
+        Mockito.when(browserProperties.isHighlight()).thenReturn(false);
         return new ElementFactory(finderService, browserProperties, localizationService);
     }
 
@@ -92,12 +110,15 @@ public class ElementFactoryTest {
     }
 
     /**
-     * A minimal custom element used to verify {@link ElementFactory#registerElement}. Mirrors the
-     * constructor shape every framework element must expose: {@code (Selector, String, IElementFactory)}.
+     * A minimal custom element interface used to verify {@link ElementFactory#registerElement}.
      */
     private interface ICustomTestElement extends IElement {
     }
 
+    /**
+     * The implementation registered for {@link ICustomTestElement}. Mirrors the constructor shape every
+     * framework element must expose for the factory's reflection: {@code (Selector, String, IElementFactory)}.
+     */
     private static class CustomTestElement extends AbstractElement implements ICustomTestElement {
         private CustomTestElement(Selector selector, String name, IElementFactory elementFactory) {
             super(selector, name, elementFactory);

@@ -7,74 +7,79 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collection;
+import java.util.List;
 
 /**
- * Represents a single browser window (or {@link BrowserContext} in Playwright).
- * A window provides an isolated session that contains its own collection of {@link IBrowserTab}s.
+ * Represents a single browser window (a Playwright {@link BrowserContext}).
+ * <p>
+ * A window is an isolated session: its tabs share cookies and storage with each other, but not with other
+ * windows. It manages its own {@link IBrowserTab}s and keeps track of which one is current.
+ * </p>
  */
 public interface IBrowserWindow {
     /**
-     * Opens a new tab (Page) within this specific browser window and sets it as the active tab.
+     * Opens a new tab in this window and makes it the current tab.
      *
      * @return The newly created {@link IBrowserTab}.
      */
     IBrowserTab openNewTab();
 
     /**
-     * Retrieves all currently open tabs within this browser window.
+     * Closes the given tab. If it was the current tab, this window's newest remaining tab becomes current.
      *
-     * @return A collection of {@link IBrowserTab} objects.
+     * @param tab The {@link IBrowserTab} to close.
      */
-    Collection<IBrowserTab> getBrowserTabs();
+    void closeTab(IBrowserTab tab);
 
     /**
-     * Gets the underlying Playwright {@link BrowserContext} instance.
-     * This is useful when you need to access raw Playwright context features (like managing cookies or permissions).
+     * Retrieves all currently open tabs within this browser window, including popups opened by its pages.
+     *
+     * @return A list of {@link IBrowserTab}s, oldest first.
+     */
+    List<IBrowserTab> getBrowserTabs();
+
+    /**
+     * Gets the underlying Playwright {@link BrowserContext}, for context features this interface doesn't cover
+     * (permissions, routes, tracing, ...).
      *
      * @return The raw Playwright browser context object.
      */
     BrowserContext getBrowserContext();
 
     /**
-     * Retrieves the currently active browser tab for this window.
+     * Retrieves this window's current tab: the tab last opened or switched to in this window, or, if there
+     * is none (or it was closed), this window's newest tab.
      *
-     * @return The current {@link IBrowserTab}.
+     * @return The current {@link IBrowserTab}, or {@code null} if no tab is open.
      */
     IBrowserTab getCurrentBrowserTab();
 
     /**
-     * Provides access to the cookie manager for this specific window.
+     * Gets a manager for this window's cookies, which all its tabs share.
      *
-     * @return The ICookieManager instance.
+     * @return The cookie manager.
      */
     ICookieManager getCookieManager();
 
     /**
-     * Sets the specified tab as the currently tracked active tab in the framework.
-     * Note: This usually just updates the internal reference. To actually bring a tab to the front,
-     * use {@link #switchToTab(IBrowserTab)}.
-     *
-     * @param currentIBrowserTab The {@link IBrowserTab} to set as current.
-     */
-    void setCurrentBrowserTab(IBrowserTab currentIBrowserTab);
-
-    /**
-     * Brings the specified tab to the front (makes it visible) and sets it as the active tab.
+     * Brings the given tab to the front and makes it this window's current tab.
      *
      * @param tab The {@link IBrowserTab} to switch to.
      */
     void switchToTab(IBrowserTab tab);
 
+    /**
+     * Closes this window together with all its tabs.
+     */
     void closeWindow();
 
     /**
      * Saves this window's current storage state (cookies and local storage) to a JSON file on disk.
      * <p>
-     * Pair this with {@link IBrowserProperties#getStorageStatePath()}
-     * to skip a UI login in future runs: authenticate once (e.g. in a one-off setup test or a
-     * {@code @BeforeSuite} method), call this to persist the session, then point
-     * {@code storageStatePath} at that file so subsequent contexts start already signed in.
+     * Use it to skip a UI login in later tests: authenticate once (e.g. in a one-off setup test or a
+     * {@code @BeforeSuite} method), call this to persist the session, then load that file into new windows,
+     * either for every window through {@link IBrowserProperties#getStorageStatePath()} or for one window with
+     * {@link IBrowser#openNewWindow(Path)}.
      * </p>
      *
      * @param path the file path to write the storage-state JSON to; parent directories are created if needed.

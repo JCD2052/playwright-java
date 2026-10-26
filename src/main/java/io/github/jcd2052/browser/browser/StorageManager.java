@@ -16,7 +16,7 @@ public class StorageManager implements IStorageManager {
      * Wraps the given web storage.
      *
      * @param webStorage  the Playwright {@link WebStorage} instance to delegate to
-     * @param storageType a human-readable label for this storage (e.g. {@code "localStorage"}), used in log messages
+     * @param storageType a human-readable label for this storage (e.g. {@code "Local Storage"}), used in log messages
      */
     public StorageManager(WebStorage webStorage, String storageType) {
         this.webStorage = webStorage;

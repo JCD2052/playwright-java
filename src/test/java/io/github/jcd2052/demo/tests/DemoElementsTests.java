@@ -1,13 +1,10 @@
 package io.github.jcd2052.demo.tests;
 
-import com.microsoft.playwright.Page;
+import io.github.jcd2052.browser.browser.interfaces.IBrowserTab;
 import io.github.jcd2052.demo.pages.DemoElementsPage;
-import io.github.jcd2052.elements.ExpectedCount;
-import io.github.jcd2052.elements.interfaces.IElement;
-import io.github.jcd2052.elements.interfaces.ILabelElement;
-import io.github.jcd2052.elements.selector.Selector;
 import io.github.jcd2052.exceptions.ElementTimeoutException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -15,328 +12,412 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.stream.Collectors;
-
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.expectThrows;
 
 /**
- * Exercises every built-in element type, and the common {@link IElement} API, against the bundled
- * {@code demo-site/elements.html} showcase page.
+ * Exercises every built-in element type, and the common element API, against the bundled
+ * {@code demo-site/elements.html} showcase page, through the {@link DemoElementsPage} page object.
  */
 public class DemoElementsTests extends DemoSiteBaseTests {
+    /**
+     * The first bytes of every PNG file, used to check that a screenshot is a real image.
+     */
     private static final byte[] PNG_SIGNATURE = {(byte) 0x89, 'P', 'N', 'G'};
 
     @Autowired
     private DemoElementsPage page;
 
+    /**
+     * Opens the elements showcase page before each test and waits for it to load.
+     */
     @BeforeMethod(alwaysRun = true)
     public void openElementsPage() {
         openDemoPage("/elements.html");
-        assertTrue(page.waitForLoading(), "Elements page did not load");
+        Assert.assertTrue(page.waitForLoading(), "Elements page did not load");
     }
 
-    // ---- Buttons and the click family -------------------------------------------------------
-
-    @Test
+    /**
+     * Verifies that a click reaches the button as a single click.
+     */
+    @Test(description = "click fires a single click")
     public void clickFiresASingleClick() {
-        page.getActionButton().click();
-        assertTrue(page.getButtonLog().getText().startsWith("click@"));
+        page.clickActionButton();
+
+        Assert.assertTrue(page.getButtonLog().startsWith("click@"));
     }
 
-    @Test
+    /**
+     * Verifies that clicking at a position clicks at that offset inside the element.
+     */
+    @Test(description = "click at a position clicks at the given offset inside the element")
     public void clickAtPositionClicksAtTheGivenOffsetInsideTheElement() {
-        page.getActionButton().click(10, 5);
-        assertEquals(page.getButtonLog().getText(), "click@10,5");
+        page.clickActionButtonAt(10, 5);
+
+        Assert.assertEquals(page.getButtonLog(), "click@10,5");
     }
 
-    @Test
+    /**
+     * Verifies that a double-click reaches the button as a double-click.
+     */
+    @Test(description = "doubleClick fires a double click")
     public void doubleClickFiresADoubleClick() {
-        page.getActionButton().doubleClick();
-        assertEquals(page.getButtonLog().getText(), "double-click");
+        page.doubleClickActionButton();
+
+        Assert.assertEquals(page.getButtonLog(), "double-click");
     }
 
-    @Test
+    /**
+     * Verifies that a right-click opens the context menu.
+     */
+    @Test(description = "rightClick opens the context menu")
     public void rightClickOpensTheContextMenu() {
-        page.getActionButton().rightClick();
-        assertEquals(page.getButtonLog().getText(), "right-click");
+        page.rightClickActionButton();
+
+        Assert.assertEquals(page.getButtonLog(), "right-click");
     }
 
-    @Test
+    /**
+     * Verifies that a middle click uses the middle mouse button.
+     */
+    @Test(description = "middleClick uses the middle mouse button")
     public void middleClickUsesTheMiddleMouseButton() {
-        page.getActionButton().middleClick();
-        assertEquals(page.getButtonLog().getText(), "middle-click");
+        page.middleClickActionButton();
+
+        Assert.assertEquals(page.getButtonLog(), "middle-click");
     }
 
-    @Test
+    /**
+     * Verifies that a force click reaches a constantly moving element, which a normal click would wait on
+     * because the element never becomes stable.
+     */
+    @Test(description = "forceClick skips actionability checks on an unstable element")
     public void forceClickSkipsActionabilityChecksOnAnUnstableElement() {
-        page.getUnstableButton().forceClick();
-        assertEquals(page.getButtonLog().getText(), "unstable-click");
+        page.forceClickUnstableButton();
+
+        Assert.assertEquals(page.getButtonLog(), "unstable-click");
     }
 
-    @Test
+    /**
+     * Verifies that {@code isEnabled} reflects the {@code disabled} attribute.
+     */
+    @Test(description = "isEnabled reflects the disabled attribute")
     public void isEnabledReflectsTheDisabledAttribute() {
-        assertTrue(page.getActionButton().isEnabled());
-        assertFalse(page.getDisabledButton().isEnabled());
+        Assert.assertTrue(page.isActionButtonEnabled());
+        Assert.assertFalse(page.isDisabledButtonEnabled());
     }
 
-    @Test
+    /**
+     * Verifies that pointer-event detection works, and that a JavaScript click reaches an element that ignores
+     * pointer events.
+     */
+    @Test(description = "clickWithJs reaches an element that ignores pointer events")
     public void clickWithJsReachesAnElementThatIgnoresPointerEvents() {
-        assertTrue(page.getNoPointerButton().getJsActions().isPointerEventsDisabled());
-        assertFalse(page.getActionButton().getJsActions().isPointerEventsDisabled());
+        Assert.assertTrue(page.isNoPointerButtonIgnoringPointerEvents());
+        Assert.assertFalse(page.isActionButtonIgnoringPointerEvents());
 
-        page.getNoPointerButton().clickWithJs();
+        page.clickNoPointerButtonWithJs();
 
-        assertEquals(page.getButtonLog().getText(), "js-click");
+        Assert.assertEquals(page.getButtonLog(), "js-click");
     }
 
-    @Test
+    /**
+     * Verifies that acting on an element that is not on the page fails with an {@link ElementTimeoutException}
+     * whose message names the action in plain words, the element, and its selector.
+     */
+    @Test(description = "Acting on a missing element throws a readable framework timeout")
     public void actingOnAMissingElementThrowsAReadableFrameworkTimeout() {
-        ElementTimeoutException exception = expectThrows(ElementTimeoutException.class,
-                () -> page.getMissingButton().click());
+        ElementTimeoutException exception = Assert.expectThrows(ElementTimeoutException.class,
+                () -> page.clickMissingButton());
 
-        assertTrue(exception.getMessage().contains("Missing button"));
-        assertTrue(exception.getMessage().contains("#does-not-exist"));
+        Assert.assertTrue(exception.getMessage().contains("Failed to perform 'click' on element 'Missing button'"));
+        Assert.assertTrue(exception.getMessage().contains("#does-not-exist"));
     }
 
-    // ---- Labels, state and waits ------------------------------------------------------------
-
-    @Test
+    /**
+     * Verifies that a label reports the name it was created with, its text, its attributes and its visibility.
+     */
+    @Test(description = "A label exposes its name, text, attributes and visibility")
     public void labelExposesItsNameTextAttributesAndVisibility() {
-        ILabelElement greeting = page.getGreeting();
-
-        assertEquals(greeting.getName(), "Greeting");
-        assertEquals(greeting.getText(), "Hello, elements!");
-        assertEquals(greeting.getAttribute("title"), "Greeting title");
-        assertTrue(greeting.isVisible());
+        Assert.assertEquals(page.getGreetingName(), "Greeting");
+        Assert.assertEquals(page.getGreetingText(), "Hello, elements!");
+        Assert.assertEquals(page.getGreetingAttribute("title"), "Greeting title");
+        Assert.assertTrue(page.isGreetingVisible());
     }
 
-    @Test
+    /**
+     * Verifies that an attribute set with JavaScript can be read back.
+     */
+    @Test(description = "setAttribute with JavaScript is visible to getAttribute")
     public void setAttributeWithJsIsVisibleToGetAttribute() {
-        page.getGreeting().getJsActions().setAttribute("data-state", "updated");
-        assertEquals(page.getGreeting().getAttribute("data-state"), "updated");
+        page.setGreetingAttributeWithJs("data-state", "updated");
+
+        Assert.assertEquals(page.getGreetingAttribute("data-state"), "updated");
     }
 
-    @Test
+    /**
+     * Verifies that reading all texts through one element that matches several returns the text of each match.
+     */
+    @Test(description = "getAllTexts returns the text of every matching element")
     public void getAllTextsReturnsTheTextOfEveryMatchingElement() {
-        assertEquals(page.getAllTagLabels().getAllTexts(), List.of("java", "playwright", "testng"));
+        Assert.assertEquals(page.getAllTagTexts(), List.of("java", "playwright", "testng"));
     }
 
-    @Test
+    /**
+     * Verifies that waiting for visibility waits for an element that only appears after a delay.
+     */
+    @Test(description = "waitToBeVisible waits for an element that appears later")
     public void waitToBeVisibleWaitsForAnElementThatAppearsLater() {
-        assertFalse(page.getHiddenLater().isVisible());
+        Assert.assertFalse(page.isHiddenLabelVisible());
 
-        page.getShowLaterButton().click();
+        page.showLabelLater();
 
-        assertTrue(page.getHiddenLater().waitToBeVisible());
+        Assert.assertTrue(page.waitForHiddenLabelToBeVisible());
     }
 
-    @Test
+    /**
+     * Verifies that waiting for visibility returns {@code false}, instead of throwing, when the element never
+     * appears within the timeout.
+     */
+    @Test(description = "waitToBeVisible returns false when the element never appears")
     public void waitToBeVisibleReturnsFalseWhenTheElementNeverAppears() {
-        assertFalse(page.getHiddenLater().waitToBeVisible(300.0));
+        Assert.assertFalse(page.waitForHiddenLabelToBeVisible(300.0));
     }
 
-    @Test
+    /**
+     * Verifies that waiting for an element to be detached waits until it is removed from the page.
+     */
+    @Test(description = "waitToBeDetached waits for an element to be removed")
     public void waitToBeDetachedWaitsForAnElementToBeRemoved() {
-        page.getRemoveLaterButton().click();
+        page.removeLabelLater();
 
-        assertTrue(page.getRemovable().waitToBeDetached());
-        assertFalse(page.getRemovable().isVisible());
+        Assert.assertTrue(page.waitForRemovableLabelToBeRemoved());
+        Assert.assertFalse(page.isRemovableLabelVisible());
     }
 
-    @Test
+    /**
+     * Verifies that hovering moves the mouse over the element.
+     */
+    @Test(description = "hover moves the pointer over the element")
     public void hoverMovesThePointerOverTheElement() {
-        page.getHoverTarget().hover();
-        assertEquals(page.getHoverLog().getText(), "hovered");
+        page.hoverOverHoverTarget();
+
+        Assert.assertEquals(page.getHoverLog(), "hovered");
     }
 
-    @Test
+    /**
+     * Verifies that an element screenshot is a PNG image.
+     */
+    @Test(description = "getScreenshot returns a PNG image")
     public void getScreenshotReturnsAPngImage() {
-        byte[] screenshot = page.getGreeting().getScreenshot();
+        byte[] screenshot = page.takeGreetingScreenshot();
 
-        assertTrue(screenshot.length > PNG_SIGNATURE.length);
+        Assert.assertTrue(screenshot.length > PNG_SIGNATURE.length);
         for (int i = 0; i < PNG_SIGNATURE.length; i++) {
-            assertEquals(screenshot[i], PNG_SIGNATURE[i]);
+            Assert.assertEquals(screenshot[i], PNG_SIGNATURE[i]);
         }
     }
 
-    // ---- Text box ---------------------------------------------------------------------------
-
-    @Test
+    /**
+     * Verifies that a text box can be filled, replaced and cleared, and that its value can be read each time.
+     */
+    @Test(description = "A text box fills, reads and clears its value")
     public void textBoxFillsReadsAndClearsItsValue() {
-        page.getEchoInput().fillText("first");
-        assertEquals(page.getEchoInput().getInputValue(), "first");
+        page.fillEcho("first");
+        Assert.assertEquals(page.getEchoValue(), "first");
 
-        page.getEchoInput().clearAndFillText("second");
-        assertEquals(page.getEchoInput().getInputValue(), "second");
+        page.replaceEcho("second");
+        Assert.assertEquals(page.getEchoValue(), "second");
 
-        page.getEchoInput().clearText();
-        assertEquals(page.getEchoInput().getInputValue(), "");
+        page.clearEcho();
+        Assert.assertEquals(page.getEchoValue(), "");
     }
 
-    @Test
+    /**
+     * Verifies that pressing a key sends it to the element: Enter submits the text box's form.
+     */
+    @Test(description = "press sends a key to the element")
     public void pressSendsAKeyToTheElement() {
-        page.getEchoInput().fillText("hello");
-        page.getEchoInput().press("Enter");
+        page.fillEcho("hello");
+        page.submitEchoWithEnter();
 
-        assertEquals(page.getEchoLog().getText(), "submitted: hello");
+        Assert.assertEquals(page.getEchoLog(), "submitted: hello");
     }
 
-    @Test
+    /**
+     * Verifies that unfocusing an element moves the focus away from it.
+     */
+    @Test(description = "unfocus blurs the element")
     public void unfocusBlursTheElement() {
-        page.getEchoInput().fillText("focused");
-        page.getEchoInput().unfocus();
+        page.fillEcho("focused");
+        page.unfocusEcho();
 
-        assertEquals(page.getEchoLog().getText(), "blurred");
+        Assert.assertEquals(page.getEchoLog(), "blurred");
     }
 
-    // ---- Dropdown ---------------------------------------------------------------------------
-
-    @Test
+    /**
+     * Verifies that a dropdown lists all its options and reports the default selection.
+     */
+    @Test(description = "A dropdown lists its options and the default selection")
     public void dropdownListsItsOptionsAndTheDefaultSelection() {
-        assertEquals(page.getFruitDropdown().getTexts(), List.of("Apple", "Banana", "Cherry"));
-        assertEquals(page.getFruitDropdown().getSelectedOption(), "Apple");
+        Assert.assertEquals(page.getFruitOptions(), List.of("Apple", "Banana", "Cherry"));
+        Assert.assertEquals(page.getSelectedFruit(), "Apple");
     }
 
-    @Test
+    /**
+     * Verifies that a dropdown option can be selected by its text, its value and its index.
+     */
+    @Test(description = "A dropdown selects by text, value and index")
     public void dropdownSelectsByTextValueAndIndex() {
-        page.getFruitDropdown().selectByText("Banana");
-        assertEquals(page.getFruitDropdown().getSelectedOption(), "Banana");
+        page.selectFruitByText("Banana");
+        Assert.assertEquals(page.getSelectedFruit(), "Banana");
 
-        page.getFruitDropdown().selectByValue("cherry");
-        assertEquals(page.getFruitDropdown().getSelectedOption(), "Cherry");
+        page.selectFruitByValue("cherry");
+        Assert.assertEquals(page.getSelectedFruit(), "Cherry");
 
-        page.getFruitDropdown().selectByIndex(0);
-        assertEquals(page.getFruitDropdown().getSelectedOption(), "Apple");
+        page.selectFruitByIndex(0);
+        Assert.assertEquals(page.getSelectedFruit(), "Apple");
     }
 
-    // ---- Link -------------------------------------------------------------------------------
-
-    @Test
+    /**
+     * Verifies that a link reports its {@code href} and navigates to it when clicked.
+     */
+    @Test(description = "A link exposes its href and navigates when clicked")
     public void linkExposesItsHrefAndNavigatesWhenClicked() {
-        assertEquals(page.getProductsLink().getHref(), "table.html");
+        Assert.assertEquals(page.getProductsLinkHref(), "table.html");
 
-        page.getProductsLink().click();
+        page.clickProductsLink();
 
-        Page currentPage = browserService.getBrowser().requireCurrentBrowserTab().getPage();
-        currentPage.waitForURL("**/table.html");
-        assertTrue(browserService.getBrowser().requireCurrentBrowserTab().getCurrentUrl().endsWith("/table.html"));
+        IBrowserTab tab = browserService.getBrowser().requireCurrentBrowserTab();
+        tab.getPage().waitForURL("**/table.html");
+        Assert.assertTrue(tab.getCurrentUrl().endsWith("/table.html"));
     }
 
-    // ---- Checkbox and radio buttons ---------------------------------------------------------
-
-    @Test
+    /**
+     * Verifies that a checkbox can be checked and unchecked, and reports its state each time.
+     */
+    @Test(description = "A checkbox checks and unchecks")
     public void checkboxChecksAndUnchecks() {
-        assertFalse(page.getNewsletterCheckbox().isChecked());
+        Assert.assertFalse(page.isNewsletterChecked());
 
-        page.getNewsletterCheckbox().check();
-        assertTrue(page.getNewsletterCheckbox().isChecked());
+        page.checkNewsletter();
+        Assert.assertTrue(page.isNewsletterChecked());
 
-        page.getNewsletterCheckbox().uncheck();
-        assertFalse(page.getNewsletterCheckbox().isChecked());
+        page.uncheckNewsletter();
+        Assert.assertFalse(page.isNewsletterChecked());
     }
 
-    @Test
+    /**
+     * Verifies that clicking a radio button selects it and deselects the other buttons of its group.
+     */
+    @Test(description = "Clicking a radio button selects it and deselects the rest of the group")
     public void clickingARadioButtonSelectsItAndDeselectsTheRestOfTheGroup() {
-        assertTrue(page.getFreePlanRadio().isChecked());
-        assertFalse(page.getProPlanRadio().isChecked());
+        Assert.assertTrue(page.isFreePlanSelected());
+        Assert.assertFalse(page.isProPlanSelected());
 
-        page.getProPlanRadio().click();
+        page.selectProPlan();
 
-        assertTrue(page.getProPlanRadio().isChecked());
-        assertFalse(page.getFreePlanRadio().isChecked());
+        Assert.assertTrue(page.isProPlanSelected());
+        Assert.assertFalse(page.isFreePlanSelected());
     }
 
-    // ---- Upload -----------------------------------------------------------------------------
-
-    @Test
+    /**
+     * Verifies that an upload box accepts a file given as a {@link Path}.
+     */
+    @Test(description = "An upload box accepts a Path")
     public void uploadBoxAcceptsAPath() throws IOException {
         Path file = Files.createTempFile("avatar-path-", ".txt");
         try {
-            page.getAvatarUpload().upload(file);
-            assertEquals(page.getUploadLog().getText(), file.getFileName().toString());
+            page.uploadAvatar(file);
+
+            Assert.assertEquals(page.getUploadedFileName(), file.getFileName().toString());
         } finally {
             Files.deleteIfExists(file);
         }
     }
 
-    @Test
+    /**
+     * Verifies that an upload box accepts a file given as a {@link java.io.File}.
+     */
+    @Test(description = "An upload box accepts a File")
     public void uploadBoxAcceptsAFile() throws IOException {
         Path file = Files.createTempFile("avatar-file-", ".txt");
         try {
-            page.getAvatarUpload().upload(file.toFile());
-            assertEquals(page.getUploadLog().getText(), file.getFileName().toString());
+            page.uploadAvatar(file.toFile());
+
+            Assert.assertEquals(page.getUploadedFileName(), file.getFileName().toString());
         } finally {
             Files.deleteIfExists(file);
         }
     }
 
-    // ---- Collections and child elements -----------------------------------------------------
-
-    @Test
+    /**
+     * Verifies that an element collection wraps every match as its own element, named by its position.
+     */
+    @Test(description = "An element collection wraps every match as its own named element")
     public void elementCollectionWrapsEveryMatchAsItsOwnNamedElement() {
-        List<ILabelElement> tags = page.getTags().getElements();
-
-        assertEquals(tags.stream().map(IElement::getText).collect(Collectors.toList()),
-                List.of("java", "playwright", "testng"));
-        assertEquals(tags.get(0).getName(), "Tag 1");
-        assertEquals(tags.get(2).getName(), "Tag 3");
+        Assert.assertEquals(page.getTagTexts(), List.of("java", "playwright", "testng"));
+        Assert.assertEquals(page.getTagElementNames(), List.of("Tag 1", "Tag 2", "Tag 3"));
     }
 
-    @Test
+    /**
+     * Verifies that child elements are only looked up inside their parent element.
+     */
+    @Test(description = "Child elements are scoped to their parent")
     public void childElementsAreScopedToTheirParent() {
-        List<ILabelElement> children = page.getTagList()
-                .createChildElements(ILabelElement.class, Selector.bySelector("li"), "Child tag", ExpectedCount.MORE_THAN_ZERO)
-                .getElements();
-
-        assertEquals(children.size(), 3);
-        assertEquals(children.get(1).getText(), "playwright");
+        Assert.assertEquals(page.getChildTagTexts(), List.of("java", "playwright", "testng"));
     }
 
-    @Test
+    /**
+     * Verifies that a child element tells apart identical buttons that sit in different containers.
+     */
+    @Test(description = "A child element disambiguates identical buttons in different containers")
     public void childElementDisambiguatesIdenticalButtonsInDifferentContainers() {
-        page.pickCard(page.getBetaCard());
-        assertEquals(page.getCardLog().getText(), "picked: Beta");
+        page.pickCard("Beta");
+
+        Assert.assertEquals(page.getCardLog(), "picked: Beta");
     }
 
-    // ---- Drag and drop ----------------------------------------------------------------------
-
-    @Test
+    /**
+     * Verifies that Playwright's built-in drag drops the element on the target.
+     */
+    @Test(description = "dragTo drops the element on the target")
     public void dragToDropsTheElementOnTheTarget() {
-        page.getDragSource().dragTo(page.getDropTarget());
-        assertEquals(page.getDropTarget().getText(), "Dropped");
+        page.dragSourceToTarget();
+
+        Assert.assertEquals(page.getDropTargetText(), "Dropped");
     }
 
-    @Test
+    /**
+     * Verifies that dragging by moving the mouse in steps drops the element on the target, even though the
+     * elements start outside the viewport.
+     */
+    @Test(description = "dragAndDropTo moves the mouse in steps")
     public void dragAndDropToMovesTheMouseInSteps() {
-        page.getDragSource().dragAndDropTo(page.getDropTarget(), 10);
-        assertEquals(page.getDropTarget().getText(), "Dropped");
+        page.dragSourceToTargetInSteps(10);
+
+        Assert.assertEquals(page.getDropTargetText(), "Dropped");
     }
 
-    // ---- Scrolling --------------------------------------------------------------------------
-
-    @Test
+    /**
+     * Verifies that scrolling to an element brings an off-screen element into the viewport.
+     */
+    @Test(description = "scrollToElement brings an off-screen element into view")
     public void scrollToElementBringsAnOffscreenElementIntoView() {
-        assertFalse(isInViewport(page.getFarAway()));
+        Assert.assertFalse(page.isFarAwayLabelInViewport());
 
-        page.getFarAway().scrollToElement();
+        page.scrollToFarAwayLabel();
 
-        assertTrue(isInViewport(page.getFarAway()));
+        Assert.assertTrue(page.isFarAwayLabelInViewport());
     }
 
-    @Test
+    /**
+     * Verifies that scrolling with JavaScript brings an off-screen element into the viewport.
+     */
+    @Test(description = "scrollIntoView with JavaScript brings an off-screen element into view")
     public void scrollIntoViewWithJsBringsAnOffscreenElementIntoView() {
-        assertFalse(isInViewport(page.getFarAway()));
+        Assert.assertFalse(page.isFarAwayLabelInViewport());
 
-        page.getFarAway().getJsActions().scrollIntoView();
+        page.scrollToFarAwayLabelWithJs();
 
-        assertTrue(isInViewport(page.getFarAway()));
-    }
-
-    private static boolean isInViewport(IElement element) {
-        return (Boolean) element.getLocator().evaluate(
-                "el => { const r = el.getBoundingClientRect(); return r.top >= 0 && r.bottom <= window.innerHeight; }");
+        Assert.assertTrue(page.isFarAwayLabelInViewport());
     }
 }

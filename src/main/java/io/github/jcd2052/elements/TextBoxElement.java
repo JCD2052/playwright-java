@@ -16,21 +16,19 @@ public class TextBoxElement extends AbstractElement implements ITextBoxElement {
     /**
      * Constructs a new {@code TextBoxElement}.
      *
-     * @param selector       The Playwright Selector locator strategy used to find the element.
-     * @param name           A human-readable name for the text box (e.g., "Username Input", "Search Bar"), utilized for logging.
-     * @param elementFactory The {@link IElementFactory} responsible for managing and resolving locators.
+     * @param selector       The selector the element is found with.
+     * @param name           A human-readable name for the text box (e.g., "Username Input", "Search Bar"), used in log messages and errors.
+     * @param elementFactory The factory creating the element.
      */
     protected TextBoxElement(Selector selector, String name, IElementFactory elementFactory) {
         super(selector, name, elementFactory);
     }
 
     /**
-     * Retrieves the current text value entered into the text box.
-     * <p>Unlike {@code getText()}, which retrieves the inner text of an element,
-     * this method accurately retrieves the underlying HTML {@code value} property
-     * of the input field using Playwright's native {@code Locator.inputValue()}.</p>
+     * Gets the text box's current value. Unlike {@code getText()}, which reads the element's text content, this
+     * reads the input's {@code value} property, which is what the user typed.
      *
-     * @return The current string value present in the text box.
+     * @return The current value.
      */
     @Override
     public String getInputValue() {
@@ -39,12 +37,11 @@ public class TextBoxElement extends AbstractElement implements ITextBoxElement {
     }
 
     /**
-     * Enters the specified text into the text box.
-     * <p>This method utilizes Playwright's native {@code Locator.fill()} method,
-     * which typically focuses the element, clears any existing text, and then
-     * simulates typing the new value. The action and the entered text are logged.</p>
+     * Sets the text box's value to the given text, replacing what it held. The value is set in one go and an
+     * {@code input} event is fired; to send individual key presses, use {@code press(...)} or the tab's
+     * keyboard.
      *
-     * @param text The string value to enter into the text box.
+     * @param text The text to enter.
      */
     @Override
     public void fillText(String text) {
@@ -53,9 +50,7 @@ public class TextBoxElement extends AbstractElement implements ITextBoxElement {
     }
 
     /**
-     * Empties the text box of any current input.
-     * <p>This utilizes Playwright's native {@code Locator.clear()} method to ensure
-     * the input field is completely empty. The action is logged prior to execution.</p>
+     * Empties the text box.
      */
     @Override
     public void clearText() {
@@ -64,9 +59,9 @@ public class TextBoxElement extends AbstractElement implements ITextBoxElement {
     }
 
     /**
-     * Clears any existing text and enters the specified text into the text box.
+     * Replaces the text box's value with the given text, logged as clearing and filling.
      *
-     * @param text The string value to enter after clearing.
+     * @param text The text to enter.
      */
     @Override
     public void clearAndFillText(String text) {

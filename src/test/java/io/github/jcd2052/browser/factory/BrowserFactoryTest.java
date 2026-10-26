@@ -8,21 +8,12 @@ import io.github.jcd2052.browser.configuration.IBrowserProperties;
 import io.github.jcd2052.browser.launcher.IBrowserLauncher;
 import io.github.jcd2052.browser.launcher.IBrowserLauncherRegistry;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Mockito;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.List;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertSame;
-import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.expectThrows;
 
 /**
  * Unit tests for {@link BrowserFactory}.
@@ -34,107 +25,128 @@ import static org.testng.Assert.expectThrows;
  * via an {@link ArgumentCaptor} rather than mocked.
  */
 public class BrowserFactoryTest {
-    @Test
+    /**
+     * Verifies that headless mode, timeout and launch arguments are translated into Playwright's launch options,
+     * and that the browser is launched by the launcher registered for the configured browser name.
+     */
+    @Test(description = "createBrowser translates properties into launch options and delegates to the resolved launcher")
     public void createBrowserTranslatesPropertiesIntoLaunchOptionsAndDelegatesToTheResolvedLauncher() {
-        Playwright playwright = mock(Playwright.class);
-        IBrowserProperties properties = mock(IBrowserProperties.class);
-        IBrowserLauncherRegistry registry = mock(IBrowserLauncherRegistry.class);
-        IBrowserLauncher launcher = mock(IBrowserLauncher.class);
-        Browser launchedBrowser = mock(Browser.class);
+        Playwright playwright = Mockito.mock(Playwright.class);
+        IBrowserProperties properties = Mockito.mock(IBrowserProperties.class);
+        IBrowserLauncherRegistry registry = Mockito.mock(IBrowserLauncherRegistry.class);
+        IBrowserLauncher launcher = Mockito.mock(IBrowserLauncher.class);
+        Browser launchedBrowser = Mockito.mock(Browser.class);
 
-        when(properties.isHeadless()).thenReturn(true);
-        when(properties.getTimeout()).thenReturn(30000L);
-        when(properties.getArgs()).thenReturn(List.of("--no-sandbox", "--disable-gpu"));
-        when(properties.getName()).thenReturn("chrome");
-        when(registry.getLauncher("chrome")).thenReturn(launcher);
-        when(launcher.launch(eq(playwright), any(BrowserType.LaunchOptions.class))).thenReturn(launchedBrowser);
+        Mockito.when(properties.isHeadless()).thenReturn(true);
+        Mockito.when(properties.getTimeout()).thenReturn(30000L);
+        Mockito.when(properties.getArgs()).thenReturn(List.of("--no-sandbox", "--disable-gpu"));
+        Mockito.when(properties.getName()).thenReturn("chrome");
+        Mockito.when(registry.getLauncher("chrome")).thenReturn(launcher);
+        Mockito.when(launcher.launch(
+                ArgumentMatchers.eq(playwright),
+                ArgumentMatchers.any(BrowserType.LaunchOptions.class))).thenReturn(launchedBrowser);
 
         Browser result = new BrowserFactory<>(properties, registry).createBrowser(playwright);
 
-        assertSame(result, launchedBrowser);
+        Assert.assertSame(result, launchedBrowser);
 
         ArgumentCaptor<BrowserType.LaunchOptions> captor = ArgumentCaptor.forClass(BrowserType.LaunchOptions.class);
-        verify(launcher).launch(eq(playwright), captor.capture());
+        Mockito.verify(launcher).launch(ArgumentMatchers.eq(playwright), captor.capture());
         BrowserType.LaunchOptions usedOptions = captor.getValue();
-        assertEquals(usedOptions.headless, Boolean.TRUE);
-        assertEquals(usedOptions.timeout, 30000.0);
-        assertEquals(usedOptions.args, List.of("--no-sandbox", "--disable-gpu"));
+        Assert.assertEquals(usedOptions.headless, Boolean.TRUE);
+        Assert.assertEquals(usedOptions.timeout, 30000.0);
+        Assert.assertEquals(usedOptions.args, List.of("--no-sandbox", "--disable-gpu"));
     }
 
-    @Test
+    /**
+     * Verifies that a browser name with no registered launcher fails with an {@link IllegalArgumentException}
+     * that names the unsupported browser.
+     */
+    @Test(description = "createBrowser throws for an unsupported browser name")
     public void createBrowserThrowsForAnUnsupportedBrowserName() {
-        Playwright playwright = mock(Playwright.class);
-        IBrowserProperties properties = mock(IBrowserProperties.class);
-        IBrowserLauncherRegistry registry = mock(IBrowserLauncherRegistry.class);
+        Playwright playwright = Mockito.mock(Playwright.class);
+        IBrowserProperties properties = Mockito.mock(IBrowserProperties.class);
+        IBrowserLauncherRegistry registry = Mockito.mock(IBrowserLauncherRegistry.class);
 
-        when(properties.isHeadless()).thenReturn(false);
-        when(properties.getTimeout()).thenReturn(30000L);
-        when(properties.getName()).thenReturn("netscape-navigator");
-        when(registry.getLauncher("netscape-navigator")).thenReturn(null);
+        Mockito.when(properties.isHeadless()).thenReturn(false);
+        Mockito.when(properties.getTimeout()).thenReturn(30000L);
+        Mockito.when(properties.getName()).thenReturn("netscape-navigator");
+        Mockito.when(registry.getLauncher("netscape-navigator")).thenReturn(null);
 
         BrowserFactory<IBrowserProperties> factory = new BrowserFactory<>(properties, registry);
 
-        IllegalArgumentException exception = expectThrows(IllegalArgumentException.class,
+        IllegalArgumentException exception = Assert.expectThrows(IllegalArgumentException.class,
                 () -> factory.createBrowser(playwright));
-        assertTrue(exception.getMessage().contains("netscape-navigator"));
+        Assert.assertTrue(exception.getMessage().contains("netscape-navigator"));
     }
 
-    @Test
+    /**
+     * Verifies that a configured custom test-id attribute is set on Playwright's selectors, so
+     * {@code Selector.byTestId(...)} uses it.
+     */
+    @Test(description = "createBrowser applies the custom test-id attribute when configured")
     public void createBrowserAppliesTheCustomTestIdAttributeWhenConfigured() {
-        Playwright playwright = mock(Playwright.class);
-        Selectors selectors = mock(Selectors.class);
-        IBrowserProperties properties = mock(IBrowserProperties.class);
-        IBrowserLauncherRegistry registry = mock(IBrowserLauncherRegistry.class);
-        IBrowserLauncher launcher = mock(IBrowserLauncher.class);
+        Playwright playwright = Mockito.mock(Playwright.class);
+        Selectors selectors = Mockito.mock(Selectors.class);
+        IBrowserProperties properties = Mockito.mock(IBrowserProperties.class);
+        IBrowserLauncherRegistry registry = Mockito.mock(IBrowserLauncherRegistry.class);
+        IBrowserLauncher launcher = Mockito.mock(IBrowserLauncher.class);
 
-        when(properties.isHeadless()).thenReturn(true);
-        when(properties.getTimeout()).thenReturn(30000L);
-        when(properties.getTestIdAttribute()).thenReturn("data-test");
-        when(properties.getName()).thenReturn("chrome");
-        when(playwright.selectors()).thenReturn(selectors);
-        when(registry.getLauncher("chrome")).thenReturn(launcher);
+        Mockito.when(properties.isHeadless()).thenReturn(true);
+        Mockito.when(properties.getTimeout()).thenReturn(30000L);
+        Mockito.when(properties.getTestIdAttribute()).thenReturn("data-test");
+        Mockito.when(properties.getName()).thenReturn("chrome");
+        Mockito.when(playwright.selectors()).thenReturn(selectors);
+        Mockito.when(registry.getLauncher("chrome")).thenReturn(launcher);
 
         new BrowserFactory<>(properties, registry).createBrowser(playwright);
 
-        verify(selectors).setTestIdAttribute("data-test");
+        Mockito.verify(selectors).setTestIdAttribute("data-test");
     }
 
-    @Test
+    /**
+     * Verifies that a blank test-id attribute leaves Playwright's selectors untouched, keeping the default
+     * {@code data-testid}.
+     */
+    @Test(description = "createBrowser skips the test-id attribute when blank")
     public void createBrowserSkipsTheTestIdAttributeWhenBlank() {
-        Playwright playwright = mock(Playwright.class);
-        IBrowserProperties properties = mock(IBrowserProperties.class);
-        IBrowserLauncherRegistry registry = mock(IBrowserLauncherRegistry.class);
-        IBrowserLauncher launcher = mock(IBrowserLauncher.class);
+        Playwright playwright = Mockito.mock(Playwright.class);
+        IBrowserProperties properties = Mockito.mock(IBrowserProperties.class);
+        IBrowserLauncherRegistry registry = Mockito.mock(IBrowserLauncherRegistry.class);
+        IBrowserLauncher launcher = Mockito.mock(IBrowserLauncher.class);
 
-        when(properties.isHeadless()).thenReturn(true);
-        when(properties.getTimeout()).thenReturn(30000L);
-        when(properties.getTestIdAttribute()).thenReturn("   ");
-        when(properties.getName()).thenReturn("chrome");
-        when(registry.getLauncher("chrome")).thenReturn(launcher);
+        Mockito.when(properties.isHeadless()).thenReturn(true);
+        Mockito.when(properties.getTimeout()).thenReturn(30000L);
+        Mockito.when(properties.getTestIdAttribute()).thenReturn("   ");
+        Mockito.when(properties.getName()).thenReturn("chrome");
+        Mockito.when(registry.getLauncher("chrome")).thenReturn(launcher);
 
         new BrowserFactory<>(properties, registry).createBrowser(playwright);
 
-        verify(playwright, never()).selectors();
+        Mockito.verify(playwright, Mockito.never()).selectors();
     }
 
-    @Test
+    /**
+     * Verifies that an empty argument list is not passed to the launch options, so Playwright uses its defaults.
+     */
+    @Test(description = "createBrowser omits args when none are configured")
     public void createBrowserOmitsArgsWhenNoneAreConfigured() {
-        Playwright playwright = mock(Playwright.class);
-        IBrowserProperties properties = mock(IBrowserProperties.class);
-        IBrowserLauncherRegistry registry = mock(IBrowserLauncherRegistry.class);
-        IBrowserLauncher launcher = mock(IBrowserLauncher.class);
+        Playwright playwright = Mockito.mock(Playwright.class);
+        IBrowserProperties properties = Mockito.mock(IBrowserProperties.class);
+        IBrowserLauncherRegistry registry = Mockito.mock(IBrowserLauncherRegistry.class);
+        IBrowserLauncher launcher = Mockito.mock(IBrowserLauncher.class);
 
-        when(properties.isHeadless()).thenReturn(false);
-        when(properties.getTimeout()).thenReturn(15000L);
-        when(properties.getArgs()).thenReturn(List.of());
-        when(properties.getName()).thenReturn("firefox");
-        when(registry.getLauncher("firefox")).thenReturn(launcher);
+        Mockito.when(properties.isHeadless()).thenReturn(false);
+        Mockito.when(properties.getTimeout()).thenReturn(15000L);
+        Mockito.when(properties.getArgs()).thenReturn(List.of());
+        Mockito.when(properties.getName()).thenReturn("firefox");
+        Mockito.when(registry.getLauncher("firefox")).thenReturn(launcher);
 
         new BrowserFactory<>(properties, registry).createBrowser(playwright);
 
         ArgumentCaptor<BrowserType.LaunchOptions> captor = ArgumentCaptor.forClass(BrowserType.LaunchOptions.class);
-        verify(launcher).launch(eq(playwright), captor.capture());
-        assertEquals(captor.getValue().headless, Boolean.FALSE);
-        assertNull(captor.getValue().args);
+        Mockito.verify(launcher).launch(ArgumentMatchers.eq(playwright), captor.capture());
+        Assert.assertEquals(captor.getValue().headless, Boolean.FALSE);
+        Assert.assertNull(captor.getValue().args);
     }
 }

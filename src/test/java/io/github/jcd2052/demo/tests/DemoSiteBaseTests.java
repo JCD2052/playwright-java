@@ -38,6 +38,6 @@ public abstract class DemoSiteBaseTests extends SpringBootBaseTests {
      * @param page the page path relative to the demo site root, e.g. {@code "/index.html"}
      */
     protected void openDemoPage(String page) {
-        browserService.navigateTo(demoServer.getBaseUrl() + page);
+        browserService.getBrowser().navigateTo(demoServer.getBaseUrl() + page);
     }
 }

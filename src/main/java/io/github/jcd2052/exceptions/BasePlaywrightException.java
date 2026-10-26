@@ -1,7 +1,9 @@
 package io.github.jcd2052.exceptions;
 
 /**
- * Base runtime exception for all framework-level automation errors.
+ * Base class of the framework's unchecked exceptions: {@link ElementTimeoutException} and
+ * {@link ElementActionException} for failed element actions, and {@link LocalizationException} for log messages.
+ * Catch it to handle any of them.
  */
 public abstract class BasePlaywrightException extends RuntimeException {
     /**

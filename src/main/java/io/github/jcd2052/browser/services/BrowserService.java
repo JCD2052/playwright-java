@@ -1,45 +1,35 @@
 package io.github.jcd2052.browser.services;
 
-import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.Playwright;
-import com.microsoft.playwright.PlaywrightException;
 import com.microsoft.playwright.Tracing;
 import io.github.jcd2052.browser.browser.PlaywrightBrowser;
 import io.github.jcd2052.browser.browser.interfaces.IBrowser;
 import io.github.jcd2052.browser.configuration.IBrowserProperties;
 import io.github.jcd2052.browser.factory.IBrowserFactory;
 import io.github.jcd2052.browser.services.interfaces.IBrowserService;
-import io.github.jcd2052.exceptions.PlaywrightExceptionParser;
 import io.github.jcd2052.logger.LoggerProvider;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 /**
- * Concrete implementation of the {@link IBrowserService}.
+ * Default {@link IBrowserService}, keeping each thread's browser in a {@link ThreadLocal}.
  * <p>
- * This service manages the lifecycle of Playwright browsers. It is designed to be
- * thread-safe for parallel test execution by utilizing a {@link ThreadLocal} storage
- * mechanism for the browser instances. This ensures that each executing thread
- * (e.g., each parallel TestNG method) gets its own completely isolated browser session.</p>
+ * Each browser gets its own {@link Playwright} driver and is launched by the {@link IBrowserFactory}, so
+ * every executing thread (e.g. each parallel TestNG invocation) has its own isolated browser process.
+ * </p>
+ *
+ * @param <T> the {@link IBrowserProperties} type the service is configured with
  */
 public class BrowserService<T extends IBrowserProperties> implements IBrowserService<T> {
     /**
-     * Thread-local storage to hold a separate browser instance for each executing thread,
-     * guaranteeing thread safety during parallel test execution.
+     * Each thread's browser; threads never share one.
      */
     private final ThreadLocal<IBrowser> threadLocalBrowser = new ThreadLocal<>();
-    /**
-     * Every browser opened by this service and not yet closed, across all threads, so
-     * {@link #closeAll()} can release browsers whose threads never called {@link #close()}.
-     */
-    private final Set<IBrowser> openBrowsers = ConcurrentHashMap.newKeySet();
     private final T browserProperties;
-    private final IBrowserFactory<T> browserFactory;
+    private final IBrowserFactory browserFactory;
     private final Supplier<Playwright> playwrightSupplier;
 
     /**
@@ -48,7 +38,7 @@ public class BrowserService<T extends IBrowserProperties> implements IBrowserSer
      * @param browserProperties The configuration properties for the browser (tracing, headless, etc.).
      * @param browserFactory    The factory responsible for instantiating the actual Playwright browsers.
      */
-    public BrowserService(T browserProperties, IBrowserFactory<T> browserFactory) {
+    public BrowserService(T browserProperties, IBrowserFactory browserFactory) {
         this(browserProperties, browserFactory, Playwright::create);
     }
 
@@ -66,7 +56,7 @@ public class BrowserService<T extends IBrowserProperties> implements IBrowserSer
      */
     public BrowserService(
             T browserProperties,
-            IBrowserFactory<T> browserFactory,
+            IBrowserFactory browserFactory,
             Supplier<Playwright> playwrightSupplier) {
         this.browserProperties = browserProperties;
         this.browserFactory = browserFactory;
@@ -74,83 +64,51 @@ public class BrowserService<T extends IBrowserProperties> implements IBrowserSer
     }
 
     @Override
-    public T getBrowserProperties() {
-        return browserProperties;
+    public boolean isTracingEnabled() {
+        return browserProperties.isTracing();
     }
 
     /**
      * {@inheritDoc}
      * <p>
-     * If the current thread's browser has lost its connection (its {@link Playwright} instance was
-     * closed or its driver process died), Playwright still reports the browser as connected, so the
-     * loss only shows up here as a failed call. In that case the dead browser is replaced and the
-     * window and tab are opened once more, so one lost connection doesn't break every later test on
-     * this thread. Any other failure is rethrown unchanged.
-     */
-    @Override
-    public void start() {
-        try {
-            IBrowserService.super.start();
-        } catch (PlaywrightException e) {
-            if (!PlaywrightExceptionParser.isConnectionLost(e)) {
-                throw e;
-            }
-            LoggerProvider.getLogger().warn("Lost the browser connection, launching a new browser: "
-                    + e.getMessage().lines().findFirst().orElse(""));
-            setBrowser(browserFactory);
-            IBrowserService.super.start();
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     * <p>
-     * <b>Lifecycle Note:</b> This method retrieves the currently active browser window
-     * and, if tracing is enabled via properties, starts the Playwright tracer to begin
-     * recording DOM snapshots and screenshots for the session.
+     * Screenshots and DOM snapshots are recorded as configured by {@link IBrowserProperties#isTracingScreenshotsEnabled()}
+     * and {@link IBrowserProperties#isTracingSnapshotsEnabled()}.
      */
     @Override
     public void startTracing() {
-        if (browserProperties.isTracing()) {
-            getBrowser().requireCurrentBrowserWindow().getBrowserContext().tracing().start(new Tracing.StartOptions()
-                    .setScreenshots(browserProperties.isScreenshots())
-                    .setSnapshots(browserProperties.isSnapshots()));
-        }
+        getBrowser().requireCurrentBrowserWindow().getBrowserContext().tracing().start(new Tracing.StartOptions()
+                .setScreenshots(browserProperties.isTracingScreenshotsEnabled())
+                .setSnapshots(browserProperties.isTracingSnapshotsEnabled()));
     }
 
     /**
      * {@inheritDoc}
      * <p>
-     * <b>Implementation Note:</b> Explicitly stops the Playwright tracer, exports the recorded
-     * data to a ZIP file on disk, and reads that file into memory to be returned.
-     * This method is typically called during test teardown <b>only if a test fails</b>,
-     * ensuring that valuable debugging artifacts are preserved for root-cause analysis.</p>
+     * The trace is saved as {@code filename} inside {@link IBrowserProperties#getTracingSaveFolder()}, then read
+     * back into memory. A failure is logged rather than thrown, so collecting a trace cannot fail test teardown.
      *
      * @param filename The specific name to assign to the exported trace ZIP file.
-     * @return A {@code byte[]} containing the ZIP file data, or an empty byte array
-     * ({@code new byte[0]}) if tracing is disabled or an error occurs during file reading.
+     * @return A {@code byte[]} containing the ZIP file data, or an empty byte array if the trace could not be
+     * saved or read.
      */
     @Override
     public byte[] stopAndSaveTrace(String filename) {
-        if (browserProperties.isTracing()) {
-            try {
-                Path tracePath = Paths.get(browserProperties.getTracingSaveFolder(), filename);
-                Path traceDirectory = tracePath.getParent();
-                if (traceDirectory != null) {
-                    Files.createDirectories(traceDirectory);
-                }
-                getBrowser()
-                        .requireCurrentBrowserWindow()
-                        .getBrowserContext()
-                        .tracing()
-                        .stop(new Tracing.StopOptions().setPath(tracePath));
-                return Files.readAllBytes(tracePath);
-
-            } catch (Exception e) {
-                LoggerProvider.getLogger().error("Failed to read trace file into byte array: " + e.getMessage());
+        try {
+            Path tracePath = Paths.get(browserProperties.getTracingSaveFolder(), filename);
+            Path traceDirectory = tracePath.getParent();
+            if (traceDirectory != null) {
+                Files.createDirectories(traceDirectory);
             }
+            getBrowser()
+                    .requireCurrentBrowserWindow()
+                    .getBrowserContext()
+                    .tracing()
+                    .stop(new Tracing.StopOptions().setPath(tracePath));
+            return Files.readAllBytes(tracePath);
+        } catch (Exception e) {
+            LoggerProvider.getLogger().error("Failed to save the trace: " + e.getMessage());
+            return new byte[0];
         }
-        return new byte[0];
     }
 
     /**
@@ -176,15 +134,16 @@ public class BrowserService<T extends IBrowserProperties> implements IBrowserSer
      * {@inheritDoc}
      * <p>
      * Closes any existing browser instance for the current thread (including one that has crashed,
-     * so its driver process is released) and replaces it with a new instance generated by the
-     * provided factory. A failure while closing the old browser is logged and does not prevent the
-     * new one from being created.
+     * so its driver process is released) and replaces it with a new one: a new {@link Playwright}
+     * driver is started, the factory launches the browser in it, and a first window is opened. If any
+     * of that fails, the new driver is closed again so no process is left running. A failure while
+     * closing the old browser is logged and does not prevent the replacement.
      *
      * @param browserFactory The factory used to spawn the new browser instance.
      * @throws IllegalArgumentException if the provided factory is null.
      */
     @Override
-    public void setBrowser(IBrowserFactory<T> browserFactory) {
+    public void setBrowser(IBrowserFactory browserFactory) {
         if (browserFactory == null) {
             throw new IllegalArgumentException("Browser factory cannot be null");
         }
@@ -194,26 +153,23 @@ public class BrowserService<T extends IBrowserProperties> implements IBrowserSer
             threadLocalBrowser.remove();
             closeQuietly(cached);
         }
-        Playwright playwright = getPlaywright();
-        Browser playwrightBrowser;
+        Playwright playwright = playwrightSupplier.get();
+        IBrowser browser;
         try {
-            playwrightBrowser = browserFactory.createBrowser(playwright);
+            browser = new PlaywrightBrowser(playwright, browserFactory.createBrowser(playwright), browserProperties);
+            browser.openNewWindow();
         } catch (RuntimeException e) {
             playwright.close();
             throw e;
         }
-        IBrowser browser = new PlaywrightBrowser(playwright, playwrightBrowser, browserProperties);
-        openBrowsers.add(browser);
         threadLocalBrowser.set(browser);
     }
 
     /**
      * {@inheritDoc}
      * <p>
-     * Gracefully terminates the active Playwright browser for the current thread and
-     * clears the {@link ThreadLocal} reference to prevent memory leaks between test suites.
-     * A failure while closing is logged rather than thrown, so a broken browser cannot fail test
-     * teardown; the reference is cleared either way, so the next call starts a fresh browser.
+     * A failure while closing is logged rather than thrown, so a broken browser cannot fail test teardown;
+     * the thread's browser is forgotten either way.
      */
     @Override
     public void close() {
@@ -225,36 +181,15 @@ public class BrowserService<T extends IBrowserProperties> implements IBrowserSer
     }
 
     /**
-     * {@inheritDoc}
-     * <p>
-     * Failures are logged per browser so one broken browser does not keep the others open.
-     */
-    @Override
-    public void closeAll() {
-        threadLocalBrowser.remove();
-        openBrowsers.forEach(this::closeQuietly);
-    }
-
-    /**
-     * Closes the given browser and forgets it, logging instead of throwing on failure.
+     * Closes the given browser, logging instead of throwing on failure.
      *
      * @param browser the browser to close
      */
     private void closeQuietly(IBrowser browser) {
-        openBrowsers.remove(browser);
         try {
             browser.close();
         } catch (RuntimeException e) {
             LoggerProvider.getLogger().warn("Failed to close browser: " + e.getMessage());
         }
-    }
-
-    /**
-     * Helper method to initialize the core Playwright connection.
-     *
-     * @return A {@link Playwright} instance from the configured supplier.
-     */
-    private Playwright getPlaywright() {
-        return playwrightSupplier.get();
     }
 }

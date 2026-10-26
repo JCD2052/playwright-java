@@ -9,37 +9,36 @@ package io.github.jcd2052.elements.interfaces;
 public interface ITextBoxElement extends IElement {
 
     /**
-     * Retrieves the current value typed into the input field.
+     * Gets the field's current value.
      * <p>
-     * Unlike {@link IElement#getText()}, which typically returns inner text,
-     * this method retrieves the live "value" property of the input element.
+     * Unlike {@link IElement#getText()}, which reads the element's text content, this reads the input's
+     * {@code value} property, which is what the user typed.
      *
      * @return The current string value of the input.
      */
     String getInputValue();
 
     /**
-     * Enters the specified text into the field.
+     * Sets the field's value to the given text, replacing what it held.
      * <p>
-     * <b>Implementation Note:</b> This typically utilizes Playwright's {@code fill()}
-     * mechanism, which focuses the element and sends a series of input events.
+     * The built-in implementation uses Playwright's {@code fill()}, which sets the value in one go and fires an
+     * {@code input} event, rather than typing key by key.
+     * </p>
      *
-     * @param text The string to be entered into the text box.
+     * @param text The text to enter.
      */
     void fillText(String text);
 
     /**
-     * Clears all existing text from the input field.
+     * Empties the field.
      */
     void clearText();
 
     /**
-     * A convenience method that first clears the field and then enters the new text.
-     * <p>
-     * This is the recommended approach for updating form fields to ensure
-     * that new data is not simply appended to existing stale text.
+     * Replaces the field's value with the given text. By default this clears the field and then fills it;
+     * implementations may do it in one step.
      *
-     * @param text The new string to be entered.
+     * @param text The text to enter.
      */
     default void clearAndFillText(String text) {
         clearText();

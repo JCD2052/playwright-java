@@ -15,19 +15,16 @@ public class CheckBoxElement extends AbstractCheckableElement implements ICheckB
     /**
      * Constructs a new {@code CheckBoxElement}.
      *
-     * @param selector       The Playwright Selector locator strategy used to find the element.
-     * @param name           A human-readable name for the checkbox (e.g., "Accept Terms"), used for logging and reporting.
-     * @param elementFactory The {@link IElementFactory} responsible for creating and locating the element.
+     * @param selector       The selector the element is found with.
+     * @param name           A human-readable name for the checkbox (e.g., "Accept Terms"), used in log messages and errors.
+     * @param elementFactory The factory creating the element.
      */
     protected CheckBoxElement(Selector selector, String name, IElementFactory elementFactory) {
         super(selector, name, elementFactory);
     }
 
     /**
-     * Checks the checkbox element.
-     * <p>This method ensures the checkbox is selected. If it is already checked, this action
-     * typically does nothing, delegating the state management to Playwright's native
-     * {@code Locator.check()} method. The action is logged prior to execution.</p>
+     * Checks the checkbox. Does nothing if it is already checked.
      */
     @Override
     public void check() {
@@ -36,10 +33,7 @@ public class CheckBoxElement extends AbstractCheckableElement implements ICheckB
     }
 
     /**
-     * Unchecks the checkbox element.
-     * <p>This method ensures the checkbox is deselected. If it is already unchecked, this action
-     * typically does nothing, delegating the state management to Playwright's native
-     * {@code Locator.uncheck()} method. The action is logged prior to execution.</p>
+     * Unchecks the checkbox. Does nothing if it is already unchecked.
      */
     @Override
     public void uncheck() {

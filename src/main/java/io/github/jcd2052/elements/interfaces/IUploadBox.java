@@ -4,36 +4,21 @@ import java.io.File;
 import java.nio.file.Path;
 
 /**
- * Represents a web element capable of handling file uploads.
- * <p>
- * Extending the foundational {@link IElement}, this interface provides a dedicated contract
- * for interacting with file input fields or custom upload dropzones. It abstracts away
- * the underlying browser-level interactions required to successfully attach a local file
- * to the web application.
- * </p>
+ * A file upload field: an HTML {@code <input type="file">} element that files are set on directly, without an
+ * operating-system file chooser.
  */
 public interface IUploadBox extends IElement {
     /**
-     * Uploads the specified local file to the associated web element.
-     * <p>
-     * Depending on the specific implementation, this method may inject the file path directly
-     * into a standard {@code <input type="file">} element, or it may utilize Playwright's
-     * advanced event interception to handle modern, custom OS-level file chooser dialogs.
-     * </p>
+     * Sets the given file on the field, as if the user had chosen it.
      *
-     * @param path The {@link Path} object representing path to file to upload.
+     * @param path The file to upload; it must exist on the machine running the tests.
      */
     void upload(Path path);
 
     /**
-     * Uploads the specified local file to the associated web element.
-     * <p>
-     * Depending on the specific implementation, this method may inject the file path directly
-     * into a standard {@code <input type="file">} element, or it may utilize Playwright's
-     * advanced event interception to handle modern, custom OS-level file chooser dialogs.
-     * </p>
+     * Sets the given file on the field, as if the user had chosen it.
      *
-     * @param file The {@link File} object representing the local file to be uploaded.
+     * @param file The file to upload; it must exist on the machine running the tests.
      */
     default void upload(File file) {
         upload(file.toPath());

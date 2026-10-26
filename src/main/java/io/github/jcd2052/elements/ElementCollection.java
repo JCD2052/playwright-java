@@ -14,13 +14,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A dynamic collection of web elements of a specific type.
- * <p>This class implements {@link IElementCollection} to manage a group of elements matching
- * a single Selector locator strategy. It handles waiting for specific collection states (e.g., waiting for at least
- * one element to appear) and dynamically wrapping the raw Playwright locators into framework-specific
- * custom elements (e.g., turning a list of button locators into a List of {@code IButtonElement}).</p>
+ * Default {@link IElementCollection}: the elements matching one selector, read each time
+ * {@link #getElements()} is called.
+ * <p>
+ * Reading first waits for the {@link ExpectedCount}, then creates one element per match. Each element is bound
+ * to its position ({@code selector.nth(i)}), not to a specific node: if the page changes, element {@code i}
+ * refers to whatever is then at position {@code i}, so read the collection again after the page changes.
+ * </p>
  *
- * @param <T> The specific type of {@link IElement} contained in this collection.
+ * @param <T> The type of the collection's elements.
  */
 public class ElementCollection<T extends IElement> implements IElementCollection<T> {
     private final Selector selector;
@@ -30,13 +32,13 @@ public class ElementCollection<T extends IElement> implements IElementCollection
     private final ExpectedCount expectedCount;
 
     /**
-     * Constructs a new {@code ElementCollection}.
+     * Creates a collection.
      *
-     * @param selector       The base Playwright selector used to find all elements in the collection.
-     * @param name           A base human-readable name for the collection, appended with an index for individual elements.
-     * @param elementFactory The {@link IElementFactory} responsible for creating the individual elements.
-     * @param supplier       The functional supplier template for instantiating the typed wrapper components.
-     * @param expectedCount  The expectation rule applied before resolving the collection (e.g., MUST have elements, MUST be empty).
+     * @param selector       The selector matching every element of the collection.
+     * @param name           The collection's name; each element is named after it with its position, e.g. "Tag 1".
+     * @param elementFactory The factory the elements are created with.
+     * @param supplier       Creates each element.
+     * @param expectedCount  The count condition to wait for before the elements are read.
      */
     public ElementCollection(
             Selector selector,
@@ -52,12 +54,10 @@ public class ElementCollection<T extends IElement> implements IElementCollection
     }
 
     /**
-     * Retrieves the list of resolved framework elements.
-     * <p>This method first waits for the expected count condition to be met. It then determines
-     * the total number of matching elements and iterates through them, using a deferred index-based
-     * Selector wrapper to create isolated, individually addressable framework elements.</p>
+     * Waits for the expected count, then creates one element per current match, each bound to its position.
      *
-     * @return A {@link List} of instantiated elements of type {@code T}.
+     * @return The elements, in page order.
+     * @throws io.github.jcd2052.exceptions.BasePlaywrightException if the expected count is not reached in time.
      */
     @Override
     public List<T> getElements() {
@@ -78,9 +78,7 @@ public class ElementCollection<T extends IElement> implements IElementCollection
     }
 
     /**
-     * Evaluates the DOM to ensure the collection matches the {@link ExpectedCount} condition.
-     * <p>Utilizes Playwright's native wait options (bound by the context's default timeout) to handle
-     * synchronization:</p>
+     * Waits, up to the window's default timeout, for the collection's {@link ExpectedCount}:
      * <ul>
      * <li>{@code ZERO}: Waits until no matching element remains attached to the DOM.</li>
      * <li>{@code MORE_THAN_ZERO}: Waits for the first element to reach the {@code ATTACHED} state in the DOM.</li>

@@ -3,50 +3,54 @@ package io.github.jcd2052.browser.configuration;
 import java.util.List;
 
 /**
- * Defines the configuration properties required to initialize and manage a browser session.
+ * The configuration of the browsers the framework launches and of the windows it opens in them.
  * <p>
- * These properties control various aspects of the browser's behavior, such as viewport size,
- * execution mode (headless or visible), timeouts, and Playwright tracing capabilities.
+ * Launch settings (browser name, headless mode, launch arguments, test-id attribute) are applied when a browser
+ * is launched; window settings (viewport, timeouts, locale, timezone, geolocation, permissions, device
+ * emulation, storage state) are applied to every new window. Optional settings left {@code null} or blank fall
+ * back to Playwright's defaults. Projects can extend this interface with settings of their own.
+ * </p>
  */
 public interface IBrowserProperties {
 
     /**
-     * Retrieves the name of the browser to be launched.
+     * Gets the name of the browser to launch, matched case-insensitively against the registered launchers.
      *
-     * @return The browser name (e.g., "chromium", "firefox", "webkit", "chrome", "edge").
+     * @return The browser name: "chrome", "chromium", "edge", "firefox", "webkit", or a custom launcher's name.
      */
     String getName();
 
     /**
-     * Retrieves the directory path where Playwright execution traces will be saved.
+     * Gets the folder that saved Playwright traces are written to.
      *
-     * @return The file path to the tracing save folder.
+     * @return The tracing folder path.
      */
     String getTracingSaveFolder();
 
     /**
-     * Retrieves the default timeout duration for browser and page operations.
+     * Gets the default timeout for element actions and waits in every new window. It is also used as the
+     * browser launch timeout, so keep it above the time a cold browser start takes.
      *
      * @return The timeout in milliseconds.
      */
     Long getTimeout();
 
     /**
-     * Retrieves the default timeout duration for page loading.
+     * Gets the default timeout for navigations (loading a page) in every new window.
      *
      * @return The timeout in milliseconds.
      */
     Long getPageLoadTimeout();
 
     /**
-     * Retrieves the default width of the browser viewport.
+     * Gets the viewport width of every new window.
      *
      * @return The viewport width in pixels.
      */
     Integer getWidth();
 
     /**
-     * Retrieves the default height of the browser viewport.
+     * Gets the viewport height of every new window.
      *
      * @return The viewport height in pixels.
      */
@@ -61,47 +65,45 @@ public interface IBrowserProperties {
     boolean isHeadless();
 
     /**
-     * Checks if visual element highlighting is enabled.
-     * When enabled, the framework may draw borders or highlight elements being interacted with
-     * during test execution (useful for debugging).
+     * Checks whether elements are highlighted while the framework works with them: when enabled, an element is
+     * outlined in red before actions such as reading its text or typing into it. Useful for debugging.
      *
      * @return {@code true} if element highlighting is enabled, {@code false} otherwise.
      */
     boolean isHighlight();
 
     /**
-     * Checks if Playwright tracing is enabled for the browser session.
-     * Tracing records a detailed log of the execution, which can be viewed in the Playwright Trace Viewer.
+     * Checks whether tests should record Playwright traces, which can be opened in the Playwright Trace Viewer.
+     * The browser service's start and stop methods don't check this; callers ask
+     * {@code IBrowserService.isTracingEnabled()} first.
      *
      * @return {@code true} if tracing is enabled, {@code false} otherwise.
      */
     boolean isTracing();
 
     /**
-     * Checks if screenshots should be captured during execution.
-     * This is often used in conjunction with tracing to record visual states.
+     * Checks whether traces record screenshots of the page as the test runs.
      *
      * @return {@code true} if screenshots are enabled, {@code false} otherwise.
      */
-    boolean isScreenshots();
+    boolean isTracingScreenshotsEnabled();
 
     /**
-     * Checks if DOM snapshots should be captured during execution.
-     * Snapshots allow for DOM inspection within the Playwright Trace Viewer.
+     * Checks whether traces record DOM snapshots, which let the Trace Viewer show the page at each step.
      *
      * @return {@code true} if snapshots are enabled, {@code false} otherwise.
      */
-    boolean isSnapshots();
+    boolean isTracingSnapshotsEnabled();
 
     /**
-     * Retrieves the list of custom command-line arguments to pass to the browser executable on startup.
+     * Gets extra command-line arguments to pass to the browser when it is launched.
      *
      * @return A list of argument strings (e.g., "--no-sandbox", "--disable-gpu").
      */
     List<String> getArgs();
     /**
-     * Retrieves the custom test ID attribute to be used globally by Playwright Selectors.
-     * If null or empty, Playwright defaults to 'data-testid'.
+     * Gets the attribute {@code Selector.byTestId(...)} matches against, applied to the Playwright driver when a
+     * browser is launched. If {@code null} or blank, Playwright's default {@code data-testid} is used.
      *
      * @return the custom attribute string (e.g., "data-a-test").
      */
@@ -179,8 +181,8 @@ public interface IBrowserProperties {
     boolean isHasTouch();
 
     /**
-     * Retrieves the path to a previously saved Playwright storage-state JSON file
-     * (cookies and local storage) to preload into every new browser context.
+     * Gets the path of a previously saved Playwright storage-state JSON file (cookies and local storage) to
+     * preload into every new window. The file must exist when a window is opened.
      * <p>
      * This is the standard way to skip a UI login flow in every test: authenticate once,
      * save the resulting storage state to disk, then point this property at that file so

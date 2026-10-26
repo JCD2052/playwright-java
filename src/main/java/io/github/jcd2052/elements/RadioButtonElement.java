@@ -15,9 +15,9 @@ public class RadioButtonElement extends AbstractCheckableElement implements IRad
     /**
      * Constructs a new {@code RadioButtonElement}.
      *
-     * @param selector       The Playwright Selector locator strategy used to find the element.
-     * @param name           A human-readable name for the radio button (e.g., "Credit Card Option", "Gender: Male"), utilized for logging.
-     * @param elementFactory The {@link IElementFactory} responsible for managing and resolving locators.
+     * @param selector       The selector the element is found with.
+     * @param name           A human-readable name for the radio button (e.g., "Credit Card Option", "Gender: Male"), used in log messages and errors.
+     * @param elementFactory The factory creating the element.
      */
     protected RadioButtonElement(Selector selector, String name, IElementFactory elementFactory) {
         super(selector, name, elementFactory);

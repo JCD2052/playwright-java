@@ -12,91 +12,96 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * The base interface for all UI elements in the framework.
+ * The base interface for all of the framework's elements.
  * <p>
- * Defines the core contract for metadata (name, Selector locator strategy), state checks (visibility, enablement),
- * and interactions (clicking, typing). It also enables hierarchical element discovery
- * by providing methods to create child elements relative to the current one.
+ * An element is a name plus a {@link Selector}. The selector is resolved on the current tab every time the
+ * element acts, so an element never goes stale. The interface covers reading state (text, attributes,
+ * visibility), interactions (clicks, keys, drag and drop, hover, scrolling), waits, and creating child
+ * elements scoped to this one.
+ * </p>
+ * <p>
+ * The default methods here act on the Playwright locator directly. {@code AbstractElement}, which every
+ * built-in element extends, overrides them to add logging and to translate Playwright errors into framework
+ * exceptions.
  * </p>
  */
 public interface IElement {
     /**
-     * Retrieves the logical name of the element used for logging and reporting.
+     * Gets the element's name, used in log messages and errors.
      *
-     * @return The logical name of the element.
+     * @return The element's name.
      */
     String getName();
 
     /**
-     * Retrieves the visible inner text of the element.
+     * Gets the element's text content, including text that is hidden with CSS.
      *
-     * @return The text content of the element.
+     * @return The element's text.
      */
     String getText();
 
     /**
-     * Retrieves a collection of strings representing the text of all elements matching the current strategy.
+     * Gets the rendered (inner) text of every element matching this element's selector.
      *
-     * @return A list of text strings.
+     * @return One text per matching element, in page order.
      */
     List<String> getAllTexts();
 
     /**
-     * Retrieves the value of the specified attribute.
+     * Gets the value of one of the element's HTML attributes.
      *
-     * @param name The name of the attribute (e.g., "href", "value", "class").
-     * @return The attribute value as a string.
+     * @param name The attribute name, e.g. "href" or "class".
+     * @return The attribute value, or {@code null} if the element has no such attribute.
      */
     String getAttribute(String name);
 
     /**
-     * Retrieves the Just-In-Time locator strategy assigned to this element.
+     * Gets the selector this element finds itself with.
      *
-     * @return The {@link Selector} locator strategy wrapper.
+     * @return The element's selector.
      */
     Selector getSelector();
 
     /**
-     * Dynamically resolves and evaluates the underlying Playwright locator.
+     * Resolves the element's selector on the current tab, for Playwright features this interface doesn't cover.
      *
-     * @return The live Playwright {@link Locator} instance.
+     * @return The Playwright locator.
      */
     Locator getLocator();
 
     /**
-     * Retrieves the JavaScript actions context bounded to this element.
+     * Gets actions that run JavaScript on this element, for cases normal interactions can't reach.
      *
-     * @return The JavaScript actions execution interface.
+     * @return The element's JavaScript actions.
      */
     IJsActions getJsActions();
 
     /**
-     * Retrieves the raw, page-level mouse API from the context of this element.
-     * <p><b>WARNING:</b> The IMouseActions API uses absolute screen coordinates (X/Y),
-     * NOT coordinates relative to this specific element!</p>
+     * Gets the raw mouse of the page this element is on.
+     * <p>The mouse works with viewport coordinates, not coordinates relative to this element.</p>
      *
-     * @return The IMouseActions instance for complex mouse movements.
+     * @return The page's mouse actions.
      */
     IMouseActions getMouseActions();
 
     /**
-     * Creates a single child element relative to this element's locator strategy.
+     * Creates an element that is looked up inside this one.
      *
-     * @param clazz    The class or interface type of the child element.
-     * @param selector The relative child Selector locator strategy.
-     * @param name     The logical name for the child element.
+     * @param clazz    The child's element interface or class.
+     * @param selector The child's selector, relative to this element.
+     * @param name     The child's name.
      * @param <T>      The specific type of the element.
      * @return The instantiated child element.
      */
     <T extends IElement> T createChildElement(Class<T> clazz, Selector selector, String name);
 
     /**
-     * Creates a collection of child elements relative to this element's locator strategy.
+     * Creates a collection of the elements matching a selector inside this one.
      *
-     * @param clazz         The type of elements in the collection.
-     * @param selector      The relative child Selector locator strategy.
-     * @param name          The logical name for the collection.
-     * @param expectedCount The count condition to wait for.
+     * @param clazz         The elements' interface or class.
+     * @param selector      The elements' selector, relative to this element.
+     * @param name          The collection's name; each element is named after it with its position.
+     * @param expectedCount The count condition to wait for before the elements are read.
      * @param <T>           The specific type of the elements.
      * @return An {@link IElementCollection} of child elements.
      */
@@ -107,39 +112,39 @@ public interface IElement {
             ExpectedCount expectedCount);
 
     /**
-     * Creates a single child element using a custom supplier and a deferred Selector strategy.
+     * Creates an element that is looked up inside this one, using a custom supplier to create it.
      *
-     * @param elementSupplier The supplier defining the instantiation logic.
-     * @param selector        The relative child Selector locator strategy.
-     * @param name            The logical name for the child element.
+     * @param elementSupplier Creates the child element.
+     * @param selector        The child's selector, relative to this element.
+     * @param name            The child's name.
      * @param <T>             The specific type of the element.
      * @return The instantiated child element.
      */
     <T extends IElement> T createChildElement(IElementSupplier<T> elementSupplier, Selector selector, String name);
 
     /**
-     * Checks if the element is currently visible in the DOM.
+     * Checks whether the element is visible on the page right now, without waiting.
      *
      * @return {@code true} if visible, {@code false} otherwise.
      */
     boolean isVisible();
 
     /**
-     * Checks if the element is currently enabled and interactive.
+     * Checks whether the element is enabled (not {@code disabled}) right now, without waiting.
      *
      * @return {@code true} if enabled, {@code false} otherwise.
      */
     boolean isEnabled();
 
     /**
-     * Simulates pressing a specific keyboard key or keyboard shortcut combination.
+     * Focuses the element and presses a key or key combination on it.
      *
      * @param key The key identifier or key combination (e.g., "Enter", "Control+A").
      */
     void press(String key);
 
     /**
-     * Performs a standard Playwright click on the element.
+     * Clicks the element, after Playwright's actionability checks (visible, stable, enabled, receives events).
      */
     void click();
 
@@ -149,32 +154,33 @@ public interface IElement {
     void doubleClick();
 
     /**
-     * Performs a right-click context interaction on the element.
+     * Right-clicks the element.
      */
     void rightClick();
 
     /**
-     * Performs a middle-click auxiliary interaction on the element.
+     * Clicks the element with the middle mouse button.
      */
     void middleClick();
 
     /**
-     * Clicks at specific layout coordinates relative to the top-left edge of the element bounding box.
+     * Clicks the element at an offset from the top-left corner of its box.
      *
-     * @param x The horizontal coordinate offset.
-     * @param y The vertical coordinate offset.
+     * @param x The horizontal offset in pixels.
+     * @param y The vertical offset in pixels.
      */
     void click(double x, double y);
 
     /**
-     * Performs a forced action click that bypasses standard Playwright actionability checks.
+     * Clicks the element without waiting for Playwright's actionability checks, e.g. for an element that is
+     * always moving.
      */
     void forceClick();
 
     /**
-     * Performs a drag-and-drop operation using simulated, stepped mouse movements instead of Playwright's
-     * native {@code dragTo()}. This is more reliable for modern drag-and-drop libraries (e.g. React-Beautiful-DnD
-     * or SortableJS) that rely on precise, incremental {@code mousemove} events.
+     * Drags this element onto the target by moving the mouse in steps, instead of Playwright's native
+     * {@link #dragTo(IElement)}. Useful for drag-and-drop libraries that react to incremental {@code mousemove}
+     * events. Both elements are scrolled into view before the mouse moves.
      *
      * @param targetElement The element to drop onto.
      * @param steps         The number of intermediate mouse-move steps between source and target (e.g. 10-20).
@@ -189,21 +195,22 @@ public interface IElement {
     }
 
     /**
-     * Performs a click interaction using raw JavaScript execution in the client browser context.
+     * Clicks the element through JavaScript ({@code element.click()}), which reaches elements a real click can't,
+     * such as ones with {@code pointer-events: none}.
      */
     default void clickWithJs() {
         getJsActions().click();
     }
 
     /**
-     * Scrolls the element into the browser's viewport.
+     * Scrolls the element into view, if it isn't already.
      */
     default void scrollToElement() {
         getLocator().scrollIntoViewIfNeeded();
     }
 
     /**
-     * Performs a native Playwright drag-and-drop action onto the target element.
+     * Drags this element onto the target with Playwright's native drag and drop.
      *
      * @param targetElement The element to drop onto.
      */
@@ -219,19 +226,19 @@ public interface IElement {
     }
 
     /**
-     * Captures a screenshot of the element.
+     * Takes a screenshot of the element.
      *
-     * @return A byte array representing the screenshot image.
+     * @return The PNG image.
      */
     default byte[] getScreenshot() {
         return getLocator().screenshot();
     }
 
     /**
-     * Waits for the element to reach a specific state (e.g., VISIBLE, HIDDEN, ATTACHED).
+     * Waits for the element to reach a state, failing if it doesn't in time.
      *
-     * @param state   The desired {@link WaitForSelectorState}.
-     * @param timeout The maximum time to wait in milliseconds.
+     * @param state   The state to wait for, e.g. VISIBLE, HIDDEN, ATTACHED or DETACHED; {@code null} for VISIBLE.
+     * @param timeout The maximum time to wait in milliseconds; {@code null} for the window's default timeout.
      */
     default void waitForState(WaitForSelectorState state, Double timeout) {
         Locator.WaitForOptions waitOptions = state == null && timeout == null ? null : new Locator.WaitForOptions();
@@ -243,10 +250,10 @@ public interface IElement {
     }
 
     /**
-     * Safe wait method that returns a boolean instead of throwing an exception on timeout.
+     * Waits for the element to reach a state, returning {@code false} instead of throwing if it doesn't in time.
      *
-     * @param state   The desired state.
-     * @param timeout The timeout in milliseconds.
+     * @param state   The state to wait for; {@code null} for VISIBLE.
+     * @param timeout The maximum time to wait in milliseconds; {@code null} for the window's default timeout.
      * @return {@code true} if the state was reached, {@code false} if a {@link TimeoutError} occurred.
      */
     default boolean waitForLoading(WaitForSelectorState state, Double timeout) {
@@ -259,7 +266,7 @@ public interface IElement {
     }
 
     /**
-     * Waits for the default state and timeout.
+     * Waits, up to the window's default timeout, for the element to become visible.
      *
      * @return {@code true} if the state was reached, {@code false} if a timeout occurred.
      */
@@ -278,7 +285,7 @@ public interface IElement {
     }
 
     /**
-     * Waits for the element to be removed from the DOM using the default timeout.
+     * Waits, up to the window's default timeout, for the element to be removed from the DOM.
      *
      * @return {@code true} if the element was detached, {@code false} if a timeout occurred.
      */
@@ -297,7 +304,7 @@ public interface IElement {
     }
 
     /**
-     * Waits for the element to become visible using the default timeout.
+     * Waits, up to the window's default timeout, for the element to become visible.
      *
      * @return {@code true} if the element became visible, {@code false} if a timeout occurred.
      */
@@ -306,10 +313,10 @@ public interface IElement {
     }
 
     /**
-     * Convenience method for creating a child element with a default logical name.
+     * Creates an element that is looked up inside this one, named {@code "Child of <this element's name>"}.
      *
-     * @param clazz    The class or interface type of the child element.
-     * @param selector The relative child Selector locator strategy.
+     * @param clazz    The child's element interface or class.
+     * @param selector The child's selector, relative to this element.
      * @param <T>      The specific type of the element.
      * @return The instantiated child element.
      */
@@ -318,10 +325,11 @@ public interface IElement {
     }
 
     /**
-     * Convenience method for creating a child element via supplier with a default logical name.
+     * Creates an element that is looked up inside this one using a custom supplier, named
+     * {@code "Child of <this element's name>"}.
      *
-     * @param elementSupplier The supplier defining the instantiation logic.
-     * @param selector        The relative child Selector locator strategy.
+     * @param elementSupplier Creates the child element.
+     * @param selector        The child's selector, relative to this element.
      * @param <T>             The specific type of the element.
      * @return The instantiated child element.
      */
@@ -332,11 +340,12 @@ public interface IElement {
     }
 
     /**
-     * Convenience method for creating a child collection with an 'ANY' expected count.
+     * Creates a collection of the elements matching a selector inside this one, without waiting for any count
+     * ({@link ExpectedCount#ANY}).
      *
-     * @param clazz    The type of elements in the collection.
-     * @param selector The relative child Selector locator strategy.
-     * @param name     The logical name for the collection.
+     * @param clazz    The elements' interface or class.
+     * @param selector The elements' selector, relative to this element.
+     * @param name     The collection's name; each element is named after it with its position.
      * @param <T>      The specific type of the elements.
      * @return An {@link IElementCollection} of child elements.
      */

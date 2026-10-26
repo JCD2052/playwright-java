@@ -15,19 +15,51 @@ import java.util.regex.Pattern;
 @Data
 @Accessors(chain = true)
 public class RoleOptions {
+    /**
+     * The accessible name to match as text; ignored if {@link #namePattern} is set.
+     */
     private String nameString;
+    /**
+     * The accessible name to match as a regular expression; takes precedence over {@link #nameString}.
+     */
     private Pattern namePattern;
+    /**
+     * Whether the name must match exactly (case-sensitive, whole string) instead of as a substring.
+     */
     private Boolean exact;
+    /**
+     * Match only elements that are (or are not) checked, e.g. checkboxes.
+     */
     private Boolean checked;
+    /**
+     * Match only elements that are (or are not) disabled.
+     */
     private Boolean disabled;
+    /**
+     * Match only elements that are (or are not) expanded, e.g. menus or tree items.
+     */
     private Boolean expanded;
+    /**
+     * Whether to also match elements hidden from the accessibility tree.
+     */
     private Boolean includeHidden;
+    /**
+     * Match only headings (and similar roles) of this level, e.g. 1 for {@code <h1>}.
+     */
     private Integer level;
+    /**
+     * Match only elements that are (or are not) pressed, e.g. toggle buttons.
+     */
     private Boolean pressed;
+    /**
+     * Match only elements that are (or are not) selected, e.g. tabs or options.
+     */
     private Boolean selected;
 
     /**
-     * Translates to Page options
+     * Converts the set options into Playwright's options for {@code Page.getByRole}.
+     *
+     * @return The page-level role options.
      */
     public Page.GetByRoleOptions toPageOptions() {
         Page.GetByRoleOptions options = new Page.GetByRoleOptions();
@@ -45,7 +77,9 @@ public class RoleOptions {
     }
 
     /**
-     * Translates to Locator options
+     * Converts the set options into Playwright's options for {@code Locator.getByRole}.
+     *
+     * @return The locator-level role options.
      */
     public Locator.GetByRoleOptions toLocatorOptions() {
         Locator.GetByRoleOptions options = new Locator.GetByRoleOptions();

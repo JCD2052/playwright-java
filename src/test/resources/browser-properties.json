@@ -1,0 +1,12 @@
+{
+  "name": "chromium",
+  "headless": true,
+  "timeout": 5000,
+  "pageLoadTimeout": 10000,
+  "width": 1280,
+  "height": 720,
+  "tracing": false,
+  "tracingSaveFolder": "target/tracing",
+  "locale": "uk-UA",
+  "timezoneId": "Europe/Kyiv"
+}

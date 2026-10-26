@@ -5,38 +5,31 @@ import io.github.jcd2052.elements.selector.Selector;
 import io.github.jcd2052.elements.interfaces.IUploadBox;
 import io.github.jcd2052.logger.i18n.LogAction;
 
-import java.io.File;
 import java.nio.file.Path;
 
 /**
- * A concrete implementation of a file upload component.
+ * The built-in {@link IUploadBox}, for an HTML {@code <input type="file">} element.
  * <p>
- * This class utilizes Playwright's native {@code setInputFiles()} mechanism.
- * It is designed specifically to interact with standard HTML {@code <input type="file">}
- * elements in the DOM. It directly bypasses the Operating System's file chooser dialog
- * by injecting the file path straight into the browser's input node.
+ * Files are set on the input directly with Playwright's {@code setInputFiles()}, so no operating-system file
+ * chooser opens. The selector must match the {@code <input>} itself, not a styled button around it.
  * </p>
  */
 public class UploadBox extends AbstractElement implements IUploadBox {
     /**
      * Constructs a new {@code UploadBox} element.
      *
-     * @param selector       The Playwright Selector locator strategy used to find strictly targeting the {@code <input type="file">} element.
-     * @param name           The human-readable name of the upload field, utilized for automated logging.
-     * @param elementFactory The central factory used for dependency injection and element resolution.
+     * @param selector       The selector of the {@code <input type="file">} element.
+     * @param name           The element\'s name, used in log messages and errors.
+     * @param elementFactory The factory creating the element.
      */
     protected UploadBox(Selector selector, String name, IElementFactory elementFactory) {
         super(selector, name, elementFactory);
     }
 
     /**
-     * Uploads the specified local file directly into the input element.
-     * <p>
-     * Resolves the provided {@link File} object into a standard Java NIO {@link java.nio.file.Path}
-     * and passes it directly to Playwright's locator engine.
-     * </p>
+     * Sets the given file on the input, as if the user had chosen it.
      *
-     * @param filePath The local file to be uploaded. Ensure the file exists on the execution machine's filesystem.
+     * @param filePath The file to upload; it must exist on the machine running the tests.
      */
     @Override
     public void upload(Path filePath) {

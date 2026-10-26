@@ -3,8 +3,9 @@ package io.github.jcd2052.logger;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Default {@link ILogger} implementation, delegating to an SLF4J {@code Logger} obtained via
- * Lombok's {@link Slf4j @Slf4j}.
+ * Default {@link ILogger}, delegating to SLF4J; the actual output depends on the SLF4J backend on the classpath
+ * (e.g. Logback). A message whose format doesn't match its arguments is logged as is, followed by
+ * {@code [Format Error]}, instead of throwing.
  */
 @Slf4j
 public class Logger implements ILogger {

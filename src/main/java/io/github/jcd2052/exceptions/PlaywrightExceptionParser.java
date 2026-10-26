@@ -6,43 +6,26 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import io.github.jcd2052.elements.selector.Selector;
 
-import java.util.List;
-
 /**
- * Utility class to parse verbose Playwright exceptions into compact, readable framework exceptions.
+ * Turns Playwright's verbose exceptions into compact framework exceptions that name the element, the action and
+ * the selector.
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class PlaywrightExceptionParser {
     /**
-     * Message fragments Playwright uses when the connection to the driver or browser is gone for good:
-     * the {@code Playwright} instance was closed, its driver process died, or the browser was closed.
-     */
-    private static final List<String> CONNECTION_LOST_MARKERS = List.of(
-            "Playwright connection closed",
-            "pipe closed",
-            "Target page, context or browser has been closed",
-            "Browser has been closed");
-
-    /**
-     * Checks whether an exception means the browser connection is permanently lost, so the browser
-     * can only be replaced, not retried.
+     * Translates a Playwright failure into a framework exception.
+     * <p>
+     * The message has the form "Failed to perform '&lt;action&gt;' on element '&lt;name&gt;'", followed by the
+     * reason (Playwright's message without its call log) and the selector. A timeout becomes an
+     * {@link ElementTimeoutException}; anything else an {@link ElementActionException}, with a hint when the element
+     * was detached or its page closed during the action. The original exception is kept as the cause.
+     * </p>
      *
-     * @param e the raw Playwright exception
-     * @return {@code true} if the driver or browser connection is gone
-     */
-    public static boolean isConnectionLost(PlaywrightException e) {
-        String message = e.getMessage();
-        return message != null && CONNECTION_LOST_MARKERS.stream().anyMatch(message::contains);
-    }
-
-    /**
-     * Parses a raw PlaywrightException and returns a compact Custom Exception.
-     *
-     * @param e           The raw Playwright exception.
-     * @param elementName The logical name of the element.
-     * @param selector    The JIT Selector used to find the element.
-     * @param actionName  The name of the action being attempted (e.g., "click", "getText").
-     * @return A mapped AutomationException.
+     * @param e           The Playwright exception.
+     * @param elementName The element's name.
+     * @param selector    The element's selector, or {@code null} if unknown.
+     * @param actionName  A short, readable name of the action that failed, e.g. "click".
+     * @return The framework exception, ready to throw.
      */
     public static BasePlaywrightException parse(
             PlaywrightException e,
@@ -73,11 +56,11 @@ public class PlaywrightExceptionParser {
     }
 
     /**
-     * Extracts only the primary error reason from a Playwright exception message,
-     * stripping out the massive "Call log:" sections.
+     * Keeps only the primary reason of a Playwright error message: the text before its "Call log:" section, without
+     * a leading "Error:".
      *
-     * @param fullMessage The raw Playwright error message.
-     * @return The first meaningful line of the error.
+     * @param fullMessage The Playwright error message.
+     * @return The primary reason, or a placeholder if there is no message.
      */
     private static String extractCompactMessage(String fullMessage) {
         if (fullMessage == null) {

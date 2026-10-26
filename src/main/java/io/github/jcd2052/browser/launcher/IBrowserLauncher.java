@@ -5,29 +5,28 @@ import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.Playwright;
 
 /**
- * Defines the contract for specific browser launching strategies.
+ * Launches one kind of browser, such as installed Chrome or Playwright's bundled Firefox.
  * <p>
- * Implementations of this interface (e.g., ChromeLauncher, FirefoxLauncher) are responsible
- * for executing the specific Playwright commands required to launch a particular browser engine.
+ * Each launcher has a name that the configuration refers to ({@code IBrowserProperties.getName()}). Register
+ * custom launchers in an {@link IBrowserLauncherRegistry} to support more browsers or browser channels.
+ * </p>
  */
 public interface IBrowserLauncher {
 
     /**
-     * Retrieves the unique string identifier for this browser launcher.
-     * This name should match the browser name provided in the configuration properties
-     * (e.g., "chrome", "firefox", "webkit", "edge").
+     * Gets the name this launcher is registered under, matched against the configured browser name
+     * (case-insensitively), e.g. "chrome", "chromium", "edge", "firefox" or "webkit".
      *
-     * @return The string identifier of the browser.
+     * @return The launcher's browser name.
      */
     String getName();
 
     /**
-     * Launches the specific browser using the provided Playwright instance and launch options.
+     * Launches this launcher's browser in the given driver.
      *
-     * @param playwright The active {@link Playwright} connection instance.
-     * @param options    The configuration options (like headless mode, timeouts, args) to apply
-     * during the browser launch.
-     * @return A newly launched Playwright {@link Browser} instance.
+     * @param playwright The Playwright driver to launch the browser in.
+     * @param options    The launch options built from the configuration (headless mode, timeout, arguments).
+     * @return The launched browser.
      */
     Browser launch(Playwright playwright, BrowserType.LaunchOptions options);
 }

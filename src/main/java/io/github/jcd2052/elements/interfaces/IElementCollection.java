@@ -14,11 +14,11 @@ import java.util.List;
 public interface IElementCollection<T extends IElement> {
 
     /**
-     * Retrieves all elements in the collection as a {@link List}.
+     * Finds the elements currently matching the collection's selector, after waiting for its expected count.
      * <p>
-     * Implementation note: This method typically triggers the element discovery process
-     * using the underlying selector to find all matching instances currently present
-     * on the page.
+     * Each returned element is bound to its position among the matches, so read the collection again after
+     * the page changes.
+     * </p>
      *
      * @return A list of instantiated elements of type {@code T}.
      */

@@ -1,6 +1,7 @@
 package io.github.jcd2052.browser.browser;
 
 import com.microsoft.playwright.Dialog;
+import io.github.jcd2052.browser.browser.interfaces.AlertType;
 import io.github.jcd2052.browser.browser.interfaces.IAlert;
 import io.github.jcd2052.logger.LoggerProvider;
 
@@ -23,6 +24,16 @@ public class BrowserAlert implements IAlert {
     @Override
     public String getMessage() {
         return dialog.message();
+    }
+
+    @Override
+    public AlertType getType() {
+        return AlertType.fromPlaywrightType(dialog.type());
+    }
+
+    @Override
+    public String getDefaultValue() {
+        return dialog.defaultValue();
     }
 
     @Override

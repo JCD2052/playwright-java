@@ -4,14 +4,16 @@ import com.microsoft.playwright.Locator;
 import io.github.jcd2052.elements.selector.Selector;
 
 /**
- * Service responsible for resolving Just-In-Time (JIT) locators against the active Playwright page.
+ * Resolves selectors into Playwright locators on the current tab, at the moment an element acts, so elements
+ * always work with whatever tab is current.
  */
 public interface IElementFinderService {
     /**
-     * Evaluates the provided Selector strategy against the current active browser page.
+     * Resolves the selector against the current tab's page.
      *
-     * @param selector the locator strategy to evaluate
-     * @return the resolved Playwright Locator
+     * @param selector the selector to resolve
+     * @return the resolved Playwright locator
+     * @throws IllegalStateException if no window or tab is open
      */
     Locator findElement(Selector selector);
 }

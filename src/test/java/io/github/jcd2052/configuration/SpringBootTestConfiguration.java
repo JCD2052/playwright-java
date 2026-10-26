@@ -43,9 +43,9 @@ public class SpringBootTestConfiguration {
     private String tracingFolder;
     @Value("${playwright.browser.highlight:false}")
     private boolean highlight;
-    @Value("${playwright.browser.screenshots:true}")
+    @Value("${playwright.browser.tracing.screenshots:false}")
     private boolean screenshots;
-    @Value("${playwright.browser.snapshots:true}")
+    @Value("${playwright.browser.tracing.snapshots:false}")
     private boolean snapshots;
     @Value("${playwright.browser.viewport.width:1600}")
     private Integer width;
@@ -77,7 +77,7 @@ public class SpringBootTestConfiguration {
     private boolean hasTouch;
     @Value("${playwright.browser.storage.state.path:}")
     private String storageStatePath;
-    @Value("${playwright.logs.language:${playwright.browser.has.logs.language:en}}")
+    @Value("${playwright.logs.language:en}")
     private String localizationLanguage;
 
     @Bean
@@ -86,7 +86,7 @@ public class SpringBootTestConfiguration {
     }
 
     @Bean
-    public IBrowserFactory<IBrowserProperties> browserFactory(
+    public IBrowserFactory browserFactory(
             IBrowserProperties browserProperties, IBrowserLauncherRegistry registry) {
         return new BrowserFactory<>(browserProperties, registry);
     }
@@ -114,9 +114,9 @@ public class SpringBootTestConfiguration {
         return new ElementFinderService(browserService);
     }
 
-    @Bean(destroyMethod = "closeAll")
+    @Bean
     public IBrowserService<IBrowserProperties> browserService(
-            IBrowserProperties browserProperties, IBrowserFactory<IBrowserProperties> browserFactory) {
+            IBrowserProperties browserProperties, IBrowserFactory browserFactory) {
         return new BrowserService<>(browserProperties, browserFactory);
     }
 
@@ -137,8 +137,8 @@ public class SpringBootTestConfiguration {
                 .setHeight(height)
                 .setTracingSaveFolder(tracingFolder)
                 .setHighlight(highlight)
-                .setScreenshots(screenshots)
-                .setSnapshots(snapshots)
+                .setTracingScreenshotsEnabled(screenshots)
+                .setTracingSnapshotsEnabled(snapshots)
                 .setArgs(parseCsv(args))
                 .setTestIdAttribute(testIdAttribute)
                 .setLocale(locale)

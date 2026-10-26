@@ -4,25 +4,25 @@ import com.microsoft.playwright.options.Cookie;
 import java.util.List;
 
 /**
- * Manages browser cookies for a specific browser window/context.
+ * Manages the cookies of one browser window (Playwright browser context); every tab of the window shares them.
  */
 public interface ICookieManager {
     /**
-     * Adds an array of cookies to the current browser context.
+     * Adds cookies to this window.
      *
-     * @param cookies A list of Playwright Cookie objects to add.
+     * @param cookies The Playwright cookies to add.
      */
     void addCookies(List<Cookie> cookies);
 
     /**
-     * Retrieves all cookies from the current browser context.
+     * Retrieves all cookies of this window.
      *
-     * @return A list of current Playwright Cookie objects.
+     * @return The window's current cookies.
      */
     List<Cookie> getCookies();
 
     /**
-     * Clears all cookies from the current browser context.
+     * Removes all cookies from this window.
      */
     void clearCookies();
 }
