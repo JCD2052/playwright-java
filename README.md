@@ -386,7 +386,8 @@ public class BaseTests extends AbstractTestNGSpringContextTests {
 * `isTracingEnabled()` tells whether tracing is on in the settings. `startTracing()` and
   `stopAndSaveTrace(fileName)` always act on the current window, so check it first, as above.
   `stopAndSaveTrace` writes the ZIP into the tracing folder and also returns its bytes, e.g. to attach
-  to a report.
+  to a report. It never launches a browser: when the thread has no open browser (it was never started,
+  was closed, or crashed), it logs a warning and returns an empty array.
 
 ### Using a custom `IBrowserProperties`
 
@@ -527,6 +528,10 @@ and throws Playwright's `TimeoutError` when none opens; its handler is removed e
 catches a later dialog. The handler must accept or decline the dialog, or the page stays blocked.
 Accepting a prompt without text answers it with an empty string; declining it answers with `null`.
 
+If the handler throws (for example a failed assertion), the dialog is dismissed so the page is not left
+blocked, and the exception is rethrown to the caller instead of ending as a timeout. A further dialog that
+opens while the action runs is dismissed.
+
 ## Creating Pages
 
 Create pages or localized fragments by extending `AbstractForm`. Pass a stable root `Selector` identifying
@@ -571,7 +576,8 @@ Useful page methods from `AbstractForm`:
 * `isVisible()`
 * `waitForLoading()` / `waitForLoading(timeout)`
 * `waitToBeVisible()` / `waitToBeVisible(timeout)`
-* `waitToBeInvisible()` / `waitToBeInvisible(timeout)`
+* `waitToBeInvisible()` / `waitToBeInvisible(timeout)` — waits until the root element is removed from the
+  DOM; a root that is only hidden but still attached does not count
 
 ## Creating Elements
 
@@ -665,6 +671,8 @@ countryDropdown.selectByIndex(2);
 String selected = countryDropdown.getSelectedOption();
 List<String> options = countryDropdown.getTexts();
 ```
+
+For a multi-select with several selected options, `getSelectedOption()` returns the first one.
 
 Checkboxes and radio buttons:
 
@@ -821,14 +829,19 @@ language, pass a directory to `LocalizationService` (the last constructor argume
 `<language>.json`. A file found there replaces the bundled one for that language, so it needs every message
 key; copy `src/main/resources/localization/en.json` as a starting point.
 
+A problem with a log message (a missing key, or a template that doesn't match its arguments) is logged as a
+warning and never fails or hides an action that has already happened. When a message is requested directly
+from `LocalizationService`, a template that doesn't fit its arguments fails with a `LocalizationException`
+naming the key.
+
 ## Exceptions
 
 Every action wrapped by `AbstractElement` (click, fill, waits, ...) translates raw Playwright
 errors into one of two unchecked exceptions, both carrying the original exception as `getCause()`:
 
-* `ElementTimeoutException` — the element never reached an actionable state in time.
-* `ElementActionException` — the action itself failed (e.g. the element was detached from the
-  DOM mid-action, or its context closed).
+* `ElementTimeoutException` — Playwright timed out: the element never reached an actionable state in time.
+* `ElementActionException` — the action itself failed. The message adds a hint when the page, context or
+  browser was closed during the action, or when the element was detached from the DOM mid-action.
 
 Both extend `BasePlaywrightException`, so you can catch broadly or specifically. The message is
 compacted from Playwright's often-verbose output and always includes the element name, the action
@@ -838,7 +851,7 @@ attempted, and the `Selector` strategy that was used — e.g.:
 Failed to perform 'click' on element 'Save button'.
 Reason: Target closed
 Locator Strategy: byRole(BUTTON, name="Save")
-(The element was likely removed from the DOM during the action).
+(The page, context or browser was closed during the action).
 ```
 
 A log message file that is missing or can't be read fails with a `LocalizationException`.

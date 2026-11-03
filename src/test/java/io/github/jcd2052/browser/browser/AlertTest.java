@@ -79,6 +79,22 @@ public class AlertTest {
     }
 
     /**
+     * Verifies that a failure in the alert handler is rethrown to the caller, and that the dialog is dismissed so
+     * the page is not left blocked.
+     */
+    @Test(description = "A failing alert handler is rethrown and the dialog is dismissed")
+    public void aFailingAlertHandlerIsRethrownAndTheDialogIsDismissed() {
+        IllegalStateException thrown = Assert.expectThrows(IllegalStateException.class, () -> tab.handleNextAlert(
+                alert -> {
+                    throw new IllegalStateException("handler failed");
+                },
+                () -> page.click("#alert")));
+
+        Assert.assertEquals(thrown.getMessage(), "handler failed");
+        Assert.assertEquals(page.evaluate("1 + 1"), 2);
+    }
+
+    /**
      * Verifies that accepting a {@code confirm} makes it return {@code true} to the page.
      */
     @Test(description = "Accepting a confirm confirms it")

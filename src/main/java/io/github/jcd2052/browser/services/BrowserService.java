@@ -86,6 +86,8 @@ public class BrowserService<T extends IBrowserProperties> implements IBrowserSer
      * <p>
      * The trace is saved as {@code filename} inside {@link IBrowserProperties#getTracingSaveFolder()}, then read
      * back into memory. A failure is logged rather than thrown, so collecting a trace cannot fail test teardown.
+     * If the thread has no open browser (never started, closed or crashed), nothing is launched: a warning is
+     * logged and an empty array is returned.
      *
      * @param filename The specific name to assign to the exported trace ZIP file.
      * @return A {@code byte[]} containing the ZIP file data, or an empty byte array if the trace could not be
@@ -94,13 +96,17 @@ public class BrowserService<T extends IBrowserProperties> implements IBrowserSer
     @Override
     public byte[] stopAndSaveTrace(String filename) {
         try {
+            IBrowser browser = threadLocalBrowser.get();
+            if (browser == null || browser.isClosed()) {
+                LoggerProvider.getLogger().warn("No open browser to save the trace from.");
+                return new byte[0];
+            }
             Path tracePath = Paths.get(browserProperties.getTracingSaveFolder(), filename);
             Path traceDirectory = tracePath.getParent();
             if (traceDirectory != null) {
                 Files.createDirectories(traceDirectory);
             }
-            getBrowser()
-                    .requireCurrentBrowserWindow()
+            browser.requireCurrentBrowserWindow()
                     .getBrowserContext()
                     .tracing()
                     .stop(new Tracing.StopOptions().setPath(tracePath));

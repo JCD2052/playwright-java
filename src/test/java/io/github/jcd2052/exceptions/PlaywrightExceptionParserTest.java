@@ -72,18 +72,48 @@ public class PlaywrightExceptionParserTest {
     }
 
     /**
-     * Verifies that a closed target becomes an {@link ElementActionException} whose message hints that the element
-     * was removed from the DOM.
+     * Verifies that a closed target becomes an {@link ElementActionException} whose message hints that the page,
+     * context or browser was closed.
      */
-    @Test(description = "Target closed maps to ElementActionException with an extra hint")
-    public void targetClosedMapsToElementActionExceptionWithAnExtraHint() {
+    @Test(description = "Target closed maps to ElementActionException with a closed hint")
+    public void targetClosedMapsToElementActionExceptionWithAClosedHint() {
         PlaywrightException raw = new PlaywrightException("Error: Target closed");
 
         BasePlaywrightException parsed = PlaywrightExceptionParser.parse(
                 raw, "Save button", Selector.bySelector("#save"), "click");
 
         Assert.assertTrue(parsed instanceof ElementActionException);
-        Assert.assertTrue(parsed.getMessage().contains("likely removed from the DOM"));
+        Assert.assertTrue(parsed.getMessage().contains("was closed during the action"));
+        Assert.assertFalse(parsed.getMessage().contains("likely removed from the DOM"));
+    }
+
+    /**
+     * Verifies that Playwright's newer closed-page wording gets the same closed hint.
+     */
+    @Test(description = "A 'has been closed' error maps to ElementActionException with a closed hint")
+    public void aHasBeenClosedErrorMapsToElementActionExceptionWithAClosedHint() {
+        PlaywrightException raw = new PlaywrightException(
+                "Error: Target page, context or browser has been closed");
+
+        BasePlaywrightException parsed = PlaywrightExceptionParser.parse(
+                raw, "Save button", Selector.bySelector("#save"), "click");
+
+        Assert.assertTrue(parsed instanceof ElementActionException);
+        Assert.assertTrue(parsed.getMessage().contains("was closed during the action"));
+    }
+
+    /**
+     * Verifies that only a real {@link TimeoutError} becomes an {@link ElementTimeoutException}: an ordinary error
+     * whose text merely mentions "Timeout" does not.
+     */
+    @Test(description = "A plain error that mentions Timeout is not an ElementTimeoutException")
+    public void aPlainErrorThatMentionsTimeoutIsNotAnElementTimeoutException() {
+        PlaywrightException raw = new PlaywrightException("Error: no element matches 'Timeout settings'");
+
+        BasePlaywrightException parsed = PlaywrightExceptionParser.parse(
+                raw, "Save button", Selector.bySelector("#save"), "click");
+
+        Assert.assertTrue(parsed instanceof ElementActionException);
     }
 
     /**

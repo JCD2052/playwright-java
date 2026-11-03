@@ -1,6 +1,5 @@
 package io.github.jcd2052.elements;
 
-import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.options.SelectOption;
 import io.github.jcd2052.browser.services.interfaces.IElementFactory;
 import io.github.jcd2052.elements.selector.Selector;
@@ -9,7 +8,6 @@ import io.github.jcd2052.logger.i18n.LogAction;
 
 import java.util.List;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * A concrete representation of a standard HTML select dropdown element.
@@ -36,31 +34,27 @@ public class DropdownElement extends AbstractElement implements IDropdownElement
     }
 
     /**
-     * Gets the rendered text of the selected option.
+     * Gets the rendered text of the selected option. For a multi-select with several selected options, the first
+     * one is returned.
      *
      * @return The text of the selected option.
      */
     @Override
     public String getSelectedOption() {
         return executeActionReturning(
-                () -> getLocator().locator(SELECTOR_FOR_SELECTED_OPTION).innerText(),
+                () -> getLocator().locator(SELECTOR_FOR_SELECTED_OPTION).first().innerText(),
                 LogAction.DROPDOWN_OPTION_READ);
     }
 
     /**
-     * Gets the text of every option, in order.
+     * Gets the text of every option, in order, in a single call to the browser.
      *
      * @return A list of strings representing the text of every {@code <option>} element.
      */
     @Override
     public List<String> getTexts() {
         return executeActionReturning(
-                () -> getLocator()
-                        .locator("option")
-                        .all()
-                        .stream()
-                        .map(Locator::textContent)
-                        .collect(Collectors.toList()),
+                () -> getLocator().locator("option").allTextContents(),
                 LogAction.DROPDOWN_OPTIONS_READ);
     }
 

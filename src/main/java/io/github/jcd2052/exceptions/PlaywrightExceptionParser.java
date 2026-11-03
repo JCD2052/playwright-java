@@ -16,9 +16,10 @@ public class PlaywrightExceptionParser {
      * Translates a Playwright failure into a framework exception.
      * <p>
      * The message has the form "Failed to perform '&lt;action&gt;' on element '&lt;name&gt;'", followed by the
-     * reason (Playwright's message without its call log) and the selector. A timeout becomes an
-     * {@link ElementTimeoutException}; anything else an {@link ElementActionException}, with a hint when the element
-     * was detached or its page closed during the action. The original exception is kept as the cause.
+     * reason (Playwright's message without its call log) and the selector. A Playwright {@code TimeoutError} becomes
+     * an {@link ElementTimeoutException}; anything else an {@link ElementActionException}, with a hint when the
+     * page, context or browser was closed, or the element was detached, during the action. The original exception
+     * is kept as the cause.
      * </p>
      *
      * @param e           The Playwright exception.
@@ -43,11 +44,16 @@ public class PlaywrightExceptionParser {
                 selector != null ? selector.toString() : "Unknown"
         );
 
-        if (e instanceof TimeoutError || compactMessage.contains("Timeout")) {
+        if (e instanceof TimeoutError) {
             return new ElementTimeoutException(formattedMessage, e);
         }
 
-        if (compactMessage.contains("Target closed") || compactMessage.contains("detached")) {
+        if (compactMessage.contains("has been closed") || compactMessage.contains("Target closed")) {
+            return new ElementActionException(
+                    formattedMessage + "\n(The page, context or browser was closed during the action).", e);
+        }
+
+        if (compactMessage.contains("detached")) {
             return new ElementActionException(
                     formattedMessage + "\n(The element was likely removed from the DOM during the action).", e);
         }

@@ -8,6 +8,7 @@ import io.github.jcd2052.browser.browser.interfaces.IBrowser;
 import io.github.jcd2052.browser.browser.interfaces.IBrowserTab;
 import io.github.jcd2052.browser.browser.interfaces.IBrowserWindow;
 import io.github.jcd2052.browser.configuration.IBrowserProperties;
+import io.github.jcd2052.exceptions.InvalidBrowserWindowException;
 import lombok.Getter;
 
 import java.nio.file.Path;
@@ -115,6 +116,7 @@ public class PlaywrightBrowser implements IBrowser {
      */
     @Override
     public void switchToWindow(IBrowserWindow window) {
+        checkWindow(window);
         IBrowserTab tab = window.getCurrentBrowserTab();
         if (tab != null) {
             window.switchToTab(tab);
@@ -124,6 +126,7 @@ public class PlaywrightBrowser implements IBrowser {
 
     @Override
     public void closeWindow(IBrowserWindow window) {
+        checkWindow(window);
         window.closeWindow();
     }
 
@@ -152,6 +155,20 @@ public class PlaywrightBrowser implements IBrowser {
     @Override
     public boolean isClosed() {
         return isClosed || !browser.isConnected();
+    }
+
+    /**
+     * Checks that the window is open in this browser.
+     *
+     * @param window The window to check.
+     * @throws InvalidBrowserWindowException if the window is {@code null}, belongs to another browser, or has
+     *                                       been closed.
+     */
+    private void checkWindow(IBrowserWindow window) {
+        if (window == null || !browser.contexts().contains(window.getBrowserContext())) {
+            throw new InvalidBrowserWindowException(
+                    "The window does not belong to this browser or has been closed.");
+        }
     }
 
     /**
