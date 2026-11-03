@@ -117,6 +117,19 @@ public class BrowserTabTest {
     }
 
     /**
+     * Verifies that two tabs are equal exactly when they wrap the same page.
+     */
+    @Test(description = "Tabs are equal when they wrap the same page and different otherwise")
+    public void tabsAreEqualWhenTheyWrapTheSamePageAndDifferentOtherwise() {
+        IBrowserTab sameTab = window.getCurrentBrowserTab();
+        IBrowserTab otherTab = window.openNewTab();
+
+        Assert.assertEquals(sameTab, tab);
+        Assert.assertEquals(sameTab.hashCode(), tab.hashCode());
+        Assert.assertNotEquals(otherTab, tab);
+    }
+
+    /**
      * Verifies that navigating loads the page, whose URL and title the tab then reports.
      */
     @Test(description = "navigateTo loads the page and the tab reports its URL and title")

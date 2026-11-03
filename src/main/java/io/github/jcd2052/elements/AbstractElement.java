@@ -142,14 +142,20 @@ public abstract class AbstractElement implements IElement {
                     }
                     getMouseActions().move(sourceBox.x + (sourceBox.width / 2), sourceBox.y + (sourceBox.height / 2));
                     getMouseActions().down();
-
-                    targetElement.getLocator().scrollIntoViewIfNeeded();
-                    BoundingBox targetBox = targetElement.getLocator().boundingBox();
-                    if (targetBox == null) {
-                        throw new IllegalStateException("Cannot perform dragAndDropTo: target element is not visible.");
+                    try {
+                        targetElement.getLocator().scrollIntoViewIfNeeded();
+                        BoundingBox targetBox = targetElement.getLocator().boundingBox();
+                        if (targetBox == null) {
+                            throw new IllegalStateException(
+                                    "Cannot perform dragAndDropTo: target element is not visible.");
+                        }
+                        getMouseActions().move(
+                                targetBox.x + (targetBox.width / 2),
+                                targetBox.y + (targetBox.height / 2),
+                                steps);
+                    } finally {
+                        getMouseActions().up();
                     }
-                    getMouseActions().move(targetBox.x + (targetBox.width / 2), targetBox.y + (targetBox.height / 2), steps);
-                    getMouseActions().up();
                 },
                 LogAction.ELEMENT_DRAGGED_TO, targetElement.getName());
     }
@@ -414,7 +420,12 @@ public abstract class AbstractElement implements IElement {
         formatArgs[0] = this.name;
         System.arraycopy(args, 0, formatArgs, 1, args.length);
 
-        LoggerProvider.getLogger().info(i18n.getMessage(logAction, formatArgs));
+        try {
+            LoggerProvider.getLogger().info(i18n.getMessage(logAction, formatArgs));
+        } catch (RuntimeException e) {
+            LoggerProvider.getLogger().warn(
+                    "Could not log the action '" + logAction.getKey() + "' on '" + this.name + "': " + e.getMessage());
+        }
     }
 
     /**
@@ -428,7 +439,12 @@ public abstract class AbstractElement implements IElement {
                 logAction != null ? logAction.getActionName() : "unknown action"
         );
 
-        String errorMessage = i18n.getMessage(LogAction.ACTION_FAILED, this.name, parsedException.getMessage());
+        String errorMessage;
+        try {
+            errorMessage = i18n.getMessage(LogAction.ACTION_FAILED, this.name, parsedException.getMessage());
+        } catch (RuntimeException translationFailure) {
+            errorMessage = parsedException.getMessage();
+        }
         LoggerProvider.getLogger().error(errorMessage);
 
         return parsedException;

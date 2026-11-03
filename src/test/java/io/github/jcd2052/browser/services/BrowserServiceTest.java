@@ -280,6 +280,21 @@ public class BrowserServiceTest {
     }
 
     /**
+     * Verifies that {@link BrowserService#stopAndSaveTrace(String)} launches nothing when the thread has no browser,
+     * and returns an empty array instead.
+     */
+    @Test(description = "stopAndSaveTrace does not launch a browser when the thread has none")
+    public void stopAndSaveTraceDoesNotLaunchABrowserWhenTheThreadHasNone() {
+        IBrowserFactory factory = Mockito.mock(IBrowserFactory.class);
+        BrowserService<IBrowserProperties> service = service(factory, () -> Mockito.mock(Playwright.class));
+
+        byte[] trace = service.stopAndSaveTrace("trace.zip");
+
+        Assert.assertEquals(trace.length, 0);
+        Mockito.verifyNoInteractions(factory);
+    }
+
+    /**
      * Creates a browser service with test properties, the given factory, and the given source of Playwright drivers.
      */
     private static BrowserService<IBrowserProperties> service(

@@ -6,6 +6,7 @@ import io.github.jcd2052.logger.i18n.ILocalizationReader;
 import io.github.jcd2052.logger.i18n.ILogAction;
 
 import java.nio.file.Path;
+import java.util.IllegalFormatException;
 import java.util.Map;
 
 /**
@@ -45,6 +46,11 @@ public class LocalizationService implements ILocalizationService {
             throw new LocalizationException("Missing translation key '" + action.getKey() + "' in current locale.");
         }
 
-        return String.format(template, args);
+        try {
+            return String.format(template, args);
+        } catch (IllegalFormatException e) {
+            throw new LocalizationException(
+                    "Invalid translation template for key '" + action.getKey() + "': " + e.getMessage(), e);
+        }
     }
 }

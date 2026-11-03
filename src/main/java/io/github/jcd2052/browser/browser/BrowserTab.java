@@ -2,6 +2,7 @@ package io.github.jcd2052.browser.browser;
 
 import com.microsoft.playwright.Dialog;
 import com.microsoft.playwright.Page;
+import com.microsoft.playwright.PlaywrightException;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import io.github.jcd2052.browser.browser.interfaces.IAlert;
@@ -26,6 +27,7 @@ public class BrowserTab implements IBrowserTab {
      * The Playwright page this tab represents.
      */
     @Getter
+    @EqualsAndHashCode.Include
     private final Page page;
     @Getter
     private final IMouseActions mouseActions;
@@ -46,17 +48,32 @@ public class BrowserTab implements IBrowserTab {
     @Override
     public IAlert handleNextAlert(Consumer<IAlert> alertHandler, Runnable actionThatTriggersAlert) {
         AtomicReference<IAlert> handledAlert = new AtomicReference<>();
+        AtomicReference<RuntimeException> handlerFailure = new AtomicReference<>();
         Consumer<Dialog> listener = dialog -> {
-            if (handledAlert.get() == null) {
-                IAlert alert = new BrowserAlert(dialog);
-                alertHandler.accept(alert);
-                handledAlert.set(alert);
+            if (handledAlert.get() != null) {
+                dialog.dismiss();
+                return;
             }
+            IAlert alert = new BrowserAlert(dialog);
+            try {
+                alertHandler.accept(alert);
+            } catch (RuntimeException e) {
+                handlerFailure.set(e);
+                try {
+                    dialog.dismiss();
+                } catch (PlaywrightException alreadyHandled) {
+                    e.addSuppressed(alreadyHandled);
+                }
+            }
+            handledAlert.set(alert);
         };
         page.onDialog(listener);
         try {
             actionThatTriggersAlert.run();
             page.waitForCondition(() -> handledAlert.get() != null);
+            if (handlerFailure.get() != null) {
+                throw handlerFailure.get();
+            }
             return handledAlert.get();
         } finally {
             page.offDialog(listener);

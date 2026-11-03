@@ -43,6 +43,20 @@ public class LocalizationServiceTest {
     }
 
     /**
+     * Verifies that a message whose template has more placeholders than the given arguments fails with a
+     * {@link LocalizationException} naming the key, not a raw format exception.
+     */
+    @Test(description = "A template with too many placeholders throws a LocalizationException naming the key")
+    public void aTemplateWithTooManyPlaceholdersThrowsALocalizationExceptionNamingTheKey() {
+        LocalizationService service = serviceWith(Map.of("element_zoomed", "Zoomed '%1$s' to %2$s"));
+
+        LocalizationException exception = Assert.expectThrows(LocalizationException.class,
+                () -> service.getMessage(ILogAction.of("element_zoomed"), "Map"));
+
+        Assert.assertTrue(exception.getMessage().contains("element_zoomed"));
+    }
+
+    /**
      * Verifies that a custom action's readable name, shown in error messages, is its key.
      */
     @Test(description = "A custom ILogAction's action name is its key")
